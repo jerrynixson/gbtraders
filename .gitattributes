@@ -1,0 +1,12 @@
+# Set the default behavior to automatically normalize line endings.
+* text=auto eol=crlf
+
+# Ensure that certain file types retain LF line endings.
+*.sh text eol=lf
+*.md text eol=lf
+
+# Binary files
+*.jpg binary
+*.png binary
+*.gif binary
+*.pdf binary
