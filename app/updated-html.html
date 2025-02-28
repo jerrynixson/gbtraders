@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GB Traders</title>
+    <link rel="stylesheet" href="updated-css.css">
+</head>
+<body>
+<main class="marketplace-container">
+  <header class="main-header">
+    <div class="Region-select">
+      <b>Region        </b>
+      <select id="region-in-header" class="region-in-header">
+        <option value="UK">UK</option>
+        <option value="India">IN</option>
+        <option value="North America">NA</option>
+        <option value="Africa">AF</option>
+      </select>
+    </div>
+    <nav class="nav-container">
+      <div class="logo-container">
+        <img
+          src="https://cdn.builder.io/api/v1/image/assets/TEMP/f62104c8cc0c2e04ce9b9a963a0de393da34a8b0b7002e0dd2d4faf50ae97198?placeholderIfAbsent=true&apiKey=889adf78e2a140f9947dbbbcaf3856f4"
+          alt="GB Traders Logo"
+          class="logo"
+        />
+      </div>
+      <ul class="nav-links">
+        <li><a href="#" class="nav-link">Used Cars</a></li>
+        <li><a href="#" class="nav-link">New Cars</a></li>
+        <li><a href="#" class="nav-link">Car Reviews</a></li>
+        <li><a href="#" class="nav-link">Car Rentals</a></li>
+        <li><a href="#" class="nav-link">Buy a Car</a></li>
+      </ul>
+      <div class="user-actions">
+        <div class="action-item">
+          <img
+            src="https://cdn.builder.io/api/v1/image/assets/TEMP/7a4260a0a1da48baee6e8b9002cc70e005ed5640d3d7c8e348eb0fa3a3b722f0?placeholderIfAbsent=true&apiKey=889adf78e2a140f9947dbbbcaf3856f4"
+            alt="Saved"
+            class="action-icon"
+          />
+          <span>Saved</span>
+        </div>
+        <div class="action-item">
+          <img
+            src="https://cdn.builder.io/api/v1/image/assets/TEMP/79fc8f8a08dc414fc4a5b36cd913316d815406b9a1c2e3ad43081f9f24a1362a?placeholderIfAbsent=true&apiKey=889adf78e2a140f9947dbbbcaf3856f4"
+            alt="Profile"
+            class="action-icon"
+          />
+          <a href="login.html"><span>Sign in</span></a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="search-container">
+        <div class="search-form">
+          <div class="search-row">
+            <input type="text" placeholder="Postcode" class="search-input" />
+            <div class="search-select">
+              <select>
+                <option>Vehicle Type</option>
+                <option>Car</option>
+                <option>Truck</option>
+                <option>Motor Bike</option>
+                <option>Van</option>
+                <option>Bus</option>
+              </select>
+            </div>
+          </div>
+          <div class="search-row">
+            <input type="text" placeholder="Brand" class="search-input" />
+            <input type="text" placeholder="Model" class="search-input" />
+          </div>
+          <div class="search-row">
+            <input type="text" placeholder="Min Price (€)" class="search-input" />
+            <input type="text" placeholder="Max Price (€)" class="search-input" />
+          <button class="search-button">Search</button>
+        </div>
+        <div class="search-actions">
+          <button class="reset-button">Reset filters</button>
+          <button class="more-options">More options</button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </section>
+  <section class="sorting-section">
+    <h2 class="sort-label">Sorted by</h2>
+    <div class="sort-dropdown">
+      <span>New</span>
+      <img
+        src="https://cdn.builder.io/api/v1/image/assets/TEMP/c39bece0de951033a7fd35a1c350362a8c2a394a706b75fc4e9ea11a6bb7f9c1?placeholderIfAbsent=true&apiKey=889adf78e2a140f9947dbbbcaf3856f4"
+        alt="Dropdown arrow"
+        class="dropdown-icon"
+      />
+    </div>
+  </section>
+
+  <section class="car-listings">
+    <article class="car-card">
+      <div class="car-image-container">
+        <img
+          src=""
+          alt=""
+          class="car-image"
+        />
+        <div class="car-badge">
+          <span class="badge-electric">EV</span>
+        </div>
+      </div>
+      <div class="car-details">
+        <div class="price-info">
+          <div class="price-main">
+            <span class="price-label"></span>
+            <span class="price-amount"></span>
+            <span class="price-vat"></span>
+          </div>
+          <div class="price-details">
+            
+          </div>
+        </div>
+        <span class="delivery-info"></span>
+        <div class="car-info">
+          <h3 class="car-title"></h3>
+          <p class="car-subtitle"></p>
+        </div>
+      </div>
+    </article>
+
+    <article class="car-card">
+      <div class="car-image-container">
+        <img
+          src=""
+          class="car-image"
+        />
+        <div class="car-badge">
+          <span class="badge-electric"></span>
+        </div>
+      </div>
+      <div class="car-details">
+        <div class="price-info">
+          <div class="price-main">
+            <span class="price-label"></span>
+            <span class="price-amount"></span>
+            <span class="price-vat"></span>
+          </div>
+          <div class="price-details">
+            <
+          </div>
+        </div>
+        <span class="delivery-info"></span>
+        <div class="car-info">
+          <h3 class="car-title"></h3>
+          <p class="car-subtitle"></p>
+        </div>
+      </div>
+    </article>
+
+    <article class="car-card">
+      <div class="car-image-container">
+        <img
+          src=""
+          alt=""
+          class="car-image"
+        />
+        <div class="car-badge">
+          <span class="badge-electric">EV</span>
+        </div>
+      </div>
+      <div class="car-details">
+        <div class="price-info">
+          <div class="price-main">
+            <span class="price-label"></span>
+            <span class="price-amount"></span>
+            <span class="price-vat"></span>
+          </div>
+          <div class="price-details">
+            
+          </div>
+        </div>
+        <span class="delivery-info"></span>
+        <div class="car-info">
+          <h3 class="car-title"></h3>
+          <p class="car-subtitle"></p>
+        </div>
+      </div>
+    </article>
+
+    
+  </section>
+
+  <div class="view-more">
+    <span class="view-more-text">View more deals</span>
+    <img
+      src="https://cdn.builder.io/api/v1/image/assets/TEMP/7f3b96b00fa5144d3304d70723af25482a6676362fbd249d0e6662a641a463ee?placeholderIfAbsent=true&apiKey=889adf78e2a140f9947dbbbcaf3856f4"
+      alt="Arrow right"
+      class="view-more-icon"
+    />
+  </div>
+
+  <section class="seller-promo">
+    <div class="promo-content">
+      <div class="promo-text">
+        <h2 class="promo-title">Have a vehicle you are trying to sell?</h2>
+        <p class="promo-subtitle">
+          Be a verified seller and reach thousands of potential buyers
+          effortlessly!
+        </p>
+        <p class="promo-description">
+          List your car today and get the best deals—fast, secure, and
+          hassle-free!
+        </p>
+      </div>
+      <button class="promo-cta" onclick="signup.html">Get Started!</button>
+    </div>
+  </section>
+
+  <section class="buying-essentials">
+    <h2 class="section-title">Buying essentials</h2>
+    <div class="essentials-grid">
+      <article class="essential-card">
+        <img
+          src="https://cdn.builder.io/api/v1/image/assets/TEMP/53ac8a28e385474ba042adeb7c713dfc5a0370a9c1ffa20f9f75b6304b06f90f?placeholderIfAbsent=true&apiKey=889adf78e2a140f9947dbbbcaf3856f4"
+          alt="Finance"
+          class="essential-icon"
+        />
+        <h3 class="essential-title">CAR FINANCE & LOANS</h3>
+        <p class="essential-description">
+          Discover how much you can<br />
+          borrow and find the right<br />
+          package for you.
+        </p>
+      </article>
+
+      <article class="essential-card">
+        <img
+          src="https://cdn.builder.io/api/v1/image/assets/TEMP/9ea9f1aeba4a0c79d5093012c95e231e7cb26a635c60efe121e9bcb52dedfce7?placeholderIfAbsent=true&apiKey=889adf78e2a140f9947dbbbcaf3856f4"
+          alt="History check"
+          class="essential-icon"
+        />
+        <h3 class="essential-title">CHECK A CAR'S HISTORY</h3>
+        <p class="essential-description">
+          Have complete peace of mind<br />
+          before you buy your next car.
+        </p>
+      </article>
+
+      <article class="essential-card">
+        <img
+          src="https://cdn.builder.io/api/v1/image/assets/TEMP/25bf1e59d6e65ff00b2c2f55a29c9971efc34788d6a451fd9e156a6b18053a10?placeholderIfAbsent=true&apiKey=889adf78e2a140f9947dbbbcaf3856f4"
+          alt="Security"
+          class="essential-icon"
+        />
+        <h3 class="essential-title">SECURITY ADVICE</h3>
+        <p class="essential-description">
+          Advice on how to buy and sell<br />
+          vehicles safely.
+        </p>
+      </article>
+
+      <article class="essential-card">
+        <img
+          src="https://cdn.builder.io/api/v1/image/assets/TEMP/2ffc8263476cf475be0b08b70f3309cbb886f7aad93308f98bfd5cdabc9d5d2e?placeholderIfAbsent=true&apiKey=889adf78e2a140f9947dbbbcaf3856f4"
+          alt="Valuation"
+          class="essential-icon"
+        />
+        <h3 class="essential-title">WHAT'S IT WORTH</h3>
+        <p class="essential-description">
+          Get a free valuation. Sell or<br />
+          part-exchange your car at the<br />
+          right price.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <footer class="main-footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <h3 class="footer-title">GB Trader Group</h3>
+        <nav class="footer-nav">
+          <a href="#" class="footer-link">Security advice</a>
+          <a href="#" class="footer-link">Contact us</a>
+          <a href="#" class="footer-link">About us</a>
+          <a href="#" class="footer-link">Careers</a>
+          <a href="#" class="footer-link">Investor information</a>
+          <a href="#" class="footer-link">Privacy policies and terms</a>
+          <a href="#" class="footer-link">Terms & conditions</a>
+          <a href="#" class="footer-link">External wellbeing support</a>
+          <a href="#" class="footer-link">Manage cookies</a>
+        </nav>
+      </div>
+
+      <div class="footer-info">
+        <div class="footer-sections">
+          <div class="footer-section">
+            <h3 class="footer-title">Products & services</h3>
+          </div>
+          <div class="footer-section">
+            <h3 class="footer-title">Buying advice</h3>
+          </div>
+          <div class="footer-section">
+            <h3 class="footer-title">Quick search</h3>
+          </div>
+          <div class="footer-section">
+            <h3 class="footer-title">GB Trader for dealers</h3>
+          </div>
+        </div>
+
+        <div class="company-info">
+          <div class="info-grid">
+            <div class="registration-section">
+              <h4>Registered office and headquarters</h4>
+              <p>X Floor</p>
+              <p>X Place</p>
+              <p>Manchester</p>
+              <p>M15 4FN</p>
+              <p>United Kingdom</p>
+              <p>Registered number: xxxxxxxxxx</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="copyright">Copyright © GB Trader Limited 2025</p>
+  </footer>
+</main>
+</body>
+</html>

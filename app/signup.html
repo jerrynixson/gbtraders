@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Signup Page</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="signup.css" />
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="container">
+        <header class="header-logo">
+          <img
+            src="https://cdn.builder.io/api/v1/image/assets/TEMP/62355336c5a2a7e7b90ebc079103c14ab892fddc"
+            alt="Logo"
+            class="logo-img"
+          />
+        </header>
+
+        <main class="main-content">
+          <section class="signup-container">
+            <header class="signup-header">
+              <h1 class="signup-title">Get started with Us</h1>
+              <p class="signup-subtitle">
+                Create an account, and find your perfect ride
+              </p>
+            </header>
+
+            <div class="dealer-toggle">
+              <button class="toggle-switch" role="switch" aria-checked="false" onclick="toggleSwitch(this)">
+                <span class="toggle-circle"></span>
+              </button>
+              <label class="toggle-label">Account for Dealers?</label>
+            </div>
+            
+            <script>
+              function toggleSwitch(button) {
+                button.classList.toggle("active");
+                const isChecked = button.getAttribute("aria-checked") === "true";
+                button.setAttribute("aria-checked", !isChecked);
+              }
+            </script>
+            
+
+            <form class="signup-form">
+              <div class="name-row">
+                <div class="input-group">
+                  <input
+                    type="text"
+                    placeholder="First name"
+                    class="input-field"
+                  />
+                </div>
+                <div class="input-group">
+                  <input
+                    type="text"
+                    placeholder="Last name"
+                    class="input-field"
+                  />
+                </div>
+              </div>
+
+              <div class="input-group">
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  class="input-field"
+                />
+              </div>
+
+              <div class="input-group">
+                <input
+                  type="password"
+                  placeholder="Password"
+                  class="input-field"
+                />
+              </div>
+
+              <div class="input-group">
+                <button type="button" class="country-select">
+                  <span class="select-text">Select your country</span>
+                  <i class="ti ti-chevron-down"></i>
+                </button>
+              </div>
+
+              <div class="social-divider">
+                <div class="line"></div>
+                <span class="divider-text">OR</span>
+                <div class="line"></div>
+              </div>
+
+              <div class="social-login">
+                <button class="social-btn">
+                  <img
+                    src="https://placehold.co/20x20/4285f4/4285f4"
+                    alt="Google"
+                    class="social-icon"
+                  />
+                </button>
+                <button class="social-btn">
+                  <img
+                    src="https://placehold.co/20x20/00a4ef/00a4ef"
+                    alt="Microsoft"
+                    class="social-icon"
+                  />
+                </button>
+                <button class="social-btn">
+                  <img
+                    src="https://placehold.co/20x20/1877f2/1877f2"
+                    alt="Facebook"
+                    class="social-icon"
+                  />
+                </button>
+                <button class="social-btn">
+                  <img
+                    src="https://placehold.co/20x20/000000/000000"
+                    alt="Apple"
+                    class="social-icon"
+                  />
+                </button>
+              </div>
+
+              <button type="submit" class="signup-btn">Sign up</button>
+
+              <p class="terms">
+                <span>By signing up, I agree to DB Traders</span>
+                <a href="#" class="terms-link">Terms of Service</a>
+                <span>and</span>
+                <a href="#" class="terms-link">Privacy Policy</a>
+                <span>.</span>
+              </p>
+
+              <p class="login-link">
+                Already have an account?
+                <a href="#" class="signin-link">Sign in</a>
+              </p>
+            </form>
+          </section>
+        </main>
+      </div>
+
+      <div class="cookie-banner" role="alert">
+        <p class="cookie-text">
+          By using our site, you acknowledge that you have read and understood
+          our
+          <a href="#" class="cookie-link">Cookie Policy</a>
+        </p>
+        <button class="cookie-accept">I Agree</button>
+      </div>
+    </div>
+  </body>
+</html>

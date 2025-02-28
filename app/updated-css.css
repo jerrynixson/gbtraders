@@ -1,0 +1,534 @@
+.marketplace-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  max-width: 1440px;
+  margin: 0 auto;
+  color: #242d3d;
+}
+
+.main-header {
+  padding: 15px 40px;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.logo {
+  width: 80px;
+  height: auto;
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 15px;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #242d3d;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.user-actions {
+  display: flex;
+  gap: 20px;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+}
+
+.action-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.hero-section {
+  position: relative;
+  background: url("D:\\GB Traders internship\\Sample work\\Images\\Search_Baner_GB_Traders.png") no-repeat center center/cover;
+  height: 500px; /* Adjust height as needed */
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hero-text {
+  max-width: 50%;
+}
+
+.search-container {
+  background: rgba(255, 255, 255, 0.9); /* Slight transparency */
+  border-radius: 8px;
+  padding: 25px;
+  width: 500px;
+  color: #242d3d;
+  position: absolute;
+  right: 5%; /* Moves it towards the right */
+  top: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.search-title {
+  font-size: 18px;
+  text-align: center;
+}
+.search-input, .search-select select {
+  width: 100%;
+  padding: 12px; /* More padding for a bigger look */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  transition: all 0.3s ease-in-out;
+}
+
+.search-input:focus, .search-select select:focus {
+  border-color: #0052ff; /* Highlight on focus */
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 82, 255, 0.5);
+}
+
+.search-row {
+  display: flex;
+  gap: 12px; /* More space between elements */
+}
+
+.search-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search-button {
+  background-color: #0052ff;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+}
+
+.reset-button,.more-options{
+  background-color: #0052ff;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+}
+@media (max-width: 768px) {
+  .hero-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .search-container {
+    position: static;
+    transform: none;
+    width: 100%;
+    margin-top: 20px;
+  }
+}
+
+
+.sorting-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 40px;
+}
+
+.sort-label {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.sort-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 8px 15px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.car-listings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 0 40px;
+}
+
+.car-card {
+  width: calc(33% - 15px);
+  border: 1px solid #e8e7e6;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.car-image-container {
+  position: relative;
+  height: 160px;
+}
+
+.car-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.car-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: white;
+  border-radius: 3px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-electric {
+  color: #242d3d;
+}
+
+.car-details {
+  padding: 15px;
+}
+
+.price-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.price-main {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.price-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.price-amount {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.price-vat {
+  font-size: 12px;
+  color: #666;
+}
+
+.price-details {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.delivery-info {
+  display: inline-block;
+  background-color: #4871d9;
+  color: white;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  margin-top: 10px;
+}
+
+.car-info {
+  margin-top: 10px;
+}
+
+.car-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.car-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0 0;
+  line-height: 1.4;
+}
+
+.view-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 30px 0;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.view-more-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.seller-promo {
+  background-color: #ff003d;
+  margin: 40px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.promo-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px;
+  color: white;
+}
+
+.promo-text {
+  max-width: 60%;
+}
+
+.promo-title {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.promo-subtitle {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 10px 0 0;
+  line-height: 1.2;
+}
+
+.promo-description {
+  font-size: 16px;
+  margin-top: 20px;
+}
+
+.promo-cta {
+  background-color: white;
+  color: #ff003d;
+  border: none;
+  border-radius: 25px;
+  padding: 15px 30px;
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.buying-essentials {
+  padding: 40px;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 30px;
+}
+
+.essentials-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.essential-card {
+  text-align: center;
+}
+
+.essential-icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 15px;
+}
+
+.essential-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.essential-description {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.main-footer {
+  background-color: #f5f5f5;
+  padding: 40px;
+  margin-top: 40px;
+}
+
+.footer-content {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.footer-links {
+  width: 200px;
+}
+
+.footer-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 20px;
+}
+
+.footer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-link {
+  color: #242d3d;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.footer-info {
+  flex: 1;
+}
+
+.footer-sections {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 30px;
+}
+
+.footer-section {
+  width: 200px;
+}
+
+.company-info {
+  border-top: 1px solid #e8e7e6;
+  padding-top: 20px;
+}
+
+.registration-section {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.registration-section h4 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 10px;
+}
+
+.registration-section p {
+  margin: 5px 0;
+}
+
+.copyright {
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+  margin: 0;
+}
+
+@media (max-width: 1200px) {
+  .car-card {
+    width: calc(33.33% - 14px);
+  }
+}
+
+@media (max-width: 992px) {
+  .hero-content {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  
+  .hero-text {
+    max-width: 100%;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .search-container {
+    width: 100%;
+  }
+  
+  .car-card {
+    width: calc(50% - 10px);
+  }
+  
+  .essentials-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .footer-content {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-container {
+    flex-wrap: wrap;
+  }
+  
+  .nav-links {
+    order: 3;
+    width: 100%;
+    margin-top: 15px;
+    justify-content: center;
+  }
+  
+  .car-card {
+    width: 100%;
+  }
+  
+  .promo-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .promo-text {
+    max-width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .essentials-grid {
+    grid-template-columns: 1fr;
+  }
+}

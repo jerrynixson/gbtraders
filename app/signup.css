@@ -1,0 +1,293 @@
+.wrapper {
+    width: 100%;
+    min-height: 100vh;
+    font-family: "Inter", sans-serif;
+    background-color: #fff;
+  }
+  
+  .container {
+    max-width: 1536px;
+    margin: 0 auto;
+    position: relative;
+  }
+  
+  .header-logo {
+    padding: 42px 0 0 38px;
+  }
+  
+  .logo-img {
+    width: 197px;
+    height: 101px;
+  }
+  
+  .main-content {
+    display: flex;
+    justify-content: center;
+    padding-top: 12px;
+  }
+  
+  .signup-container {
+    width: 559px;
+  }
+  
+  .signup-header {
+    margin-bottom: 30px;
+  }
+  
+  .signup-title {
+    color: #212529;
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 24px;
+    margin-bottom: 22px;
+  }
+  
+  .signup-subtitle {
+    color: #212121;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  
+  .dealer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 25px;
+  }
+  
+  .toggle-switch {
+    width: 44px;
+    height: 24px;
+    border-radius: 100px;
+    position: relative;
+    cursor: pointer;
+    background-color: #d2d5da;
+    border: none;
+    padding: 0;
+  }
+  
+  .toggle-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    box-shadow: 0 2px 4px rgba(39, 39, 39, 0.1);
+    background-color: #fff;
+    transition: transform 0.2s ease;
+  }
+  
+  .toggle-switch[aria-checked="true"] {
+    background-color: #4519ef;
+  }
+  
+  .toggle-switch[aria-checked="true"] .toggle-circle {
+    transform: translateX(20px);
+  }
+  
+  .toggle-label {
+    color: #000;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 26px;
+  }
+  
+  .signup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .name-row {
+    display: flex;
+    gap: 19px;
+  }
+  
+  .input-group {
+    position: relative;
+    width: 100%;
+  }
+  
+  .input-field {
+    width: 100%;
+    height: 61px;
+    border: 0.8px solid rgba(0, 0, 0, 0.23);
+    border-radius: 8px;
+    padding: 0 16px;
+    font-size: 16px;
+    color: #919eab;
+    font-family: inherit;
+  }
+  
+  .country-select {
+    width: 100%;
+    height: 61px;
+    border: 0.8px solid rgba(0, 0, 0, 0.23);
+    border-radius: 8px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    background: none;
+    font-family: inherit;
+  }
+  
+  .select-text {
+    color: #919eab;
+    font-size: 16px;
+  }
+  
+  .social-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  
+  .line {
+    flex: 1;
+    height: 1px;
+    background-color: rgba(145, 158, 171, 0.24);
+  }
+  
+  .divider-text {
+    color: #637381;
+    font-size: 14px;
+  }
+  
+  .social-login {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  
+  .social-btn {
+    width: 127px;
+    height: 54px;
+    border: 0.8px solid rgba(145, 158, 171, 0.32);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: none;
+    padding: 0;
+  }
+  
+  .social-icon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .signup-btn {
+    width: 100%;
+    height: 43px;
+    border-radius: 50px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    margin: 20px 0;
+    background-color: #4519ef;
+    font-family: inherit;
+  }
+  
+  .terms {
+    font-size: 14px;
+    line-height: 22px;
+    margin-bottom: 20px;
+    color: #637381;
+  }
+  
+  .terms-link {
+    color: #4519ef;
+    text-decoration: none;
+    margin: 0 5px;
+  }
+  
+  .login-link {
+    text-align: center;
+    font-size: 14px;
+    color: #212529;
+  }
+  
+  .signin-link {
+    color: #4519ef;
+    text-decoration: none;
+  }
+  
+  .cookie-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 57px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    background-color: #4519ef;
+  }
+  
+  .cookie-text {
+    color: #fff;
+    font-size: 16px;
+  }
+  
+  .cookie-link {
+    color: #fff;
+    text-decoration: underline;
+  }
+  
+  .cookie-accept {
+    padding: 7.2px 32px;
+    border-radius: 50px;
+    border: 0.8px solid #4519ef;
+    color: #4519ef;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background-color: #fff;
+    font-family: inherit;
+  }
+  
+  @media (max-width: 991px) {
+    .container {
+      padding: 0 20px;
+    }
+  
+    .signup-container {
+      width: 100%;
+      max-width: 559px;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .name-row {
+      flex-direction: column;
+    }
+  
+    .social-login {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+  
+    .social-btn {
+      width: calc(50% - 5px);
+    }
+  
+    .cookie-banner {
+      flex-direction: column;
+      height: auto;
+      padding: 15px;
+    }
+  
+    .cookie-text {
+      text-align: center;
+    }
+  }
+  
