@@ -162,5 +162,38 @@
       <button class="agree-btn">I Agree</button>
     </div>
   </main>
+  <script>
+    document.querySelector(".login-form").addEventListener("submit", async function (event) {
+        event.preventDefault(); // Prevent page reload
+    
+        const email = document.querySelector("input[placeholder='Email address']").value;
+        const password = document.querySelector("input[placeholder='Password']").value;
+    
+        try {
+            const response = await fetch("http://localhost:5000/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+    
+            const result = await response.json();
+            if (result.redirect) {
+                sessionStorage.setItem("dealerLoggedIn", "true"); // Store login state
+                window.location.href = result.redirect; // Redirect to dealer page
+            } else {
+                alert(result.error || "Login failed");
+            }
+        } catch (error) {
+            console.error("❌ Login error:", error);
+            alert("Login failed. Please try again.");
+        }
+    });
+    </script>
+    <script>
+      if (!sessionStorage.getItem("dealerLoggedIn")) {
+          window.location.href = "login.html"; // Redirect if not logged in
+      }
+    </script>
+        
 </body>
 </html>

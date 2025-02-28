@@ -62,73 +62,50 @@
         <h1 class="title">Advertise your vehicle</h1>
         <p class="subtitle">Ready to sell? Quickly create your ad</p>
 
-        <form class="vehicle-form">
+        <form id="vehicleForm" class="vehicle-form">
           <div class="form-grid">
-            <div class="form-group">
-              <label for="registration" class="label">Registration</label>
-              <div class="input-container">
-                <input
-                  type="text"
-                  id="registration"
-                  placeholder="e.g. LL58 JFK"
-                  class="input"
-                />
+              <div class="form-group">
+                  <label for="registration" class="label">Registration</label>
+                  <div class="input-container">
+                      <input type="text" id="registration" name="registration" placeholder="e.g. LL58 JFK" class="input" required />
+                  </div>
               </div>
-            </div>
-
-            <div class="form-group">
-              <label for="mileage" class="label">Current Miles</label>
-              <div class="input-container">
-                <input
-                  type="text"
-                  id="mileage"
-                  placeholder="e.g. 50000"
-                  class="input"
-                />
+      
+              <div class="form-group">
+                  <label for="mileage" class="label">Current Miles</label>
+                  <div class="input-container">
+                      <input type="text" id="mileage" name="miles" placeholder="e.g. 50000" class="input" required />
+                  </div>
               </div>
-            </div>
-
-            <div class="form-group">
-              <label for="brand" class="label">Brand</label>
-              <div class="input-container">
-                <input
-                  type="text"
-                  id="brand"
-                  placeholder="e.g. BMW"
-                  class="input"
-                />
+      
+              <div class="form-group">
+                  <label for="brand" class="label">Brand</label>
+                  <div class="input-container">
+                      <input type="text" id="brand" name="brand" placeholder="e.g. BMW" class="input" required />
+                  </div>
               </div>
-            </div>
-
-            <div class="form-group">
-              <label for="model" class="label">Model</label>
-              <div class="input-container">
-                <input
-                  type="text"
-                  id="model"
-                  placeholder="e.g. 5-Series 530d"
-                  class="input"
-                />
+      
+              <div class="form-group">
+                  <label for="model" class="label">Model</label>
+                  <div class="input-container">
+                      <input type="text" id="model" name="model" placeholder="e.g. 5-Series 530d" class="input" required />
+                  </div>
               </div>
-            </div>
           </div>
-
+      
           <section class="image-section">
-            <label>Add Images</label>
-            <div class="image-upload-box">
-              <p class="upload-text">
-                Add as many images as possible of the vehicle of all its
-                components such as interiors, exteriors, engine, wheels, etc. to
-                maintain transparency between the buyer and the dealer.
-              </p>
-              <div class="button-group">
-                <button type="button" class="btn-secondary">Add Images</button>
-                <button type="button" class="btn-secondary remove-btn">Remove Images</button>
+              <label for="imageInput">Add Images</label>
+              <div class="image-upload-box">
+                  <p class="upload-text">Add multiple images of the vehicle (interiors, exteriors, engine, wheels, etc.).</p>
+                  <input type="file" id="imageInput" name="images" multiple required />
               </div>
-            </div>
-            <button type="submit" class="btn-primary">Create your ad</button>
+              <button type="submit" class="btn-primary">Create your ad</button>
           </section>
-        </form>
+      </form>
+        <div id="responseMessage"></div> <!-- Display success or error message -->
+
+        <!-- Link to JavaScript -->
+        <script src="advertise.js"></script>
       </main>
 
       <footer class="main-footer">
