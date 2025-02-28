@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Admin Handling Page</title>
+  <link rel="stylesheet" href="dashboard-css.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<nav class="sidebar">
+  <img
+    src="https://cdn.builder.io/api/v1/image/assets/TEMP/c20039fd9ef812c2bd05334efb77b589a988cbfe7ed4f99ab4afb9a0cdfd67ec?placeholderIfAbsent=true&apiKey=889adf78e2a140f9947dbbbcaf3856f4"
+    alt="Logo"
+    class="logo"
+  />
+  <div class="nav-content">
+    <a href="#" class="nav-link"><i class="nav-icon dashboard-icon"></i> Dashboard</a>
+    <a href="#" class="nav-link nav-link-active"><i class="nav-icon approve-icon"></i> Approve Sellers</a>
+    <a href="#" class="nav-link"><i class="nav-icon maps-icon"></i> Maps</a>
+    <a href="#" class="nav-link"><i class="nav-icon profile-icon"></i> User profile</a>
+    <a href="#" class="nav-link"><i class="nav-icon sales-icon"></i> Sales</a>
+    <a href="#" class="nav-link"><i class="nav-icon analytics-icon"></i> Analytics</a>
+    <hr class="nav-divider" />
+    <h3 class="nav-section-title">DOCUMENTATION</h3>
+    <a href="#" class="nav-link"><i class="nav-icon getting-started-icon"></i> Getting started</a>
+    <a href="#" class="nav-link"><i class="nav-icon legal-icon"></i> Legal</a>
+    <a href="#" class="nav-link"><i class="nav-icon data-icon"></i> Data</a>
+  </div>
+</nav>
+
+<main class="main-content">
+  <header class="header">
+    <div class="header-content">
+      <h1 class="header-title">DASHBOARD</h1>
+      <div class="header-actions">
+        <div class="search-container">
+          <input type="search" class="search-input" placeholder="Search" />
+        </div>
+        <span class="admin-label">Admin</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="sellers-section">
+    <div class="sellers-header">
+      <h2 class="section-title">Approve Sellers</h2>
+      <button class="see-all-btn">See all</button>
+    </div>
+
+    <table class="sellers-table">
+      <thead>
+        <tr>
+          <th>Seller Name</th>
+          <th>Region</th>
+          <th>Approval</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <span class="seller-name">Seller 1</span>
+          </td>
+          <td>Region</td>
+          <td><button class="approve-btn">Approve</button></td>
+        </tr>
+        <tr>
+          <td>
+            <span class="seller-name">Seller 2</span>
+          </td>
+          <td>Region</td>
+          <td><button class="approve-btn">Approve</button></td>
+        </tr>
+        <tr>
+          <td>
+            <span class="seller-name">Seller 3</span>
+          </td>
+          <td>Region</td>
+          <td><button class="approve-btn">Approve</button></td>
+        </tr>
+        <tr>
+          <td>
+            <span class="seller-name">Seller 4</span>
+          </td>
+          <td>Region</td>
+          <td><button class="approve-btn">Approve</button></td>
+        </tr>
+        <tr>
+          <td>
+            <span class="seller-name">Seller 5</span>
+          </td>
+          <td>Region</td>
+          <td><button class="approve-btn">Approve</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="dashboard-footer">
+    <div class="footer-copyright">
+      <span>Â© 2025</span>
+      <a href="#" class="footer-link">GB Trader</a>
+    </div>
+    <div class="footer-links">
+      <a href="#" class="footer-link">GB Trader</a>
+      <a href="#" class="footer-link">About Us</a>
+      <a href="#" class="footer-link">Blog</a>
+    </div>
+  </footer>
+</main>
+
