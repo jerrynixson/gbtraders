@@ -5,7 +5,7 @@ import { Search } from "lucide-react"
 
 export function Hero() {
   return (
-    <section className="bg-secondary">
+    <section className="bg-[url('/banner-home.jpg')] bg-cover bg-center">
       <div className="container mx-auto px-4 py-12 md:py-16 flex flex-col md:flex-row">
         <div className="w-full md:w-1/2 flex flex-col justify-center mb-8 md:mb-0">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
@@ -53,4 +53,3 @@ export function Hero() {
     </section>
   )
 }
-

@@ -2,7 +2,7 @@
 
 import { Header } from "@/components/sell/header"
 import { FindCarForm } from "@/components/sell/find-car-form"
-import { BackToTop } from "@/components/sell/back-to-top"
+import { BackToTop } from "@/components/back-to-top"
 import { TrustpilotRating } from "@/components/sell/trustpilot-rating"
 import { FeedbackSection } from "@/components/sell/feedback-section"
 

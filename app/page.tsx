@@ -4,37 +4,40 @@ import { CarListings } from "@/components/car-listings"
 import { SellYourCar } from "@/components/sell-your-car"
 import { BuyingEssentials } from "@/components/buying-essentials"
 import { Footer } from "@/components/footer"
-import { Footer2 } from "@/components/footer2"
 import { CategoryGrid } from "@/components/category-grid"
+import { RegistrationSteps } from "@/components/registration-steps"
+import { BackToTop } from "@/components/back-to-top"
 
 const categories = [
   {
     title: "Car",
     href: "/cars",
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-vM5gDEZhWCrGCRrrWuAfYKS81l6Ki1.png#car",
+    image: "/car.jpg",
   },
   {
     title: "Breakdown Services",
     href: "/breakdown-services",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-vM5gDEZhWCrGCRrrWuAfYKS81l6Ki1.png#breakdown",
+    image: "/breakdown.png",
   },
   {
     title: "Car Parts",
     href: "/car-parts",
+    image: "/car-parts.jpg",
   },
   {
     title: "Garages",
     href: "/garages",
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-vM5gDEZhWCrGCRrrWuAfYKS81l6Ki1.png#garages",
+    image: "garages.jpg",
   },
   {
     title: "Vans",
     href: "/vans",
+    image: "/vans.jpg",
   },
   {
     title: "Dealers",
     href: "/dealers",
+    image: "/dealers.jpg",
   },
 ]
 
@@ -42,14 +45,15 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <main>
+      <main className="space-y-10">
         <Hero />
         <CarListings />
         <CategoryGrid categories={categories} />
-        <SellYourCar />
-        <BuyingEssentials />
+        <RegistrationSteps />
+        
       </main>
-      <Footer2 />
+      <BackToTop />
+      <Footer />
     </div>
   )
 }

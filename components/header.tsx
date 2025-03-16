@@ -10,7 +10,7 @@ export function Header() {
         <div className="flex items-center space-x-8">
           <Link href="/" className="flex items-center">
             <Image
-              src="/placeholder.svg?height=50&width=130"
+              src="/GB_Banner.png"
               alt="GB Trader Logo"
               width={130}
               height={50}
@@ -25,16 +25,16 @@ export function Header() {
               New Cars
             </Link>
             <Link href="#" className="text-sm font-medium">
-              Car Reviews
+              Categories
             </Link>
             <Link href="#" className="text-sm font-medium">
               Car Rentals
             </Link>
-            <Link href="#" className="text-sm font-medium">
+            {/* <Link href="#" className="text-sm font-medium">
               Buy a Car
-            </Link>
+            </Link> */}
             <Link href="#" className="text-sm font-medium">
-              Search Vehicle
+              Search 
             </Link>
           </nav>
         </div>

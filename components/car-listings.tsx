@@ -66,7 +66,7 @@ export function CarListings() {
   const cars = [
     {
       tag: "PCP",
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/cars/car1.jpg",
       price: "£166",
       initialPayment: "£1,987",
       contractLength: "48",
@@ -77,7 +77,7 @@ export function CarListings() {
     },
     {
       tag: "PCP",
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/cars/car2.jpg",
       price: "£235",
       initialPayment: "£2,851",
       contractLength: "24",
@@ -88,7 +88,7 @@ export function CarListings() {
     },
     {
       tag: "PCP",
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/cars/car3.jpeg",
       price: "£293",
       initialPayment: "£3,516",
       contractLength: "24",
@@ -99,7 +99,7 @@ export function CarListings() {
     },
     {
       tag: "PCP",
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/cars/car1.jpg",
       price: "£243",
       initialPayment: "£2,909",
       contractLength: "24",

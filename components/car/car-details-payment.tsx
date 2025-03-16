@@ -108,28 +108,6 @@ export function CarDetailsPayment({
           </a>
         </div>
       </div>
-
-      <div className="bg-background border border-border rounded-md p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <Image src="/placeholder.svg?height=40&width=40" alt="Map" width={40} height={40} className="mr-2" />
-            <div>
-              <h3 className="text-sm font-semibold">{dealerName}</h3>
-              <p className="text-xs text-muted-foreground">{dealerLocation}</p>
-            </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <button className="flex items-center justify-center text-sm text-primary border border-border rounded-md py-2">
-            <Phone className="w-4 h-4 mr-2" />
-            Call
-          </button>
-          <button className="flex items-center justify-center text-sm text-primary border border-border rounded-md py-2">
-            <MessageCircle className="w-4 h-4 mr-2" />
-            Chat
-          </button>
-        </div>
-      </div>
     </div>
   )
 }

@@ -12,7 +12,7 @@ export function DealerInformation({ name, location, rating, phoneNumber }: Deale
   return (
     <div className="border border-border rounded-md p-4 mb-8">
       <div className="flex items-center mb-4">
-        <Image src="/placeholder.svg?height=40&width=160" alt={name} width={160} height={40} />
+        <Image src="/map.jpg" alt={name} width={160} height={40} />
       </div>
       <h3 className="font-semibold mb-2">
         {name} {location}

@@ -1,11 +1,10 @@
-export function CarImageSection() {
+export function CarImageSection() { 
   return (
     <div>
-      <div className="bg-accent h-64 md:h-80 rounded-md flex items-center justify-center mb-4">
-        <span className="text-sm text-muted-foreground">Image not available</span>
-      </div>
+      <div 
+        className="h-64 md:h-80 rounded-md bg-[url('/cars/car1.jpg')] bg-cover bg-center mb-4"
+      />
       <button className="text-xs text-primary mb-6">View Gallery</button>
     </div>
   )
 }
-
