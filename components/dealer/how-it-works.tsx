@@ -7,7 +7,7 @@ export function HowItWorks() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="rounded-lg overflow-hidden">
             <Image
-              src="/placeholder.svg?height=500&width=600"
+              src="/how-does-it-work.png?height=500&width=600"
               alt="Dealer and customer discussing"
               width={600}
               height={500}

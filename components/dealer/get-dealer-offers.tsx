@@ -72,7 +72,7 @@ export function GetDealerOffers() {
 
           <div className="rounded-lg overflow-hidden">
             <Image
-              src="/placeholder.svg?height=500&width=600"
+              src="/car-audi.jpeg?height=500&width=600"
               alt="Woman checking phone for car offers"
               width={600}
               height={500}
