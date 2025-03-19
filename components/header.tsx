@@ -5,17 +5,33 @@ import { Heart, User } from "lucide-react"
 
 export function Header() {
   return (
+    <>
+    {/* Top navigation bar */}
+    <div className="bg-gray-100 py-2">
+      <div className="container mx-auto flex justify-center space-x-6">
+        <Link href="/cars" className="text-sm font-medium hover:text-blue-600">Cars</Link>
+        <Link href="/vans" className="text-sm font-medium hover:text-blue-600">Vans</Link>
+        <Link href="/garages" className="text-sm font-medium hover:text-blue-600">Garages</Link>
+        <Link href="/car-parts" className="text-sm font-medium hover:text-blue-600">Car Parts</Link>
+        <Link href="/dealers" className="text-sm font-medium hover:text-blue-600">Dealers</Link>
+        <Link href="/breakdown-services" className="text-sm font-medium hover:text-blue-600">Breakdown Services</Link>
+      </div>
+    </div>
+
     <header className="border-b border-gray-200">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <Link href="/" className="flex items-center">
-            <Image
-              src="/GB_Banner.png"
-              alt="GB Trader Logo"
-              width={130}
-              height={50}
-              className="h-12 w-auto"
-            />
+          
+          <Image
+          src="/GBtrader Logo.png"
+          alt="GB Trader Logo"
+          width={120}
+          height={80}
+          style={{ height: 'auto', width: '120px' }}
+          priority
+          />
+            
           </Link>
           <nav className="hidden md:flex space-x-6">
             <Link href="#" className="text-sm font-medium">Used Cars</Link>
@@ -25,20 +41,6 @@ export function Header() {
             <Link href="#" className="text-sm font-medium">Car Rentals</Link>
             <Link href="#" className="text-sm font-medium">Search</Link>
             <Link href="/dealers" className="text-sm font-medium">For Dealers</Link>
-            <details className="relative group">
-            <summary className="cursor-pointer flex items-center text-sm font-medium">
-              Car
-              <span className="ml-1">▼</span> {/* Dropdown Arrow */}
-            </summary>
-            <ul className="absolute left-0 mt-2 w-48 bg-white shadow-md rounded-lg py-2 hidden group-open:block">
-              <li><Link href="/cars" className="block px-4 py-2 text-sm hover:bg-gray-100">Car</Link></li>
-              <li><Link href="/vans" className="block px-4 py-2 text-sm hover:bg-gray-100">Vans</Link></li>
-              <li><Link href="/garages" className="block px-4 py-2 text-sm hover:bg-gray-100">Garages</Link></li>
-              <li><Link href="/car-parts" className="block px-4 py-2 text-sm hover:bg-gray-100">Car Parts</Link></li>
-              <li><Link href="/dealers" className="block px-4 py-2 text-sm hover:bg-gray-100">Dealers</Link></li>
-              <li><Link href="/breakdown-services" className="block px-4 py-2 text-sm hover:bg-gray-100">Breakdown Services</Link></li>
-            </ul>
-          </details>
           </nav>
         </div>
 
@@ -55,5 +57,6 @@ export function Header() {
         </div>
       </div>
     </header>
+    </>
   )
 }

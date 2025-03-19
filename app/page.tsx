@@ -6,6 +6,7 @@ import { BuyingEssentials } from "@/components/buying-essentials"
 import { Footer } from "@/components/footer"
 import { CategoryGrid } from "@/components/category-grid"
 import { RegistrationSteps } from "@/components/registration-steps"
+import { AdvertiseWithUs } from "@/components/Advertise-with-us"
 import { BrowseByBrand } from "@/components/browse-by-brand"
 import { BackToTop } from "@/components/back-to-top"
 
@@ -51,6 +52,7 @@ export default function Home() {
         <CarListings />
         <CategoryGrid categories={categories} />
         <RegistrationSteps />
+        <AdvertiseWithUs />
         <BrowseByBrand />
         
       </main>
