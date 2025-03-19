@@ -24,6 +24,7 @@ export function Header() {
             
             <Link href="#" className="text-sm font-medium">Car Rentals</Link>
             <Link href="#" className="text-sm font-medium">Search</Link>
+            <Link href="/dealers" className="text-sm font-medium">For Dealers</Link>
             <details className="relative group">
             <summary className="cursor-pointer flex items-center text-sm font-medium">
               Car
