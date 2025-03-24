@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react"
 
 export function AdvertiseWithUs() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 py-16">
+    <section className="relative overflow-hidden bg-gradient-to-r from-blue-800 to-red-800 py-16">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-full h-full bg-white rotate-12 transform -translate-x-1/2 -translate-y-1/4"></div>

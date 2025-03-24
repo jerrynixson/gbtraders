@@ -1,23 +1,36 @@
 import { Header } from "@/components/header"
 import { QuickInfoBar } from "@/components/car/quick-info-bar"
 import { CarImageSection } from "@/components/car/car-image-section"
-import { VehicleSummary } from "@/components/car/vehicle-summary"
+import { VehicleDetails } from "@/components/car/vehicle-summary"
 import { HowLeasingWorks } from "@/components/car/how-leasing-works"
 import { Reviews } from "@/components/car/reviews"
 import { DealerInformation } from "@/components/car/dealer-information"
 import { MoreFromDealer } from "@/components/car/more-from-dealer"
 import { CarDetailsPayment } from "@/components/car/car-details-payment"
 import { Footer } from "@/components/footer"
+import { Heart, ChevronRight } from "lucide-react"
 
 export default function Home() {
   // Vehicle specifications
-  const vehicleSpecs = {
-    fuelType: "Petrol Hybrid",
-    bodyType: "SUV",
-    gearbox: "Automatic",
-    doors: 5,
-    seats: 5,
-  }
+  const vehicleData = {
+    specifications: {
+      fuelType: "Petrol",
+      bodyType: "SUV",
+      gearbox: "Automatic",
+      doors: 5,
+      seats: 5,
+      mileage: 35000,
+      engineSize: "2.0",
+    },
+    runningCosts: {
+      mpg: 40,
+      costToFill: 70,
+      range: 400,
+      ulezCompliant: true,
+      insuranceGroup: 20,
+      vehicleTax: 150,
+    },
+  };
 
   // Review data
   const reviewData = {
@@ -101,16 +114,34 @@ export default function Home() {
           {/* Left Column */}
           <div className="lg:col-span-7">
             <CarImageSection />
-            <VehicleSummary specifications={vehicleSpecs} />
+            <VehicleDetails specifications={vehicleData.specifications} 
+            runningCosts={vehicleData.runningCosts} 
+            />
+            {/* View All Features Button */}
+            <div className="mt-4 mb-6">
+              <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-6 rounded-lg font-medium shadow-lg transform transition-transform duration-200 hover:scale-[1.02] hover:shadow-xl">
+                <span>View All Features and Specs</span>
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+
             <HowLeasingWorks />
             <Reviews {...reviewData} />
-            <DealerInformation {...dealerInfo} />
+            
             <MoreFromDealer cars={dealerCars} />
           </div>
 
           {/* Right Column */}
           <div className="lg:col-span-5">
+            {/* Add to Favorites Button */}
+            <div className="mb-4 flex justify-end">
+              <button className="flex items-center gap-2 bg-white border-2 border-red-500 hover:bg-red-50 text-red-500 hover:text-red-600 py-2 px-4 rounded-full font-medium shadow-md transition-all duration-200 hover:shadow-lg">
+                <Heart className="h-5 w-5" />
+                <span>Add to Favorites</span>
+              </button>
+            </div>
             <CarDetailsPayment {...carDetails} />
+            <DealerInformation {...dealerInfo} />
           </div>
         </div>
       </main>
