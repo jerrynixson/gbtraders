@@ -30,7 +30,7 @@ interface CarRentalBannerProps {
 const defaultBannerData: BannerData[] = [
   {
     id: 1,
-    vehicle: 'register-banner.jpg', // Ensure these images are in your public folder
+    vehicle: '/Dealers/dealer1.jpeg', // Ensure these images are in your public folder
     title: 'Cars for Rent',
     description: 'Get Your Dream Car',
     detailedDescription: 'Experience the ultimate freedom with our diverse fleet of rental vehicles. Whether you\'re planning a weekend getaway or need a reliable ride for business, we\'ve got the perfect car to match your needs and style.',
@@ -44,7 +44,7 @@ const defaultBannerData: BannerData[] = [
   },
   {
     id: 2,
-    vehicle: '/images/black-suv.jpg', // Ensure these images are in your public folder
+    vehicle: '/Dealers/dealer2.jpg', // Ensure these images are in your public folder
     title: 'Luxury Cars Available',
     description: 'Rent in Style',
     detailedDescription: 'Elevate your travel experience with our premium luxury car collection. From sleek sports cars to sophisticated SUVs, indulge in comfort, performance, and elegance that turns heads wherever you go.',
