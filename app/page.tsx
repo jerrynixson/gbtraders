@@ -46,12 +46,12 @@ export default function Home() {
       <Header />
       <main className="space-y-5">
         <Hero />
-        <CarListings />
         <CategoryGrid categories={categories} />
         <RegistrationSteps />
-        <AdvertiseWithUs />
-        <BrowseByBrand />
+        <CarListings />
         <CarRentalBanner />
+        <BrowseByBrand />
+        <AdvertiseWithUs />
         <BlogPostsSection />
         
       </main>
