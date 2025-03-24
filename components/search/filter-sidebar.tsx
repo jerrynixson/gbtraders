@@ -21,7 +21,7 @@ function ToggleButton({ options, activeIndex, onChange }: ToggleButtonProps) {
         <button
           key={index}
           className={`flex-1 py-2 px-4 text-sm font-medium ${
-            activeIndex === index ? "bg-green-800 text-white" : "bg-white text-gray-700 hover:bg-gray-100"
+            activeIndex === index ? "bg-blue-800 text-white" : "bg-white text-gray-700 hover:bg-gray-100"
           }`}
           onClick={() => onChange(index)}
         >
@@ -67,7 +67,7 @@ function FilterItem({ label, count, onClick }: FilterItemProps) {
     <div className="flex items-center justify-between py-2">
       <span className="text-sm">{label}</span>
       {count !== undefined && (
-        <span className="text-xs bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+        <span className="text-xs bg-blue-800 text-white rounded-full w-6 h-6 flex items-center justify-center">
           {count}
         </span>
       )}
@@ -214,7 +214,7 @@ export function FilterSidebar() {
               onChange={(e) => setKeyword(e.target.value)}
               className="flex-1 mr-2"
             />
-            <Button className="bg-green-500 hover:bg-green-600">Add</Button>
+            <Button className="bg-blue-800 hover:bg-blue-950">Add</Button>
           </div>
 
           <p className="text-xs text-gray-500 mb-2">You can also select Common Keywords to include in your search:</p>

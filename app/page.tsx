@@ -9,10 +9,12 @@ import { RegistrationSteps } from "@/components/registration-steps"
 import { AdvertiseWithUs } from "@/components/Advertise-with-us"
 import { BrowseByBrand } from "@/components/browse-by-brand"
 import { BackToTop } from "@/components/back-to-top"
+import CarRentalBanner from "@/components/dealer-advert-banner"
+import BlogPostsSection from "@/components/blog-post-section"
 
 const categories = [
   {
-    title: "Car",
+    title: "Vehicles",
     href: "/cars",
     image: "/car.jpg",
   },
@@ -32,11 +34,6 @@ const categories = [
     image: "garages.jpg",
   },
   {
-    title: "Vans",
-    href: "/vans",
-    image: "/vans.jpg",
-  },
-  {
     title: "Dealers",
     href: "/dealers",
     image: "/dealers.jpg",
@@ -47,13 +44,15 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <main className="space-y-10">
+      <main className="space-y-5">
         <Hero />
         <CarListings />
         <CategoryGrid categories={categories} />
         <RegistrationSteps />
         <AdvertiseWithUs />
         <BrowseByBrand />
+        <CarRentalBanner />
+        <BlogPostsSection />
         
       </main>
       <BackToTop />

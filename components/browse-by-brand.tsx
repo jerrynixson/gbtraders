@@ -17,7 +17,7 @@ const brands = [
 
 export function BrowseByBrand() {
     return (
-      <section className="py-10 bg-gray-100">
+      <section className="py-10 bg-white-100">
         <h2 className="text-2xl font-bold text-center mb-6">Browse by Brand</h2>
         <div className="grid grid-cols-6 gap-6 justify-center">
           {brands.map((brand) => (

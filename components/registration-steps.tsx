@@ -55,7 +55,7 @@ export function RegistrationSteps() {
       className="relative py-16 bg-cover bg-center"
       style={{ backgroundImage: "url(/register-banner.jpg)" }}
     >
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/10" />
       <div className="relative container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center mb-12">
           <div className="text-white mb-6 md:mb-0">
