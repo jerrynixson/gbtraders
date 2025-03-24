@@ -12,8 +12,8 @@ interface CategoryGridProps {
 export function CategoryGrid({ categories }: CategoryGridProps) {
   return (
     <section className="container mx-auto px-4 mb-12">
-      <div className="w-full md:w-full lg:max-w-[70%] mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="w-full md:w-full lg:max-w-[95%] mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {categories.map((category) => (
             <Link
               key={category.title}
