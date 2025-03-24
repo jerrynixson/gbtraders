@@ -31,11 +31,11 @@ const defaultBannerData: BannerData[] = [
   {
     id: 1,
     vehicle: '/Dealers/dealer1.jpeg', // Ensure these images are in your public folder
-    title: 'Cars for Rent',
-    description: 'Get Your Dream Car',
-    detailedDescription: 'Experience the ultimate freedom with our diverse fleet of rental vehicles. Whether you\'re planning a weekend getaway or need a reliable ride for business, we\'ve got the perfect car to match your needs and style.',
+    title: 'SPEED INTO SAVINGS!',
+    description: 'Velocity Motors',
+    detailedDescription: 'At Velocity Motors, we bring you the fastest, most stylish, and performance-packed cars at unmatched prices. Whether youre looking for a muscle car, SUV, or luxury sedan, we’ve got the perfect ride for you!',
     dealerInfo: {
-      name: 'Dream Wheels Rentals',
+      name: 'Velocity Motors',
       location: 'Downtown City Center',
       rating: 4.5,
       specialties: ['Luxury Cars', 'SUVs', 'Weekend Specials']
@@ -45,11 +45,11 @@ const defaultBannerData: BannerData[] = [
   {
     id: 2,
     vehicle: '/Dealers/dealer2.jpg', // Ensure these images are in your public folder
-    title: 'Luxury Cars Available',
-    description: 'Rent in Style',
-    detailedDescription: 'Elevate your travel experience with our premium luxury car collection. From sleek sports cars to sophisticated SUVs, indulge in comfort, performance, and elegance that turns heads wherever you go.',
+    title: 'BIG CARS. BIGGER DEALS!',
+    description: 'Titan Auto Hub',
+    detailedDescription: 'Looking for power, durability, and a deal you can’t resist? At Titan Auto Hub, we bring you the strongest and most reliable vehicles at the best prices. Whether it\'s an SUV, truck, or sports car, we make sure you drive away with confidence!',
     dealerInfo: {
-      name: 'Prestige Auto Rentals',
+      name: 'Titan Auto Hub',
       location: 'Uptown District',
       rating: 4.8,
       specialties: ['Sports Cars', 'Convertibles', 'Premium Service']

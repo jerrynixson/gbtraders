@@ -71,7 +71,8 @@ export function RegistrationSteps({
   className = ""
 }: RegistrationStepsProps) {
   return (
-    <section className={`bg-gradient-to-br from-blue-50 to-purple-50 py-16 ${className}`}>
+    //to change bg color use this section
+    <section className={`bg-gradient-to-br from-white-50 to-purple-50 py-16 ${className}`}> 
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 space-y-6 md:space-y-0">
           <div className="text-left">
