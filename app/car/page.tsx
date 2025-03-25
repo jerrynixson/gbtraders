@@ -8,7 +8,8 @@ import { DealerInformation } from "@/components/car/dealer-information"
 import { MoreFromDealer } from "@/components/car/more-from-dealer"
 import { CarDetailsPayment } from "@/components/car/car-details-payment"
 import { Footer } from "@/components/footer"
-import { Heart, ChevronRight } from "lucide-react"
+import { ScrollText, FileSearch } from "lucide-react"
+import { Heart, ChevronRight, Flag } from "lucide-react"
 
 export default function Home() {
   // Vehicle specifications
@@ -117,6 +118,23 @@ export default function Home() {
             <VehicleDetails specifications={vehicleData.specifications} 
             runningCosts={vehicleData.runningCosts} 
             />
+
+            {/* Car Description Box */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4 mb-4 shadow-sm">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">About This Vehicle</h3>
+              <p className="text-gray-600 leading-relaxed">
+                The Vauxhall Grandland is a versatile and stylish SUV that combines comfort, practicality, and modern design. Featuring a spacious interior, advanced technology, and efficient performance, this vehicle is perfect for both urban commuting and weekend adventures. With its sleek exterior, comfortable ride, and range of modern features, the Grandland offers an exceptional driving experience for families and professionals alike.
+              </p>
+              {/* Vehicle History Button */}
+            <div className="mt-4">
+            <button className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 text-white py-3 px-6 rounded-lg font-medium shadow-lg transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl group">
+              <FileSearch className="h-5 w-5 transition-transform group-hover:rotate-6" />
+              <span>Check Vehicle History</span>
+            </button>
+            </div>
+            </div>
+
+
             {/* View All Features Button */}
             <div className="mt-4 mb-6">
               <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-6 rounded-lg font-medium shadow-lg transform transition-transform duration-200 hover:scale-[1.02] hover:shadow-xl">
@@ -124,6 +142,9 @@ export default function Home() {
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
+
+            
+            
 
             <HowLeasingWorks />
             <Reviews {...reviewData} />
@@ -133,11 +154,17 @@ export default function Home() {
 
           {/* Right Column */}
           <div className="lg:col-span-5">
-            {/* Add to Favorites Button */}
-            <div className="mb-4 flex justify-end">
+            {/* Add to Favorites and Report Listing Buttons */}
+            <div className="flex justify-between items-center mb-4">
+              {/* Favorites Button */}
               <button className="flex items-center gap-2 bg-white border-2 border-red-500 hover:bg-red-50 text-red-500 hover:text-red-600 py-2 px-4 rounded-full font-medium shadow-md transition-all duration-200 hover:shadow-lg">
                 <Heart className="h-5 w-5" />
                 <span>Add to Favorites</span>
+              </button>
+
+              {/* Report Listing Button */}
+              <button className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 hover:text-gray-800 transition-colors duration-200 group">
+                <Flag className="h-4 w-4 group-hover:scale-110 transition-transform" />
               </button>
             </div>
             <CarDetailsPayment {...carDetails} />
