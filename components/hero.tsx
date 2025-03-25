@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -23,6 +23,7 @@ export function Hero({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [keywords, setKeywords] = useState<string>('');
   const [postcode, setPostcode] = useState<string>('');
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   const categories = [
     "Vehicles",
@@ -31,6 +32,20 @@ export function Hero({
     "Garages",
     "Dealers"
   ];
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      
+      // Calculate scroll progress (0 to 1)
+      const progress = Math.min(scrollTop / windowHeight, 1);
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleSearch = () => {
     if (onSearch) {
@@ -45,11 +60,22 @@ export function Hero({
   };
 
   return (
-    <div className="relative">
+    <div 
+      className="relative w-full min-h-screen overflow-hidden"
+      style={{
+        transform: `translateY(-${scrollProgress * 50}%)`,
+        opacity: 1 - scrollProgress,
+        filter: `blur(${scrollProgress * 5}px)`
+      }}
+    >
       {/* Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center filter brightness-50"
-        style={{ backgroundImage: `url('${backgroundImage}')` }}
+        style={{ 
+          backgroundImage: `url('${backgroundImage}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
       />
 
       {/* Content Container */}
