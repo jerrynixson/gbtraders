@@ -30,7 +30,7 @@ interface CarRentalBannerProps {
 const defaultBannerData: BannerData[] = [
   {
     id: 1,
-    vehicle: '/Dealers/dealer1.jpeg', // Ensure these images are in your public folder
+    vehicle: '/Dealers/dealer1.jpg', // Ensure these images are in your public folder
     title: 'SPEED INTO SAVINGS!',
     description: 'Velocity Motors',
     detailedDescription: 'At Velocity Motors, we bring you the fastest, most stylish, and performance-packed cars at unmatched prices. Whether youre looking for a muscle car, SUV, or luxury sedan, we’ve got the perfect ride for you!',
