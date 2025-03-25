@@ -4,17 +4,26 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Heart, User, Menu, X, Newspaper, Search, Store } from "lucide-react"
+import { 
+  Heart, User, Menu, X, Newspaper, Search, Store, 
+  ChevronDown, Car, Truck, MapPin, Wrench, Ban 
+} from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const topNavItems = [
-    { href: "/cars", label: "Cars" },
-    { href: "/vans", label: "Vans" },
-    { href: "/garages", label: "Garages" },
-    { href: "/car-parts", label: "Car Parts" },
-    { href: "/breakdown-services", label: "Breakdown Services" },
+  const vehiclesNavItems = [
+    { href: "/cars", label: "Cars", icon: <Car className="h-4 w-4 mr-2" /> },
+    { href: "/vans", label: "Vans", icon: <Truck className="h-4 w-4 mr-2" /> },
+    { href: "/garages", label: "Garages", icon: <MapPin className="h-4 w-4 mr-2" /> },
+    { href: "/car-parts", label: "Car Parts", icon: <Wrench className="h-4 w-4 mr-2" /> },
+    { href: "/breakdown-services", label: "Breakdown Services", icon: <Ban className="h-4 w-4 mr-2" /> },
   ]
 
   const bottomNavItems = [
@@ -42,24 +51,37 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex flex-col items-center flex-grow mx-8">
-            <div className="bg-gray-100 rounded-full px-6 py-2 mb-3 inline-flex">
-              <nav className="flex items-center space-x-8">
-                {topNavItems.map((item) => (
-                  <Link key={item.href} href={item.href} className="text-sm font-medium hover:text-primary">
-                    {item.label}
-                  </Link>
+          <div className="hidden lg:flex items-center justify-center flex-grow mx-8 space-x-8">
+            {/* Vehicles Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-sm font-medium flex items-center">
+                  Vehicles <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {vehiclesNavItems.map((item) => (
+                  <DropdownMenuItem key={item.href} asChild>
+                    <Link href={item.href} className="flex items-center">
+                      {item.icon}
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
                 ))}
-              </nav>
-            </div>
-            <nav className="flex items-center space-x-8">
-              {bottomNavItems.map((item) => (
-                <Link key={item.href} href={item.href} className="text-sm font-medium flex items-center space-x-2 hover:text-primary">
-                  {item.icon}
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </nav>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Bottom Nav Items */}
+            {bottomNavItems.map((item) => (
+              <Link 
+                key={item.href} 
+                href={item.href} 
+                className="text-sm font-medium flex items-center space-x-2 hover:text-primary"
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            ))}
           </div>
 
           {/* User Controls */}
@@ -89,9 +111,9 @@ export function Header() {
             <div className="flex">
               <div className="flex-grow pr-4">
                 <div className="mb-6">
-                  <h3 className="text-xs uppercase text-gray-500 font-semibold mb-3">Main Navigation</h3>
+                  <h3 className="text-xs uppercase text-gray-500 font-semibold mb-3">Vehicles</h3>
                   <div className="flex flex-wrap gap-2">
-                    {topNavItems.map((item) => (
+                    {vehiclesNavItems.map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
