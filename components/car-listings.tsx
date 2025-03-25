@@ -99,7 +99,7 @@ export function CarListings() {
     },
     {
       tag: "PCP",
-      image: "/cars/car4.jpeg",
+      image: "/cars/car4.jpg",
       price: "£243",
       initialPayment: "£2,909",
       contractLength: "24",
