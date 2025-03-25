@@ -48,6 +48,7 @@ export default function Home() {
     location: "Ford Bromley",
     rating: 4.7,
     phoneNumber: "0203 0333 0938",
+    description: "A trusted automotive dealership with over 25 years of experience in providing high-quality vehicles and exceptional customer service. Our team is dedicated to helping you find the perfect car that meets your needs and budget. We pride ourselves on transparency, reliability, and a customer-first approach."
   }
 
   // More from dealer cars
@@ -143,9 +144,6 @@ export default function Home() {
               </button>
             </div>
 
-            
-            
-
             <HowLeasingWorks />
             <Reviews {...reviewData} />
             
@@ -177,4 +175,3 @@ export default function Home() {
     </div>
   )
 }
-

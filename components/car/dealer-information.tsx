@@ -6,9 +6,16 @@ interface DealerInformationProps {
   location: string
   rating: number
   phoneNumber: string
+  description: string
 }
 
-export function DealerInformation({ name, location, rating, phoneNumber }: DealerInformationProps) {
+export function DealerInformation({ 
+  name, 
+  location, 
+  rating, 
+  phoneNumber, 
+  description 
+}: DealerInformationProps) {
   return (
     <div className="border border-border rounded-md p-4 mb-8">
       <div className="flex items-center mb-4">
@@ -17,6 +24,9 @@ export function DealerInformation({ name, location, rating, phoneNumber }: Deale
       <h3 className="font-semibold mb-2">
         {name} {location}
       </h3>
+      <p className="text-muted-foreground text-sm mb-4">
+        {description}
+      </p>
       <div className="flex items-center mb-2">
         <div className="flex mr-2">
           {[...Array(5)].map((_, i) => (
@@ -62,4 +72,3 @@ export function DealerInformation({ name, location, rating, phoneNumber }: Deale
     </div>
   )
 }
-
