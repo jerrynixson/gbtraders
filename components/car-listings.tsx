@@ -113,14 +113,7 @@ export function CarListings() {
   return (
     <section className="py-12">
       <div className="container mx-auto px-4">
-        {/* <div className="flex items-center mb-6">
-          <span className="mr-2 text-sm">Sorted by</span>
-          <Select defaultValue="new" className="w-40">
-            <option value="new">New</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-          </Select>
-        </div> */}
+        <h2 className="text-2xl font-bold mb-6 text-center">Featured Cars</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
           {cars.map((car, index) => (
@@ -133,7 +126,7 @@ export function CarListings() {
           </Button>
         </div>
 
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-4">
           <Link href="#" className="flex items-center text-sm text-primary">
             View more deals <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
@@ -142,4 +135,3 @@ export function CarListings() {
     </section>
   )
 }
-
