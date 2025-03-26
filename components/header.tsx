@@ -42,7 +42,10 @@ export function Header() {
     { href: "/vehicles/cars", label: "Cars" },
     { href: "/vehicles/vans", label: "Vans" },
     { href: "/vehicles/motorcycles", label: "Motorcycles" },
-    { href: "/vehicles/trucks", label: "Trucks" }
+    { href: "/vehicles/trucks", label: "Trucks" },
+    { href: "/vehicles/evs", label: "Electric cars" },
+    { href: "/vehicles/caravans", label: "Caravans" },
+    { href: "/vehicles/e-bikes", label: "E- Bikes" }
   ]
 
   const topNavItems: TopNavItem[] = [
