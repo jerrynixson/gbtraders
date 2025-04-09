@@ -147,7 +147,7 @@ export function Header() {
             <Button variant="ghost" size="icon" className="hidden lg:flex">
               <Heart className="h-6 w-6" />
             </Button>
-            <Link href="/sign-in" className="hidden lg:block">
+            <Link href="\signin" className="hidden lg:block">
               <Button variant="ghost" size="icon">
                 <User className="h-6 w-6" />
               </Button>
