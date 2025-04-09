@@ -84,7 +84,7 @@ export function Hero({
         <div className="w-full md:w-1/2 text-white z-10 mb-8 md:mb-0">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             WELCOME TO 
-            <span className="block text-primary">GB TRADERS</span>
+            <span className="block text-primary">GB TRADER</span>
           </h1>
           <p className="text-xl italic">Drive off today</p>
         </div>

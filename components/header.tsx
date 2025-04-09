@@ -39,8 +39,8 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const vehicleNavItems: NavItem[] = [
-    { href: "/vehicles/cars", label: "Cars" },
-    { href: "/vehicles/vans", label: "Vans" },
+    { href: "/categories/cars", label: "Cars" },
+    { href: "/categories/vans", label: "Vans" },
     { href: "/vehicles/motorcycles", label: "Motorcycles" },
     { href: "/vehicles/trucks", label: "Trucks" },
     { href: "/vehicles/evs", label: "Electric cars" },
@@ -54,7 +54,7 @@ export function Header() {
       label: "Vehicles", 
       items: vehicleNavItems 
     },
-    { href: "/garages", label: "Garages" },
+    { href: "/categories/garages", label: "Garages" },
     { href: "/car-parts", label: "Car Parts" },
     { href: "/breakdown-services", label: "Breakdown Services" },
   ]
