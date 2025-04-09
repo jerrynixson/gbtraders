@@ -233,7 +233,7 @@ export function Header() {
                     <span className="sr-only">Favorites</span>
                   </Button>
                 </Link>
-                <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>
+                <Link href="/signin" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
                     <User className="h-4 w-4" />
                     <span className="sr-only">Sign In</span>
