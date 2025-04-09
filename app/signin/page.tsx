@@ -104,28 +104,28 @@ const LoginPage: React.FC = () => {
                 className="flex items-center justify-center p-3 border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 aria-label="Sign in with Google"
               >
-                <img className="h-5 w-5" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" />
+                <img className="h-5 w-5" src="/google-logo.svg" alt="Google logo" />
               </button>
               <button
                 type="button"
                 className="flex items-center justify-center p-3 border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 aria-label="Sign in with Microsoft"
               >
-                <img className="h-5 w-5" src="https://www.svgrepo.com/show/448234/microsoft.svg" alt="Microsoft logo" />
+                <img className="h-5 w-5" src="/microsoft-logo.svg" alt="Microsoft logo" />
               </button>
               <button
                 type="button"
                 className="flex items-center justify-center p-3 border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 aria-label="Sign in with Facebook"
               >
-                <img className="h-5 w-5" src="https://www.svgrepo.com/show/448220/facebook.svg" alt="Facebook logo" />
+                <img className="h-5 w-5" src="/facebook-logo.svg" alt="Facebook logo" />
               </button>
               <button
                 type="button"
                 className="flex items-center justify-center p-3 border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 aria-label="Sign in with Apple"
               >
-                <img className="h-5 w-5" src="https://www.svgrepo.com/show/473717/apple.svg" alt="Apple logo" />
+                <img className="h-5 w-5" src="/apple-logo.svg" alt="Apple logo" />
               </button>
             </div>
 
