@@ -55,8 +55,8 @@ export function Header() {
       items: vehicleNavItems 
     },
     { href: "/categories/garages", label: "Garages" },
-    { href: "/car-parts", label: "Car Parts" },
     { href: "/breakdown-services", label: "Breakdown Services" },
+    { href: "/categories/shop", label: "Shop" },
   ]
 
   const bottomNavItems: NavItem[] = [
