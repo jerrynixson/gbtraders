@@ -55,7 +55,7 @@ export function Header() {
       items: vehicleNavItems 
     },
     { href: "/categories/garages", label: "Garages" },
-    { href: "/breakdown-services", label: "Breakdown Services" },
+    { href: "/categories/breakdown-services", label: "Breakdown Services" },
     { href: "/categories/shop", label: "Shop" },
   ]
 

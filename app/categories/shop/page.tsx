@@ -53,11 +53,11 @@ const Product = ({ product }: { product: ProductType }) => (
       </div>
     </div>
     <div className="p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-[#312e81] transition-colors duration-300">{product.name}</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors duration-300">{product.name}</h3>
       <p className="text-sm text-gray-600 mb-4">{product.compatibility}</p>
       <div className="flex items-center justify-between">
-        <div className="text-xl font-bold text-[#312e81]">{product.price}</div>
-        <button className="px-6 py-2 bg-[#312e81] text-white font-medium rounded-lg hover:bg-[#312e81]/90 transition-colors duration-300 shadow-sm hover:shadow-md flex items-center gap-2">
+        <div className="text-xl font-bold text-indigo-600">{product.price}</div>
+        <button className="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors duration-300 shadow-sm hover:shadow-md flex items-center gap-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
@@ -70,7 +70,7 @@ const Product = ({ product }: { product: ProductType }) => (
 
 // Features Bar component
 const FeaturesBar = () => (
-  <div className="bg-gradient-to-r from-[#312e81] via-[#312e81] to-[#312e81] text-white">
+  <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 text-white">
     <div className="container mx-auto px-4 py-4">
       <div className="flex justify-around flex-wrap gap-6">
         <div className="flex items-center gap-3 group">
@@ -294,7 +294,7 @@ export default function ShopPage({
       {includeFeatures && <FeaturesBar />}
 
       {/* Shop Header */}
-      <div className="bg-gradient-to-r from-[#312e81] via-[#312e81] to-[#312e81] text-white py-12 mb-12 relative overflow-visible">
+      <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 text-white py-12 mb-12 relative overflow-visible">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNGM0LjQxOCAwIDgtMy41ODIgOC04cy0zLjU4Mi04LTgtOC04IDMuNTgyLTggOCAzLjU4MiA4IDggOHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjA1Ii8+PC9nPjwvc3ZnPg==')] opacity-10"></div>
         <div className="container mx-auto px-4 relative z-10">
           <h1 className="text-4xl font-bold mb-6 text-center">Car Parts & Accessories Shop</h1>
@@ -342,7 +342,7 @@ export default function ShopPage({
                           key={option.value}
                           className={`px-4 py-2 text-left text-sm rounded-md transition-colors duration-200 ${
                             sortOption === option.value
-                              ? 'bg-[#312e81]/10 text-[#312e81] font-medium'
+                              ? 'bg-indigo-50 text-indigo-600 font-medium'
                               : 'text-gray-700 hover:bg-gray-50'
                           }`}
                           onClick={() => {
@@ -380,7 +380,7 @@ export default function ShopPage({
                     <input 
                       type="number" 
                       placeholder="Min" 
-                      className="w-full px-4 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       value={priceRange.min}
                       onChange={(e) => setPriceRange({...priceRange, min: e.target.value})}
                     />
@@ -388,13 +388,13 @@ export default function ShopPage({
                     <input 
                       type="number" 
                       placeholder="Max" 
-                      className="w-full px-4 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       value={priceRange.max}
                       onChange={(e) => setPriceRange({...priceRange, max: e.target.value})}
                     />
                   </div>
                   <button 
-                    className="w-full py-3 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-300"
+                    className="w-full py-3 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors duration-300"
                     onClick={() => setActiveDropdown(null)}
                   >
                     Apply
@@ -423,7 +423,7 @@ export default function ShopPage({
                         <label key={index} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
                           <input 
                             type="checkbox" 
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                             checked={selectedCategories.includes(category.name)}
                             onChange={(e) => {
                               if (e.target.checked) {
@@ -440,7 +440,7 @@ export default function ShopPage({
                   </div>
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     <button 
-                      className="w-full py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-300"
+                      className="w-full py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors duration-300"
                       onClick={() => setActiveDropdown(null)}
                     >
                       Apply
@@ -470,7 +470,7 @@ export default function ShopPage({
                         <label key={index} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
                           <input 
                             type="checkbox" 
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                             checked={selectedBrands.includes(brand.name)}
                             onChange={(e) => {
                               if (e.target.checked) {
@@ -487,7 +487,7 @@ export default function ShopPage({
                   </div>
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     <button 
-                      className="w-full py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-300"
+                      className="w-full py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors duration-300"
                       onClick={() => setActiveDropdown(null)}
                     >
                       Apply
@@ -526,8 +526,8 @@ export default function ShopPage({
                 key={index} 
                 className={`flex-shrink-0 min-w-[180px] bg-white rounded-xl p-6 flex flex-col items-center transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-md cursor-pointer ${
                   selectedCategories.includes(category.name) 
-                    ? 'ring-2 ring-[#312e81] scale-105 bg-[#312e81]/10 shadow-lg' 
-                    : 'hover:ring-1 hover:ring-[#312e81]/20'
+                    ? 'ring-2 ring-indigo-500 scale-105 bg-indigo-50 shadow-lg' 
+                    : 'hover:ring-1 hover:ring-indigo-200'
                 }`}
                 onClick={() => {
                   if (selectedCategories.includes(category.name)) {
@@ -539,7 +539,7 @@ export default function ShopPage({
               >
                 <div className={`w-16 h-16 mb-4 rounded-full flex items-center justify-center transition-all duration-300 ${
                   selectedCategories.includes(category.name) 
-                    ? 'bg-[#312e81]/10 scale-110' 
+                    ? 'bg-indigo-100 scale-110' 
                     : 'bg-gray-100'
                 }`}>
                   <img 
@@ -552,7 +552,7 @@ export default function ShopPage({
                 </div>
                 <div className={`text-sm font-medium transition-colors duration-300 ${
                   selectedCategories.includes(category.name) 
-                    ? 'text-[#312e81] font-semibold' 
+                    ? 'text-indigo-600 font-semibold' 
                     : 'text-gray-800'
                 }`}>
                   {category.name}
@@ -574,8 +574,8 @@ export default function ShopPage({
         {/* Popular Products */}
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-gray-900 mb-10 flex items-center gap-3">
-            <div className="p-2 bg-[#312e81]/10 rounded-lg">
-              <svg className="w-8 h-8 text-[#312e81]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
               </svg>
             </div>
@@ -589,14 +589,14 @@ export default function ShopPage({
         </div>
 
         {/* Promotion */}
-        <div className="bg-gradient-to-r from-[#312e81] via-[#312e81] to-[#312e81] text-white rounded-2xl p-10 mb-20 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 text-white rounded-2xl p-10 mb-20 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNGM0LjQxOCAwIDgtMy41ODIgOC04cy0zLjU4Mi04LTgtOC04IDMuNTgyLTggOCAzLjU4MiA4IDggOHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjA1Ii8+PC9nPjwvc3ZnPg==')] opacity-10"></div>
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-center">
             <div className="mb-6 md:mb-0">
               <h2 className="text-3xl font-bold mb-4">Spring Service Special</h2>
               <p className="text-lg opacity-90 max-w-xl">Get 15% off on all service parts packages. Perfect time to prepare your car for summer driving!</p>
             </div>
-            <button className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-300 shadow-lg hover:shadow-xl flex items-center gap-2">
+            <button className="px-8 py-4 bg-white text-indigo-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-300 shadow-lg hover:shadow-xl flex items-center gap-2">
               <span>Shop Now</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -608,8 +608,8 @@ export default function ShopPage({
         {/* New Arrivals */}
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-gray-900 mb-10 flex items-center gap-3">
-            <div className="p-2 bg-[#312e81]/10 rounded-lg">
-              <svg className="w-8 h-8 text-[#312e81]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
@@ -625,8 +625,8 @@ export default function ShopPage({
         {/* Brands */}
         <div>
           <h2 className="text-3xl font-bold text-gray-900 mb-10 flex items-center gap-3">
-            <div className="p-2 bg-[#312e81]/10 rounded-lg">
-              <svg className="w-8 h-8 text-[#312e81]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
@@ -636,7 +636,7 @@ export default function ShopPage({
             {brands.map((brand, index) => (
               <div key={index} className="bg-white rounded-xl p-6 flex items-center justify-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
                 <div className="w-full h-12 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-gray-800 group-hover:text-[#312e81] transition-colors duration-300">{brand.name}</span>
+                  <span className="text-lg font-semibold text-gray-800 group-hover:text-indigo-600 transition-colors duration-300">{brand.name}</span>
                 </div>
               </div>
             ))}
