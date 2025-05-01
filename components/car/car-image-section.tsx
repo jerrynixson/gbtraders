@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Camera } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import Image from "next/image"
+import { cn } from "@/lib/utils"
 
 export function CarImageSection() { 
   // Simulated car images (replace with your actual image paths)
@@ -16,42 +18,93 @@ export function CarImageSection() {
 
   const [mainImageIndex, setMainImageIndex] = useState(0)
 
-  const handleImagePreviewClick = (index) => {
+  const handleImagePreviewClick = (index: number) => {
     setMainImageIndex(index)
   }
 
+  const handlePrevImage = () => {
+    setMainImageIndex((prev) => (prev === 0 ? carImages.length - 1 : prev - 1))
+  }
+
+  const handleNextImage = () => {
+    setMainImageIndex((prev) => (prev === carImages.length - 1 ? 0 : prev + 1))
+  }
+
   return (
-    <div className="relative">
-      {/* Main Image */}
-      <div 
-        style={{backgroundImage: `url(${carImages[mainImageIndex]})`}}
-        className="h-64 md:h-80 rounded-md bg-cover bg-center mb-4"
-      />
+    <div className="relative rounded-lg border bg-card text-card-foreground shadow-sm group">
+      {/* Main Image Container */}
+      <div className="relative aspect-[16/10] w-full overflow-hidden">
+        <Image
+          src={carImages[mainImageIndex]}
+          alt="Car view"
+          fill
+          className="object-cover transition-transform duration-300 hover:scale-105"
+          priority
+        />
+
+        {/* Navigation Controls */}
+        <div className="absolute inset-x-0 bottom-4 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {/* Navigation Container */}
+          <div className="flex items-center gap-3 bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full">
+            <button 
+              onClick={handlePrevImage}
+              className="inline-flex items-center justify-center rounded-full p-1 text-white/80 transition-colors hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            {/* Dots Indicator */}
+            <div className="flex gap-1">
+              {carImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleImagePreviewClick(index)}
+                  className={cn(
+                    "w-1 h-1 rounded-full transition-all duration-200",
+                    mainImageIndex === index 
+                      ? "bg-white w-3" 
+                      : "bg-white/50 hover:bg-white/70"
+                  )}
+                  aria-label={`Go to image ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            <button 
+              onClick={handleNextImage}
+              className="inline-flex items-center justify-center rounded-full p-1 text-white/80 transition-colors hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
+              aria-label="Next image"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
       
-      {/* Image Preview Section */}
-      <div className="flex space-x-4 justify-center mb-4">
-        {carImages.slice(0, 5).map((image, index) => (
+      {/* Thumbnails Section */}
+      <div className="flex gap-2 p-4 bg-background">
+        {carImages.map((image, index) => (
           <button 
             key={index}
             onClick={() => handleImagePreviewClick(index)}
-            className={`
-              w-24 h-24 rounded-lg bg-cover bg-center 
-              transform transition-all duration-300 
-              shadow-md hover:shadow-lg
-              ${mainImageIndex === index 
-                ? 'border-3 border-blue-500 scale-105 ring-4 ring-blue-200' 
-                : 'opacity-70 hover:opacity-100'}
-            `}
-            style={{backgroundImage: `url(${image})`}}
-          />
+            className={cn(
+              "relative h-16 w-24 overflow-hidden rounded-md transition-all duration-200",
+              mainImageIndex === index 
+                ? "ring-2 ring-primary opacity-100" 
+                : "opacity-60 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            )}
+            aria-label={`View image ${index + 1}`}
+          >
+            <Image
+              src={image}
+              alt={`Car view ${index + 1}`}
+              fill
+              className="object-cover"
+            />
+          </button>
         ))}
       </div>
-      
-      {/* View Gallery Button */}
-      <button className="flex items-center gap-2 bg-black bg-opacity-80 hover:bg-opacity-90 text-white px-4 py-2 rounded-lg transform transition-all duration-300 hover:scale-105 absolute bottom-20 right-4 shadow-lg">
-        <Camera className="h-4 w-4" />
-        <span className="font-medium">View Gallery</span>
-      </button>
     </div>
   )
 }
