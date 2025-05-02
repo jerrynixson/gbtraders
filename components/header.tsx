@@ -55,13 +55,14 @@ export function Header() {
       items: vehicleNavItems 
     },
     { href: "/categories/garages", label: "Garages" },
+    { href: "/categories/dealers", label: "Dealers" },
     { href: "/categories/breakdown-services", label: "Breakdown Services" },
     { href: "/categories/shop", label: "Shop" },
   ]
 
   const bottomNavItems: NavItem[] = [
     { href: "/news", label: "News & Blogs", icon: <Newspaper className="h-4 w-4" /> },
-    { href: "/dealers", label: "For Dealers", icon: <Store className="h-4 w-4" /> },
+    { href: "/for-dealers", label: "For Dealers", icon: <Store className="h-4 w-4" /> },
     { href: "/search", label: "Search", icon: <Search className="h-4 w-4" /> },
   ]
 

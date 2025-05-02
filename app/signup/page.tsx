@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Eye, EyeOff, ArrowRight, Mail, Lock, User, Globe } from "lucide-react";
+import { PrivacyPolicyModal } from "@/components/privacy-policy-modal";
 
 const SignUpPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
@@ -13,6 +14,7 @@ const SignUpPage: React.FC = () => {
   const [country, setCountry] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isDealerAccount, setIsDealerAccount] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,12 +247,23 @@ const SignUpPage: React.FC = () => {
               <div className="text-center mt-6">
                 <p className="text-xs text-gray-500">
                   By signing up, I agree to the{" "}
-                  <a href="#" className="text-indigo-600 hover:underline">Terms of Service</a> and{" "}
-                  <a href="#" className="text-indigo-600 hover:underline">Privacy Policy</a>.
+                  <button 
+                    onClick={() => setIsPrivacyModalOpen(true)}
+                    className="text-indigo-600 hover:underline"
+                  >
+                    Terms of Service
+                  </button>{" "}
+                  and{" "}
+                  <button 
+                    onClick={() => setIsPrivacyModalOpen(true)}
+                    className="text-indigo-600 hover:underline"
+                  >
+                    Privacy Policy
+                  </button>.
                 </p>
                 <p className="text-sm text-gray-600 mt-4">
                   Already have an account?{" "}
-                  <a href="#" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                  <a href="/signin" className="font-semibold text-indigo-600 hover:text-indigo-500">
                     Sign in
                   </a>
                 </p>
@@ -261,6 +274,11 @@ const SignUpPage: React.FC = () => {
       </main>
 
       <Footer />
+
+      <PrivacyPolicyModal 
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+      />
     </div>
   );
 };
