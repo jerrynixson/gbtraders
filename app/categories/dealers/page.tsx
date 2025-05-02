@@ -1,48 +1,109 @@
 "use client";
 
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Search, MapPin, Filter, Grid, List } from "lucide-react"
-import { GarageCard } from "@/components/categories/garages/garage-listing"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
-import { useState } from "react"
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, MapPin, Filter, Grid, List } from "lucide-react";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
 
-export default function SearchGaragesPage() {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [sortBy, setSortBy] = useState("rating")
+type DealerCardProps = {
+  id: string;
+  name: string;
+  location: string;
+  image: string;
+  rating: number;
+  specialties: string[];
+  address: string;
+  phone: string;
+  openingHours: string;
+};
 
-  // Sample garage data - in a real app, this would come from an API
-  const garages = Array.from({ length: 8 }).map((_, index) => ({
-    id: `garage-${index + 1}`,
-    name: `Garage ${index + 1}`,
+function DealerCard({ id, name, location, image, rating, specialties, address, phone, openingHours }: DealerCardProps) {
+  return (
+    <Link href={`/categories/dealers/${id}`} className="block group cursor-pointer">
+      <div className="bg-white rounded-lg overflow-hidden border border-gray-100 hover:border-gray-200 transition-all hover:shadow-lg">
+        <div className="relative">
+          <Image
+            src={image || "/placeholder.svg"}
+            alt={name}
+            width={400}
+            height={250}
+            className="w-full h-48 object-contain bg-white"
+          />
+          <div className="absolute inset-0 bg-black/5 group-hover:bg-black/0 transition-colors" />
+        </div>
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-lg">{name}</h3>
+            <span className="text-sm text-gray-500 flex items-center">
+              <MapPin className="h-4 w-4 mr-1" /> {location}
+            </span>
+          </div>
+          <div className="flex items-center mb-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span key={i} className={`h-4 w-4 inline-block ${i < Math.round(rating) ? "text-yellow-400" : "text-gray-200"}`}>★</span>
+            ))}
+            <span className="text-sm text-gray-500 ml-2">{rating}/5</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {specialties.map((specialty: string, index: number) => (
+              <span key={index} className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                {specialty}
+              </span>
+            ))}
+          </div>
+          <div className="text-sm text-gray-600 space-y-1.5 mb-4">
+            <p className="truncate">{address}</p>
+            <p className="flex items-center">
+              <span className="h-3.5 w-3.5 mr-1.5 text-gray-400">📞</span> {phone}
+            </p>
+            <p className="flex items-center">
+              <span className="h-3.5 w-3.5 mr-1.5 text-gray-400">⏰</span> {openingHours}
+            </p>
+          </div>
+          <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white pointer-events-none">
+            Contact dealer
+          </Button>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+export default function SearchDealerPage() {
+  const [viewMode, setViewMode] = useState("grid");
+  const [sortBy, setSortBy] = useState("rating");
+
+  // Sample dealer data
+  const dealers = Array.from({ length: 8 }).map((_, index) => ({
+    id: `dealer-${index + 1}`,
+    name: `Dealer ${index + 1}`,
     location: `City ${index + 1}`,
-    image: `/garages/garage${(index % 4) + 1}.jpg`,
-    rating: 4.5 + (index * 0.1),
-    specialties: ["MOT", "Servicing", "Repairs"],
-    address: `${index + 1} Example Street, City ${index + 1}`,
+    image: `/dealers/dealer${(index % 4) + 1}.jpg`,
+    rating: 4.2 + (index * 0.2),
+    specialties: ["Used Cars", "Financing", "Warranty"],
+    address: `${index + 1} Dealer Street, City ${index + 1}`,
     phone: `0123 ${index}${index}${index} ${index}${index}${index}`,
-    openingHours: "Mon-Fri: 8am-6pm"
-  }))
+    openingHours: "Mon-Fri: 9am-6pm"
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-
-      {/* Glassy Blue Themed Search Bar */}
       <div className="flex justify-center items-center py-4 mb-2">
         <div className="w-full max-w-4xl flex rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-blue-200 relative">
-          {/* Accent Bar */}
           <div className="w-2 h-full bg-gradient-to-b from-blue-400 to-blue-700 rounded-l-3xl"></div>
-          {/* Content */}
           <form className="flex flex-col md:flex-row flex-1 gap-3 md:gap-4 p-4 md:p-6 items-stretch md:items-end">
             <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <label htmlFor="garage-search" className="block text-xs font-semibold text-blue-900 mb-1 tracking-widest uppercase">Garage</label>
+              <label htmlFor="dealer-search" className="block text-xs font-semibold text-blue-900 mb-1 tracking-widest uppercase">Dealer</label>
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 group-focus-within:text-blue-600 transition-colors duration-200 h-5 w-5" />
                 <Input
-                  id="garage-search"
-                  placeholder="e.g. QuickFix Motors"
+                  id="dealer-search"
+                  placeholder="e.g. Best Cars Ltd"
                   className="pl-12 pr-4 py-2.5 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 placeholder-blue-400 h-12"
                 />
               </div>
@@ -67,10 +128,9 @@ export default function SearchGaragesPage() {
                   className="w-full pl-12 pr-4 py-2.5 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 h-12"
                 >
                   <option value="">All Services</option>
-                  <option value="mot">MOT</option>
-                  <option value="servicing">Servicing</option>
-                  <option value="repairs">Repairs</option>
-                  <option value="diagnostics">Diagnostics</option>
+                  <option value="used-cars">Used Cars</option>
+                  <option value="financing">Financing</option>
+                  <option value="warranty">Warranty</option>
                 </select>
               </div>
             </div>
@@ -84,12 +144,10 @@ export default function SearchGaragesPage() {
           </form>
         </div>
       </div>
-
-      {/* Results Section */}
       <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
           <div className="flex items-center gap-4">
-            <p className="text-gray-600">Showing {garages.length} garages</p>
+            <p className="text-gray-600">Showing {dealers.length} dealers</p>
             <div className="flex items-center space-x-2">
               <Button
                 variant={viewMode === "grid" ? "default" : "outline"}
@@ -124,56 +182,44 @@ export default function SearchGaragesPage() {
             </select>
           </div>
         </div>
-
-        {/* Garage listings */}
         {viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {garages.map((garage) => (
-              <GarageCard key={garage.id} {...garage} />
+            {dealers.map((dealer) => (
+              <DealerCard key={dealer.id} {...dealer} />
             ))}
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {garages.map((garage) => (
-              <div key={garage.id} className="flex bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-                {/* Image */}
+            {dealers.map((dealer) => (
+              <div key={dealer.id} className="flex bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="w-64 h-48 flex-shrink-0 relative">
-                  <img src={garage.image} alt={garage.name} className="w-full h-full object-contain bg-white rounded-l-xl" />
+                  <img src={dealer.image} alt={dealer.name} className="w-full h-full object-contain bg-white rounded-l-xl" />
                 </div>
-                {/* Details */}
                 <div className="flex-1 flex flex-col p-6">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h3 className="font-bold text-xl text-gray-900 mb-1">{garage.name}</h3>
+                      <h3 className="font-bold text-xl text-gray-900 mb-1">{dealer.name}</h3>
                       <div className="flex items-center text-sm text-gray-500 mb-2">
                         <MapPin className="h-4 w-4 mr-1" />
-                        {garage.location}
+                        {dealer.location}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="icon" className="hover:bg-gray-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5c0 2.485-2.015 4.5-4.5 4.5S7.5 12.985 7.5 10.5 9.515 6 12 6s4.5 2.015 4.5 4.5z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 4.142-3.358 7.5-7.5 7.5s-7.5-3.358-7.5-7.5a7.5 7.5 0 1115 0z" />
-                        </svg>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="hover:bg-gray-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 8.25V6a3 3 0 00-6 0v2.25M12 15v2.25m0 0a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                        </svg>
+                        <span className="w-5 h-5 text-gray-400">★</span>
                       </Button>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {garage.specialties.map((spec, i) => (
+                    {dealer.specialties.map((spec, i) => (
                       <span key={i} className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">{spec}</span>
                     ))}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700 mb-2">
-                    <div><span className="font-medium">Address:</span> {garage.address}</div>
-                    <div><span className="font-medium">Phone:</span> {garage.phone}</div>
-                    <div><span className="font-medium">Hours:</span> {garage.openingHours}</div>
-                    <div><span className="font-medium">Rating:</span> {garage.rating.toFixed(1)} / 5</div>
+                    <div><span className="font-medium">Address:</span> {dealer.address}</div>
+                    <div><span className="font-medium">Phone:</span> {dealer.phone}</div>
+                    <div><span className="font-medium">Hours:</span> {dealer.openingHours}</div>
+                    <div><span className="font-medium">Rating:</span> {dealer.rating.toFixed(1)} / 5</div>
                   </div>
                   <div className="flex justify-end mt-auto">
                     <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-6 py-2 rounded-lg shadow">
@@ -185,8 +231,6 @@ export default function SearchGaragesPage() {
             ))}
           </div>
         )}
-
-        {/* Pagination */}
         <div className="flex justify-center mt-8 gap-2">
           <Button variant="outline" className="px-4">Previous</Button>
           <Button variant="outline" className="px-4">1</Button>
@@ -197,5 +241,6 @@ export default function SearchGaragesPage() {
       </div>
       <Footer />
     </div>
-  )
-} 
+  );
+}
+

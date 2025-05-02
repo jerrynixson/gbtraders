@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Eye, EyeOff, ArrowRight, Mail, Lock } from "lucide-react";
+import { PrivacyPolicyModal } from "@/components/privacy-policy-modal";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,8 +155,27 @@ const LoginPage: React.FC = () => {
                 </p>
                 <p className="text-xs text-gray-500 mt-4">
                   By signing in, you agree to our{" "}
-                  <a href="#" className="text-indigo-600 hover:underline">Terms</a> and{" "}
-                  <a href="#" className="text-indigo-600 hover:underline">Privacy Policy</a>.
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsPrivacyModalOpen(true);
+                    }}
+                    className="text-indigo-600 hover:underline"
+                  >
+                    Terms
+                  </button>{" "}
+                  and{" "}
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsPrivacyModalOpen(true);
+                    }}
+                    className="text-indigo-600 hover:underline"
+                  >
+                    Privacy Policy
+                  </button>.
                 </p>
               </div>
             </form>
@@ -163,6 +184,11 @@ const LoginPage: React.FC = () => {
       </main>
 
       <Footer />
+
+      <PrivacyPolicyModal 
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+      />
     </div>
   );
 };
