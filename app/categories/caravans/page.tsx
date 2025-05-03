@@ -1,20 +1,28 @@
+"use client"
+
 import { Header } from "@/components/header"
-import { Hero } from "@/components/categories/vans/hero"
-import { VanListings } from "@/components/categories/vans/van-listings"
+import { Hero } from "../../../components/categories/caravans/hero"
+import { CaravanListings } from "../../../components/categories/caravans/caravan-listings"
 import { SellYourCar } from "@/components/sell-your-car"
 import { BuyingEssentials } from "@/components/buying-essentials"
 import { Footer } from "@/components/footer"
 import { CategoryGrid } from "@/components/category-grid"
 import { RegistrationSteps } from "@/components/registration-steps"
 import { AdvertiseWithUs } from "@/components/Advertise-with-us"
-import { LeaseVanListings } from "@/components/categories/vans/lease-van"
+import { LeaseCaravanListings } from "../../../components/categories/caravans/lease-caravan"
 import { BrowseByBrand } from "@/components/browse-by-brand"
 import { ValueYourCarBanner } from "@/components/value-car"
 import { BackToTop } from "@/components/back-to-top"
 import CarRentalBanner from "@/components/dealer-advert-banner"
 import BlogPostsSection from "@/components/blog-post-section"
 
-const categories = [
+interface Category {
+  title: string
+  href: string
+  image: string
+}
+
+const categories: Category[] = [
   {
     title: "Vehicles",
     href: "/cars",
@@ -25,39 +33,22 @@ const categories = [
     href: "/breakdown-services",
     image: "/breakdown.png",
   },
-  {
-    title: "Car Parts",
-    href: "/car-parts",
-    image: "/car-parts.jpg",
-  },
-  {
-    title: "Garages",
-    href: "/garages",
-    image: "garages.jpg",
-  },
-  {
-    title: "Dealers",
-    href: "/dealers",
-    image: "/dealers.jpg",
-  },
 ]
 
-export default function Home() {
+export default function CaravansPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <Header />
       <main className="space-y-5">
         <Hero />
-        <VanListings />
+        <CaravanListings />
         <CarRentalBanner />
         <AdvertiseWithUs />
-        <LeaseVanListings />
+        <LeaseCaravanListings />
         <BlogPostsSection />
-        
       </main>
       <BackToTop />
       <Footer />
     </div>
   )
-}
-
+} 

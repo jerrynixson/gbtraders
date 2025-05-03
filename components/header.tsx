@@ -41,11 +41,11 @@ export function Header() {
   const vehicleNavItems: NavItem[] = [
     { href: "/categories/cars", label: "Cars" },
     { href: "/categories/vans", label: "Vans" },
-    { href: "/vehicles/motorcycles", label: "Motorcycles" },
-    { href: "/vehicles/trucks", label: "Trucks" },
-    { href: "/vehicles/evs", label: "Electric cars" },
-    { href: "/vehicles/caravans", label: "Caravans" },
-    { href: "/vehicles/e-bikes", label: "E- Bikes" }
+    { href: "/categories/motorcycles", label: "Motorcycles" },
+    { href: "/categories/trucks", label: "Trucks" },
+    { href: "/categories/electric-vehicles", label: "Electric Vehicles" },
+    { href: "/categories/caravans", label: "Caravans" },
+    { href: "/categories/e-bikes", label: "E-Bikes" }
   ]
 
   const topNavItems: TopNavItem[] = [
@@ -150,7 +150,7 @@ export function Header() {
                 <Heart className="h-6 w-6" />
               </Button>
             </Link>
-            <Link href="\signin" className="hidden lg:block">
+            <Link href="/signin" className="hidden lg:block">
               <Button variant="ghost" size="icon">
                 <User className="h-6 w-6" />
               </Button>
@@ -230,7 +230,7 @@ export function Header() {
                 </div>
               </div>
               <div className="w-24 border-l pl-4 flex flex-col space-y-4">
-                <Link href="/favorites" onClick={() => setMobileMenuOpen(false)}>
+                <Link href="/favourites" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
                     <Heart className="h-4 w-4" />
                     <span className="sr-only">Favorites</span>

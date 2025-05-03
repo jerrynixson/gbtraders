@@ -3,85 +3,85 @@ import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
 import { VehicleCard, Vehicle } from "@/components/vehicle-card"
 
-export function VanListings() {
-  const vans: Vehicle[] = [
+export function LeaseMotorcycleListings() {
+  const motorcycles: Vehicle[] = [
     {
       id: 1,
-      title: "Mercedes-Benz Sprinter 313 CDI",
-      price: 399,
-      monthlyPrice: 399,
-      image: "/vans/van1.jpg",
+      title: "Honda CBR650R",
+      price: 166,
+      monthlyPrice: 166,
+      image: "/motorcycles/bike1.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
-      fuel: "Diesel",
-      transmission: "Automatic",
-      tag: "Van",
-      make: "Mercedes-Benz",
-      model: "Sprinter 313 CDI",
-      description: "Premium large van with excellent load capacity",
-      initialPayment: "£4,788",
+      fuel: "Petrol",
+      transmission: "Manual",
+      tag: "Lease",
+      make: "Honda",
+      model: "CBR650R",
+      description: "Sport motorcycle with powerful engine and agile handling",
+      initialPayment: "£1,992",
       contractLength: "48",
       milesPerYear: "0",
     },
     {
       id: 2,
-      title: "Ford Transit Custom 280",
-      price: 349,
-      monthlyPrice: 349,
-      image: "/vans/van2.jpg",
+      title: "Yamaha MT-07",
+      price: 235,
+      monthlyPrice: 235,
+      image: "/motorcycles/bike2.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
-      fuel: "Diesel",
-      transmission: "Automatic",
-      tag: "Van",
-      make: "Ford",
-      model: "Transit Custom 280",
-      description: "Versatile medium van with modern features",
-      initialPayment: "£4,188",
+      fuel: "Petrol",
+      transmission: "Manual",
+      tag: "Lease",
+      make: "Yamaha",
+      model: "MT-07",
+      description: "Naked bike with torquey engine and comfortable riding position",
+      initialPayment: "£2,820",
       contractLength: "48",
       milesPerYear: "0",
     },
     {
       id: 3,
-      title: "Volkswagen Transporter T6.1",
-      price: 379,
-      monthlyPrice: 379,
-      image: "/vans/van3.jpg",
+      title: "Kawasaki Ninja 650",
+      price: 293,
+      monthlyPrice: 293,
+      image: "/motorcycles/bike3.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
-      fuel: "Diesel",
-      transmission: "Automatic",
-      tag: "Van",
-      make: "Volkswagen",
-      model: "Transporter T6.1",
-      description: "Premium medium van with advanced technology",
-      initialPayment: "£4,548",
+      fuel: "Petrol",
+      transmission: "Manual",
+      tag: "Lease",
+      make: "Kawasaki",
+      model: "Ninja 650",
+      description: "Sport-touring motorcycle with balanced performance",
+      initialPayment: "£3,516",
       contractLength: "48",
       milesPerYear: "0",
     },
     {
       id: 4,
-      title: "Renault Trafic 150",
-      price: 329,
-      monthlyPrice: 329,
-      image: "/vans/van4.jpg",
+      title: "Suzuki GSX-S750",
+      price: 243,
+      monthlyPrice: 243,
+      image: "/motorcycles/bike4.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
-      fuel: "Diesel",
-      transmission: "Automatic",
-      tag: "Van",
-      make: "Renault",
-      model: "Trafic 150",
-      description: "Efficient medium van with practical design",
-      initialPayment: "£3,948",
+      fuel: "Petrol",
+      transmission: "Manual",
+      tag: "Lease",
+      make: "Suzuki",
+      model: "GSX-S750",
+      description: "Streetfighter with powerful inline-four engine",
+      initialPayment: "£2,916",
       contractLength: "48",
       milesPerYear: "0",
     },
@@ -90,10 +90,10 @@ export function VanListings() {
   return (
     <section className="py-12 bg-gray-50">
       <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6 text-center">Vans for Sale</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Lease a Brand New Motorcycle</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-          {vans.map((vehicle) => (
+          {motorcycles.map((vehicle) => (
             <VehicleCard
               key={vehicle.id}
               id={vehicle.id}
@@ -119,7 +119,7 @@ export function VanListings() {
 
         <div className="flex justify-center mt-4">
           <Link href="#" className="flex items-center text-sm text-primary">
-            View more vans <ChevronRight className="h-4 w-4 ml-1" />
+            View more lease deals <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
         </div>
       </div>

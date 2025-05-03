@@ -3,85 +3,85 @@ import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
 import { VehicleCard, Vehicle } from "@/components/vehicle-card"
 
-export function VanListings() {
-  const vans: Vehicle[] = [
+export function TruckListings() {
+  const trucks: Vehicle[] = [
     {
       id: 1,
-      title: "Mercedes-Benz Sprinter 313 CDI",
-      price: 399,
-      monthlyPrice: 399,
-      image: "/vans/van1.jpg",
+      title: "Mercedes-Benz Actros 1845",
+      price: 1299,
+      monthlyPrice: 1299,
+      image: "/trucks/truck1.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
       fuel: "Diesel",
       transmission: "Automatic",
-      tag: "Van",
+      tag: "Truck",
       make: "Mercedes-Benz",
-      model: "Sprinter 313 CDI",
-      description: "Premium large van with excellent load capacity",
-      initialPayment: "£4,788",
+      model: "Actros 1845",
+      description: "Premium heavy-duty truck with advanced safety features",
+      initialPayment: "£15,588",
       contractLength: "48",
       milesPerYear: "0",
     },
     {
       id: 2,
-      title: "Ford Transit Custom 280",
-      price: 349,
-      monthlyPrice: 349,
-      image: "/vans/van2.jpg",
+      title: "Volvo FH 460",
+      price: 1499,
+      monthlyPrice: 1499,
+      image: "/trucks/truck2.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
       fuel: "Diesel",
       transmission: "Automatic",
-      tag: "Van",
-      make: "Ford",
-      model: "Transit Custom 280",
-      description: "Versatile medium van with modern features",
-      initialPayment: "£4,188",
+      tag: "Truck",
+      make: "Volvo",
+      model: "FH 460",
+      description: "High-performance truck with fuel-efficient engine",
+      initialPayment: "£17,988",
       contractLength: "48",
       milesPerYear: "0",
     },
     {
       id: 3,
-      title: "Volkswagen Transporter T6.1",
-      price: 379,
-      monthlyPrice: 379,
-      image: "/vans/van3.jpg",
+      title: "Scania R 450",
+      price: 1399,
+      monthlyPrice: 1399,
+      image: "/trucks/truck3.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
       fuel: "Diesel",
       transmission: "Automatic",
-      tag: "Van",
-      make: "Volkswagen",
-      model: "Transporter T6.1",
-      description: "Premium medium van with advanced technology",
-      initialPayment: "£4,548",
+      tag: "Truck",
+      make: "Scania",
+      model: "R 450",
+      description: "Reliable truck with excellent fuel economy",
+      initialPayment: "£16,788",
       contractLength: "48",
       milesPerYear: "0",
     },
     {
       id: 4,
-      title: "Renault Trafic 150",
-      price: 329,
-      monthlyPrice: 329,
-      image: "/vans/van4.jpg",
+      title: "DAF XF 450",
+      price: 1199,
+      monthlyPrice: 1199,
+      image: "/trucks/truck4.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
       fuel: "Diesel",
       transmission: "Automatic",
-      tag: "Van",
-      make: "Renault",
-      model: "Trafic 150",
-      description: "Efficient medium van with practical design",
-      initialPayment: "£3,948",
+      tag: "Truck",
+      make: "DAF",
+      model: "XF 450",
+      description: "Efficient truck with comfortable cabin",
+      initialPayment: "£14,388",
       contractLength: "48",
       milesPerYear: "0",
     },
@@ -90,10 +90,10 @@ export function VanListings() {
   return (
     <section className="py-12 bg-gray-50">
       <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6 text-center">Vans for Sale</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Trucks for Sale</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-          {vans.map((vehicle) => (
+          {trucks.map((vehicle) => (
             <VehicleCard
               key={vehicle.id}
               id={vehicle.id}
@@ -119,10 +119,10 @@ export function VanListings() {
 
         <div className="flex justify-center mt-4">
           <Link href="#" className="flex items-center text-sm text-primary">
-            View more vans <ChevronRight className="h-4 w-4 ml-1" />
+            View more trucks <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
         </div>
       </div>
     </section>
   )
-}
+} 

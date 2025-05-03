@@ -3,85 +3,85 @@ import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
 import { VehicleCard, Vehicle } from "@/components/vehicle-card"
 
-export function VanListings() {
-  const vans: Vehicle[] = [
+export function CaravanListings() {
+  const caravans: Vehicle[] = [
     {
       id: 1,
-      title: "Mercedes-Benz Sprinter 313 CDI",
-      price: 399,
-      monthlyPrice: 399,
-      image: "/vans/van1.jpg",
+      title: "Swift Challenger",
+      price: 166,
+      monthlyPrice: 166,
+      image: "/caravans/caravan1.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
-      fuel: "Diesel",
-      transmission: "Automatic",
-      tag: "Van",
-      make: "Mercedes-Benz",
-      model: "Sprinter 313 CDI",
-      description: "Premium large van with excellent load capacity",
-      initialPayment: "£4,788",
+      fuel: "N/A",
+      transmission: "N/A",
+      tag: "Caravan",
+      make: "Swift",
+      model: "Challenger",
+      description: "Luxury touring caravan with modern amenities",
+      initialPayment: "£1,992",
       contractLength: "48",
       milesPerYear: "0",
     },
     {
       id: 2,
-      title: "Ford Transit Custom 280",
-      price: 349,
-      monthlyPrice: 349,
-      image: "/vans/van2.jpg",
+      title: "Bailey Unicorn",
+      price: 235,
+      monthlyPrice: 235,
+      image: "/caravans/caravan2.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
-      fuel: "Diesel",
-      transmission: "Automatic",
-      tag: "Van",
-      make: "Ford",
-      model: "Transit Custom 280",
-      description: "Versatile medium van with modern features",
-      initialPayment: "£4,188",
+      fuel: "N/A",
+      transmission: "N/A",
+      tag: "Caravan",
+      make: "Bailey",
+      model: "Unicorn",
+      description: "Premium touring caravan with spacious interior",
+      initialPayment: "£2,820",
       contractLength: "48",
       milesPerYear: "0",
     },
     {
       id: 3,
-      title: "Volkswagen Transporter T6.1",
-      price: 379,
-      monthlyPrice: 379,
-      image: "/vans/van3.jpg",
+      title: "Elddis Avante",
+      price: 293,
+      monthlyPrice: 293,
+      image: "/caravans/caravan3.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
-      fuel: "Diesel",
-      transmission: "Automatic",
-      tag: "Van",
-      make: "Volkswagen",
-      model: "Transporter T6.1",
-      description: "Premium medium van with advanced technology",
-      initialPayment: "£4,548",
+      fuel: "N/A",
+      transmission: "N/A",
+      tag: "Caravan",
+      make: "Elddis",
+      model: "Avante",
+      description: "Modern touring caravan with innovative features",
+      initialPayment: "£3,516",
       contractLength: "48",
       milesPerYear: "0",
     },
     {
       id: 4,
-      title: "Renault Trafic 150",
-      price: 329,
-      monthlyPrice: 329,
-      image: "/vans/van4.jpg",
+      title: "Lunar Clubman",
+      price: 243,
+      monthlyPrice: 243,
+      image: "/caravans/caravan4.jpg",
       distance: "0 miles away",
       location: "GB Traders",
       year: "2023",
       mileage: "0",
-      fuel: "Diesel",
-      transmission: "Automatic",
-      tag: "Van",
-      make: "Renault",
-      model: "Trafic 150",
-      description: "Efficient medium van with practical design",
-      initialPayment: "£3,948",
+      fuel: "N/A",
+      transmission: "N/A",
+      tag: "Caravan",
+      make: "Lunar",
+      model: "Clubman",
+      description: "Elegant touring caravan with premium finishes",
+      initialPayment: "£2,916",
       contractLength: "48",
       milesPerYear: "0",
     },
@@ -90,10 +90,10 @@ export function VanListings() {
   return (
     <section className="py-12 bg-gray-50">
       <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6 text-center">Vans for Sale</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Caravans for Sale</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-          {vans.map((vehicle) => (
+          {caravans.map((vehicle) => (
             <VehicleCard
               key={vehicle.id}
               id={vehicle.id}
@@ -119,7 +119,7 @@ export function VanListings() {
 
         <div className="flex justify-center mt-4">
           <Link href="#" className="flex items-center text-sm text-primary">
-            View more vans <ChevronRight className="h-4 w-4 ml-1" />
+            View more caravans <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
         </div>
       </div>
