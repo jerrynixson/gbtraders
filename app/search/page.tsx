@@ -225,6 +225,24 @@ type VehicleCardProps = {
 
 function VehicleCard({ vehicle, view }: VehicleCardProps) {
   const isGrid = view === "grid";
+  const [isFavorite, setIsFavorite] = useState(() => {
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]')
+    return favorites.some((fav: typeof vehicle) => fav.id === vehicle.id)
+  })
+  
+  const handleFavoriteClick = () => {
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]')
+    if (isFavorite) {
+      const updatedFavorites = favorites.filter((fav: typeof vehicle) => fav.id !== vehicle.id)
+      localStorage.setItem('favorites', JSON.stringify(updatedFavorites))
+    } else {
+      favorites.push(vehicle)
+      localStorage.setItem('favorites', JSON.stringify(favorites))
+    }
+    setIsFavorite(!isFavorite)
+    // Force a re-render of the favorites page if it's open
+    window.dispatchEvent(new Event('favoritesUpdated'))
+  }
   
   return (
     <div className={`group bg-white rounded-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-blue-100 ${isGrid ? 'flex flex-col h-full' : 'flex'} ${vehicle.isHighlighted ? 'ring-2 ring-blue-100' : ''}`}>
@@ -246,8 +264,11 @@ function VehicleCard({ vehicle, view }: VehicleCardProps) {
             Featured
           </div>
         )}
-        <button className="absolute top-2 right-2 bg-white/90 hover:bg-white p-1.5 rounded-full shadow-sm transition-all duration-200 hover:scale-110 z-10">
-          <Heart className="h-4 w-4 text-gray-700" />
+        <button 
+          onClick={handleFavoriteClick}
+          className="absolute top-2 right-2 bg-white/90 hover:bg-white p-1.5 rounded-full shadow-sm transition-all duration-200 hover:scale-110 z-10"
+        >
+          <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-700'}`} />
         </button>
       </div>
       
