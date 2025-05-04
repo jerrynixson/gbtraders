@@ -1,10 +1,15 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
+import { Header } from "../../components/header";
+import { Footer } from "../../components/footer";
 import { Eye, EyeOff, ArrowRight, Mail, Lock, User, Globe } from "lucide-react";
-import { PrivacyPolicyModal } from "@/components/privacy-policy-modal";
+import { PrivacyPolicyModal } from "../../components/privacy-policy-modal";
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import Link from 'next/link';
 
 const SignUpPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
@@ -15,10 +20,44 @@ const SignUpPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isDealerAccount, setIsDealerAccount] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [error, setError] = useState('');
+  const { signUp } = useAuth();
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Sign up attempt with:', { firstName, lastName, email, password, country, isDealerAccount });
+    setError('');
+    
+    if (!firstName || !lastName || !email || !password || !country) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      // Create the user account
+      const userCredential = await signUp(email, password);
+      const user = userCredential.user;
+
+      // Save additional user data to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        firstName,
+        lastName,
+        email,
+        country,
+        accountType: isDealerAccount ? "dealer" : "buyer",
+        createdAt: new Date().toISOString()
+      });
+
+      alert('Account created successfully!');
+      router.push('/');
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      if (error.message.includes('already registered')) {
+        setError('This email is already registered. Please sign in instead.');
+      } else {
+        setError(error.message || 'An error occurred during signup. Please try again.');
+      }
+    }
   };
 
   return (
@@ -47,6 +86,21 @@ const SignUpPage: React.FC = () => {
               <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
               <p className="mt-2 text-gray-600">Fill in your details to get started</p>
             </div>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">
+                  {error}
+                  {error.includes('already registered') && (
+                    <span className="ml-2">
+                      <Link href="/signin" className="text-indigo-600 hover:text-indigo-500 underline">
+                        Sign in here
+                      </Link>
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
             
             <form className="space-y-5" onSubmit={handleSubmit}>
               {/* Dealer Account Toggle */}
