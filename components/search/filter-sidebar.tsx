@@ -122,6 +122,11 @@ export function FilterSidebar({ onFilterChange }: { onFilterChange: (filters: Fi
     dealerRating: ""
   })
 
+  // Add useEffect to handle filter changes
+  useEffect(() => {
+    onFilterChange(filters)
+  }, [filters, onFilterChange])
+
   const commonFeatures = ["Wheelchair Access", "Left Hand Drive", "Sat Nav", "Bluetooth", "Leather Seats"]
   const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid", "LPG"]
   const transmissions = ["Manual", "Automatic", "Semi-Automatic"]
@@ -198,22 +203,19 @@ export function FilterSidebar({ onFilterChange }: { onFilterChange: (filters: Fi
   }
 
   const handleFilterChange = (key: keyof FilterState, value: any) => {
-    setFilters(prev => {
-      const newFilters = { ...prev, [key]: value }
-      onFilterChange(newFilters)
-      return newFilters
-    })
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }))
   }
 
   const handleFeatureToggle = (feature: string) => {
-    setFilters(prev => {
-      const newFeatures = prev.features.includes(feature)
+    setFilters(prev => ({
+      ...prev,
+      features: prev.features.includes(feature)
         ? prev.features.filter(f => f !== feature)
         : [...prev.features, feature]
-      const newFilters = { ...prev, features: newFeatures }
-      onFilterChange(newFilters)
-      return newFilters
-    })
+    }))
   }
 
   return (
