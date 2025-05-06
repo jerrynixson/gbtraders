@@ -6,10 +6,11 @@ import { Footer } from "../../components/footer";
 import { Eye, EyeOff, ArrowRight, Mail, Lock, User, Globe } from "lucide-react";
 import { PrivacyPolicyModal } from "../../components/privacy-policy-modal";
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
+import { useToast } from "@/hooks/use-toast";
 
 const SignUpPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
@@ -21,8 +22,11 @@ const SignUpPage: React.FC = () => {
   const [isDealerAccount, setIsDealerAccount] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [error, setError] = useState('');
-  const { signUp } = useAuth();
+  const { signUp, logout } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,18 +42,29 @@ const SignUpPage: React.FC = () => {
       const userCredential = await signUp(email, password);
       const user = userCredential.user;
 
-      // Save additional user data to Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        firstName,
-        lastName,
-        email,
-        country,
-        accountType: isDealerAccount ? "dealer" : "buyer",
-        createdAt: new Date().toISOString()
-      });
+      try {
+        // Save additional user data to Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          firstName,
+          lastName,
+          email,
+          country,
+          accountType: isDealerAccount ? "dealer" : "buyer",
+          createdAt: new Date().toISOString()
+        });
 
-      alert('Account created successfully!');
-      router.push('/');
+        toast({
+          title: "Success!",
+          description: "Your account has been created successfully.",
+          variant: "default",
+        });
+        router.push(redirectTo);
+      } catch (firestoreError: any) {
+        console.error("Firestore error:", firestoreError);
+        // If Firestore fails, we should still sign out the user since we can't save their data
+        await logout();
+        setError('Failed to create your account. Please try again later.');
+      }
     } catch (error: any) {
       console.error("Signup error:", error);
       if (error.message.includes('already registered')) {
@@ -317,9 +332,9 @@ const SignUpPage: React.FC = () => {
                 </p>
                 <p className="text-sm text-gray-600 mt-4">
                   Already have an account?{" "}
-                  <a href="/signin" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                  <Link href={`/signin?redirectTo=${encodeURIComponent(redirectTo)}`} className="font-semibold text-indigo-600 hover:text-indigo-500">
                     Sign in
-                  </a>
+                  </Link>
                 </p>
               </div>
             </form>

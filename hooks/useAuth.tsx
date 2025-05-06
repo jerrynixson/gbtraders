@@ -2,7 +2,7 @@
 
 import { useState, useEffect, createContext, useContext } from 'react';
 import { 
-  User,
+  User as FirebaseUser,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
@@ -10,7 +10,12 @@ import {
   UserCredential,
   AuthError
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
+interface User extends FirebaseUser {
+  accountType?: 'dealer' | 'buyer';
+}
 
 interface AuthContextType {
   user: User | null;
@@ -27,8 +32,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Get user data from Firestore
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          let userData = userDoc.data();
+          
+          if (!userData) {
+            // Create default user data if it doesn't exist
+            userData = {
+              email: firebaseUser.email,
+              accountType: 'buyer',
+              createdAt: new Date().toISOString()
+            };
+            await setDoc(doc(db, "users", firebaseUser.uid), userData);
+          }
+
+          // Extend the Firebase user with our custom data
+          const extendedUser = {
+            ...firebaseUser,
+            accountType: userData.accountType || 'buyer' // Default to buyer if not set
+          } as User;
+          
+          console.log("User account type:", extendedUser.accountType); // Debug log
+          setUser(extendedUser);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
@@ -48,7 +83,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      const authError = error as AuthError;
+      if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
+        throw new Error('Invalid email or password.');
+      }
+      throw error;
+    }
   };
 
   const logout = async () => {

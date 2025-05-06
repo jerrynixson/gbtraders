@@ -5,8 +5,9 @@ import { Header } from "../../components/header";
 import { Footer } from "../../components/footer";
 import { Eye, EyeOff, ArrowRight, Mail, Lock } from "lucide-react";
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useToast } from "@/hooks/use-toast";
 
 const SignInPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -15,6 +16,9 @@ const SignInPage: React.FC = () => {
   const [error, setError] = useState('');
   const { signIn } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +26,12 @@ const SignInPage: React.FC = () => {
     
     try {
       await signIn(email, password);
-      alert('Signed in successfully!');
-      router.push('/'); // Redirect to main page
+      toast({
+        title: "Success!",
+        description: "You have been signed in successfully.",
+        variant: "default",
+      });
+      router.push(redirectTo);
     } catch (error: any) {
       setError(error.message);
     }
@@ -166,7 +174,7 @@ const SignInPage: React.FC = () => {
               <div className="text-center mt-6">
                 <p className="text-sm text-gray-600">
                   Don't have an account?{" "}
-                  <Link href="/signup" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                  <Link href={`/signup?redirectTo=${encodeURIComponent(redirectTo)}`} className="font-semibold text-indigo-600 hover:text-indigo-500">
                     Sign up
                   </Link>
                 </p>

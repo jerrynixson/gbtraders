@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user is a dealer
+    function isDealer() {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.accountType == 'dealer';
+    }
+
+    // Helper function to check if file is an image
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // Helper function to check if file size is under 10MB
+    function isUnder10MB() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Advertisement images
+    match /advertisements/{userId}/{fileName} {
+      allow read: if true; // Anyone can view advertisement images
+      allow create: if isDealer() && 
+        request.auth.uid == userId && 
+        isImage() && 
+        isUnder10MB();
+      allow delete: if isDealer() && 
+        request.auth.uid == userId;
+    }
+
+    // Default deny all
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+} 
