@@ -19,7 +19,8 @@ import {
   ChevronRight, 
   Grid, 
   List,
-  Search
+  Search,
+  SlidersHorizontal
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -80,6 +81,7 @@ export default function VehicleShopPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
     searchRadius: "",
     make: "",
@@ -203,18 +205,32 @@ export default function VehicleShopPage() {
       <div className="flex-1 bg-gray-50">
         <div className="container mx-auto py-8 px-2 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row gap-8">
+            {/* Mobile Filter Button */}
+            <div className="lg:hidden w-full mb-4">
+              <Button
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-800 to-blue-600 hover:from-blue-900 hover:to-blue-700"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {isFilterOpen ? "Hide Filters" : "Show Filters"}
+              </Button>
+            </div>
+
             {/* Sidebar */}
-            <aside className="w-full lg:w-72 shrink-0 mb-6 lg:mb-0">
+            <aside className={`w-full lg:w-72 shrink-0 mb-6 lg:mb-0 transition-all duration-300 ${
+              isFilterOpen ? "block" : "hidden lg:block"
+            }`}>
               <div className="sticky top-6">
                 <FilterSidebar onFilterChange={setFilters} />
               </div>
             </aside>
+
             {/* Main content */}
             <main className="flex-1 min-w-0">
               {/* View and Sort controls */}
               <div className="sticky top-4 z-20 bg-white/90 backdrop-blur border border-gray-200 rounded-xl shadow-sm p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                 {/* View toggle left */}
-                <div className="flex items-center space-x-2">
+                <div className="hidden sm:flex items-center space-x-2">
                   <Button 
                     variant={viewMode === "grid" ? "default" : "outline"} 
                     size="sm" 
@@ -223,7 +239,7 @@ export default function VehicleShopPage() {
                     aria-label="Grid view"
                   >
                     <Grid className="h-4 w-4 mr-2" />
-                    Grid
+                    <span className="hidden sm:inline">Grid</span>
                   </Button>
                   <Button 
                     variant={viewMode === "list" ? "default" : "outline"} 
@@ -233,7 +249,7 @@ export default function VehicleShopPage() {
                     aria-label="List view"
                   >
                     <List className="h-4 w-4 mr-2" />
-                    List
+                    <span className="hidden sm:inline">List</span>
                   </Button>
                 </div>
                 {/* Centered search bar */}
@@ -253,7 +269,7 @@ export default function VehicleShopPage() {
                 {/* Sort and results right */}
                 <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
                   <div className="flex items-center">
-                    <label htmlFor="sort" className="text-sm font-medium mr-3">Sort by:</label>
+                    <label htmlFor="sort" className="text-sm font-medium mr-3 hidden sm:inline">Sort by:</label>
                     <select 
                       id="sort"
                       value={sortBy}
@@ -274,7 +290,7 @@ export default function VehicleShopPage() {
                 </div>
               </div>
               {/* Vehicle listings */}
-              <section className={`${viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" : "space-y-8"} transition-all`}> 
+              <section className={`${viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8" : "space-y-4 sm:space-y-8"} transition-all`}> 
                 {paginatedVehicles.map(vehicle => (
                   <VehicleCard 
                     key={vehicle.id}
