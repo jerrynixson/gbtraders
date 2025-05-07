@@ -13,6 +13,7 @@ import { ValueYourCarBanner } from "@/components/value-car"
 import { BackToTop } from "@/components/back-to-top"
 import CarRentalBanner from "@/components/dealer-advert-banner"
 import BlogPostsSection from "@/components/blog-post-section"
+import { GBTraderFeatures } from "@/components/gbtrader-features"
 
 const categories = [
   {
@@ -55,9 +56,9 @@ export default function Home() {
         <AdvertiseWithUs />
         <LeaseCarListings />
         <BrowseByBrand />
+        <GBTraderFeatures />
         <ValueYourCarBanner />
         <BlogPostsSection />
-        
       </main>
       <BackToTop />
       <Footer />
