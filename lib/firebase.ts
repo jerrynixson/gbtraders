@@ -14,27 +14,40 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+export const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const auth = getAuth(firebaseApp);
+export const db = getFirestore(firebaseApp);
+export const storage = getStorage(firebaseApp);
 
-// Enable persistence
+// Enable persistence with error handling
 if (typeof window !== 'undefined') {
+  // Set auth persistence
   setPersistence(auth, browserLocalPersistence)
     .catch((error) => {
       console.error("Auth persistence error:", error);
     });
 
-  // Enable offline persistence for Firestore
+  // Enable offline persistence for Firestore with error handling
   enableIndexedDbPersistence(db)
     .catch((err) => {
       if (err.code === 'failed-precondition') {
+        // Multiple tabs open, persistence can only be enabled in one tab at a time
         console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
       } else if (err.code === 'unimplemented') {
+        // The current browser doesn't support persistence
         console.warn('The current browser does not support persistence.');
+      } else if (err.code === 'indexeddb-corrupted') {
+        // IndexedDB is corrupted, try to clear it
+        console.warn('IndexedDB is corrupted. Clearing data...');
+        if (window.indexedDB) {
+          try {
+            window.indexedDB.deleteDatabase('firebaseLocalStorageDb');
+            window.indexedDB.deleteDatabase('firestore');
+            console.log('IndexedDB databases cleared. Please refresh the page.');
+          } catch (e) {
+            console.error('Error clearing IndexedDB:', e);
+          }
+        }
       }
     });
-}
-
-export { app, auth, db, storage }; 
+} 

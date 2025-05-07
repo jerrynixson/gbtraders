@@ -91,7 +91,7 @@ export function Header() {
   ]
 
   const dealerNavItems: NavItem[] = [
-    { href: "/admin", label: "Post Listing", icon: <PlusCircle className="h-4 w-4" /> }
+    { href: "/advertise", label: "Post Listing", icon: <PlusCircle className="h-4 w-4" /> }
   ]
 
   const adminNavItems: NavItem[] = [
