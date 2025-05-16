@@ -41,6 +41,7 @@ const SignUpPage: React.FC = () => {
       // Create the user account
       const userCredential = await signUp(email, password);
       const user = userCredential.user;
+      const role = isDealerAccount ? 'dealer' : 'user';
 
       try {
         // Save additional user data to Firestore
@@ -49,9 +50,26 @@ const SignUpPage: React.FC = () => {
           lastName,
           email,
           country,
-          accountType: isDealerAccount ? "dealer" : "buyer",
-          createdAt: new Date().toISOString()
+          role,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         });
+
+        // Set user role through the API
+        const response = await fetch('/api/auth/set-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            role,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to set user role');
+        }
 
         toast({
           title: "Success!",
@@ -60,8 +78,8 @@ const SignUpPage: React.FC = () => {
         });
         router.push(redirectTo);
       } catch (firestoreError: any) {
-        console.error("Firestore error:", firestoreError);
-        // If Firestore fails, we should still sign out the user since we can't save their data
+        console.error("Error setting up user:", firestoreError);
+        // If Firestore or role setting fails, we should still sign out the user
         await logout();
         setError('Failed to create your account. Please try again later.');
       }
@@ -131,7 +149,9 @@ const SignUpPage: React.FC = () => {
                     <div className={`block w-10 h-6 rounded-full transition-colors ${isDealerAccount ? 'bg-indigo-600' : 'bg-gray-300'}`}></div>
                     <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${isDealerAccount ? 'transform translate-x-4' : ''}`}></div>
                   </div>
-                  <div className="ml-3 text-gray-700 text-sm font-medium">Account for Dealers</div>
+                  <div className="ml-3 text-gray-700 text-sm font-medium">
+                    {isDealerAccount ? 'Dealer Account' : 'User Account'}
+                  </div>
                 </label>
               </div>
 

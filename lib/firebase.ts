@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getAuth, setPersistence, browserLocalPersistence, User } from 'firebase/auth';
+import { getFirestore, enableIndexedDbPersistence, doc, getDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
@@ -18,6 +18,32 @@ export const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : g
 export const auth = getAuth(firebaseApp);
 export const db = getFirestore(firebaseApp);
 export const storage = getStorage(firebaseApp);
+
+// Role-based authentication helpers
+export const getUserRole = async (user: User | null): Promise<string | null> => {
+  if (!user) return null;
+
+  try {
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (userDoc.exists()) {
+      return userDoc.data().role || null;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting user role:', error);
+    return null;
+  }
+};
+
+export const isDealer = async (user: User | null): Promise<boolean> => {
+  const role = await getUserRole(user);
+  return role === 'dealer';
+};
+
+export const isUser = async (user: User | null): Promise<boolean> => {
+  const role = await getUserRole(user);
+  return role === 'user';
+};
 
 // Enable persistence with error handling
 if (typeof window !== 'undefined') {

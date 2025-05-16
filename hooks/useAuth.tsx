@@ -14,7 +14,7 @@ import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface User extends FirebaseUser {
-  accountType?: 'dealer' | 'buyer';
+  role?: 'user' | 'dealer';
 }
 
 interface AuthContextType {
@@ -43,8 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Create default user data if it doesn't exist
             userData = {
               email: firebaseUser.email,
-              accountType: 'buyer',
-              createdAt: new Date().toISOString()
+              role: 'user', // Default to regular user
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
             };
             await setDoc(doc(db, "users", firebaseUser.uid), userData);
           }
@@ -52,10 +53,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Extend the Firebase user with our custom data
           const extendedUser = {
             ...firebaseUser,
-            accountType: userData.accountType || 'buyer' // Default to buyer if not set
+            role: userData.role || 'user' // Default to user if not set
           } as User;
           
-          console.log("User account type:", extendedUser.accountType); // Debug log
+          console.log("User role:", extendedUser.role); // Debug log
           setUser(extendedUser);
         } catch (error) {
           console.error("Error fetching user data:", error);
