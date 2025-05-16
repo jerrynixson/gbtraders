@@ -71,12 +71,17 @@ const SignUpPage: React.FC = () => {
           throw new Error('Failed to set user role');
         }
 
+        // Wait for a short delay to ensure auth state is updated
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         toast({
           title: "Success!",
           description: "Your account has been created successfully.",
           variant: "default",
         });
-        router.push(redirectTo);
+        
+        // Use replace instead of push to prevent back navigation to signup
+        router.replace(redirectTo);
       } catch (firestoreError: any) {
         console.error("Error setting up user:", firestoreError);
         // If Firestore or role setting fails, we should still sign out the user
