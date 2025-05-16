@@ -20,7 +20,8 @@ import {
   Grid, 
   List,
   Search,
-  SlidersHorizontal
+  SlidersHorizontal,
+  MapPin
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -72,6 +73,21 @@ interface FilterState {
 
 // Constants
 const ITEMS_PER_PAGE = 10
+
+// Add Map component
+const MapSection = () => {
+  return (
+    <div className="w-full h-[300px] bg-gray-100 rounded-xl overflow-hidden relative mb-6">
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center">
+          <MapPin className="h-12 w-12 text-blue-800 mx-auto mb-2" />
+          <p className="text-gray-600">Map will be displayed here</p>
+          <p className="text-sm text-gray-500">(Integrate with your preferred mapping service)</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function VehicleShopPage() {
   // State
@@ -221,6 +237,7 @@ export default function VehicleShopPage() {
               isFilterOpen ? "block" : "hidden lg:block"
             }`}>
               <div className="sticky top-6">
+                <MapSection />
                 <FilterSidebar onFilterChange={setFilters} />
               </div>
             </aside>

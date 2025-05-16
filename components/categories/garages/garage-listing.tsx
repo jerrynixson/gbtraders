@@ -48,10 +48,7 @@ export function GarageCard({
           </div>
           <div className="flex items-center mb-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Star
-                key={i}
-                className={`h-4 w-4 ${i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-200"}`}
-              />
+              <Star key={i} className={`h-4 w-4 ${i < Math.round(rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-200"}`} />
             ))}
             <span className="text-sm text-gray-500 ml-2">{rating}/5</span>
           </div>
@@ -62,7 +59,7 @@ export function GarageCard({
               </span>
             ))}
           </div>
-          <div className="text-sm text-gray-600 space-y-1.5 mb-4">
+          <div className="text-sm text-gray-600 space-y-1 mb-4">
             <p className="truncate">{address}</p>
             <p className="flex items-center">
               <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {phone}
@@ -72,7 +69,7 @@ export function GarageCard({
             </p>
           </div>
           <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white pointer-events-none">
-            Contact garage
+            Contact Garage
           </Button>
         </div>
       </div>
