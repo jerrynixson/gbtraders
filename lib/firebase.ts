@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence, User } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, enableIndexedDbPersistence, doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
@@ -76,4 +76,31 @@ if (typeof window !== 'undefined') {
         }
       }
     });
-} 
+}
+
+// Dealer listing functions
+export const getDealerListings = async (userId: string) => {
+  try {
+    const listingsRef = collection(db, 'listings');
+    const q = query(listingsRef, where('dealerId', '==', userId));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting dealer listings:', error);
+    throw error;
+  }
+};
+
+export const deleteListing = async (listingId: string) => {
+  try {
+    const listingRef = doc(db, 'listings', listingId);
+    await deleteDoc(listingRef);
+  } catch (error) {
+    console.error('Error deleting listing:', error);
+    throw error;
+  }
+}; 
