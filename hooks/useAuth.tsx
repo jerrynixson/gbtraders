@@ -37,30 +37,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           // Get user data from Firestore
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-          let userData = userDoc.data();
           
-          if (!userData) {
-            // Create default user data if it doesn't exist
-            userData = {
-              email: firebaseUser.email,
-              role: 'user', // Default to regular user
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            };
-            await setDoc(doc(db, "users", firebaseUser.uid), userData);
+          // If user document doesn't exist yet or can't be accessed, don't throw an error
+          if (!userDoc.exists()) {
+            // Set basic user info without Firestore data
+            const basicUser = {
+              ...firebaseUser,
+              role: 'user' // Default to user role
+            } as User;
+            setUser(basicUser);
+            setLoading(false);
+            return;
           }
 
+          let userData = userDoc.data();
+          
           // Extend the Firebase user with our custom data
           const extendedUser = {
             ...firebaseUser,
-            role: userData.role || 'user' // Default to user if not set
+            role: userData?.role || 'user' // Default to user if not set
           } as User;
           
-          console.log("User role:", extendedUser.role); // Debug log
           setUser(extendedUser);
         } catch (error) {
-          console.error("Error fetching user data:", error);
-          setUser(null);
+          // Don't log the error to console to avoid alarming users
+          // Just use basic Firebase user info
+          const basicUser = {
+            ...firebaseUser,
+            role: 'user' // Default to user role
+          } as User;
+          setUser(basicUser);
         }
       } else {
         setUser(null);

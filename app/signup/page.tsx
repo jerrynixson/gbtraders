@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { useToast } from "@/hooks/use-toast";
+import { FirebaseError } from 'firebase/app';
 
 const SignUpPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
@@ -44,19 +45,29 @@ const SignUpPage: React.FC = () => {
       const role = isDealerAccount ? 'dealer' : 'user';
 
       try {
-        // Save additional user data to Firestore
-        await setDoc(doc(db, "users", user.uid), {
-          firstName,
-          lastName,
-          email,
-          country,
-          role,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+        // Create user document through the API
+        const createUserResponse = await fetch('/api/auth/create-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            firstName,
+            lastName,
+            email,
+            country,
+            role,
+          }),
         });
 
+        if (!createUserResponse.ok) {
+          const errorData = await createUserResponse.json();
+          throw new Error(errorData.error || 'Failed to create user document');
+        }
+
         // Set user role through the API
-        const response = await fetch('/api/auth/set-role', {
+        const setRoleResponse = await fetch('/api/auth/set-role', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -67,8 +78,9 @@ const SignUpPage: React.FC = () => {
           }),
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to set user role');
+        if (!setRoleResponse.ok) {
+          const errorData = await setRoleResponse.json();
+          throw new Error(errorData.error || 'Failed to set user role');
         }
 
         // Wait for a short delay to ensure auth state is updated
@@ -82,11 +94,11 @@ const SignUpPage: React.FC = () => {
         
         // Use replace instead of push to prevent back navigation to signup
         router.replace(redirectTo);
-      } catch (firestoreError: any) {
-        console.error("Error setting up user:", firestoreError);
-        // If Firestore or role setting fails, we should still sign out the user
+      } catch (setupError: any) {
+        console.error("Error setting up user:", setupError);
+        // If setup fails, sign out the user
         await logout();
-        setError('Failed to create your account. Please try again later.');
+        setError(setupError.message || 'Failed to create your account. Please try again later.');
       }
     } catch (error: any) {
       console.error("Signup error:", error);

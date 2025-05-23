@@ -10,7 +10,7 @@ service cloud.firestore {
     // Helper function to check if user is a dealer
     function isDealer() {
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'dealer';
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'dealer';
     }
 
     // Helper function to check if user owns the document
@@ -21,9 +21,14 @@ service cloud.firestore {
     // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if request.auth.uid == userId;
       allow update: if isOwner(userId);
       allow delete: if isOwner(userId);
+    }
+
+    // Role audit log collection - only accessible through Admin SDK
+    match /roleAuditLog/{logId} {
+      allow read, write: if false; // Restrict direct access, only allow through Admin SDK
     }
 
     // Advertisements collection
