@@ -25,6 +25,7 @@ export interface VehicleBase {
     };
   };
   images: string[];
+  imageUrls?: string[];
   createdAt: Date;
   updatedAt: Date;
   status: 'available' | 'sold' | 'pending';
@@ -32,7 +33,7 @@ export interface VehicleBase {
 }
 
 export interface VehicleSummary extends Pick<VehicleBase, 
-  'id' | 'make' | 'model' | 'year' | 'price' | 'images' | 'location' | 'registrationNumber' | 'fuelType' 	
+  'id' | 'make' | 'model' | 'year' | 'price' | 'imageUrls' | 'location' | 'registrationNumber' | 'fuelType' 	
 > {
   type: VehicleType;
   image: string;

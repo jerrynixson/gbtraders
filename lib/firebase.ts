@@ -81,8 +81,8 @@ if (typeof window !== 'undefined') {
 // Dealer listing functions
 export const getDealerListings = async (userId: string) => {
   try {
-    const listingsRef = collection(db, 'listings');
-    const q = query(listingsRef, where('dealerId', '==', userId));
+    const vehiclesRef = collection(db, 'vehicles');
+    const q = query(vehiclesRef, where('dealerUid', '==', userId));
     const querySnapshot = await getDocs(q);
     
     return querySnapshot.docs.map(doc => ({
@@ -97,7 +97,7 @@ export const getDealerListings = async (userId: string) => {
 
 export const deleteListing = async (listingId: string) => {
   try {
-    const listingRef = doc(db, 'listings', listingId);
+    const listingRef = doc(db, 'vehicles', listingId);
     await deleteDoc(listingRef);
   } catch (error) {
     console.error('Error deleting listing:', error);

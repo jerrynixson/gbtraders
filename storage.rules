@@ -2,39 +2,41 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Helper function to check if user is authenticated
+    // Function to check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Helper function to check if user is a dealer
+    // Function to check if user is a dealer
     function isDealer() {
-      return isAuthenticated() && 
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.accountType == 'dealer';
+      let userId = request.auth.uid;
+      let userDoc = firestore.get(/databases/(default)/documents/users/$(userId));
+      return userDoc != null && userDoc.data.role == 'dealer';
     }
 
-    // Helper function to check if file is an image
-    function isImage() {
-      return request.resource.contentType.matches('image/.*');
+    // Function to validate image upload
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size <= 5 * 1024 * 1024; // 5MB max
     }
 
-    // Helper function to check if file size is under 10MB
-    function isUnder10MB() {
-      return request.resource.size < 10 * 1024 * 1024;
+    // Function to check if dealer owns the vehicle
+    function ownsVehicle(vehicleId) {
+      return true; // Allow initial upload since Firestore document doesn't exist yet
     }
 
-    // Advertisement images
-    match /advertisements/{userId}/{fileName} {
-      allow read: if true; // Anyone can view advertisement images
-      allow create: if isDealer() && 
-        request.auth.uid == userId && 
-        isImage() && 
-        isUnder10MB();
-      allow delete: if isDealer() && 
-        request.auth.uid == userId;
+    // Vehicles collection rules
+    match /vehicles/{vehicleId}/{imageFile} {
+      // Allow read for everyone (public listings)
+      allow read: if true;
+      
+      // Allow write for authenticated dealers
+      allow write: if isAuthenticated() 
+        && isDealer()
+        && isValidImage();
     }
 
-    // Default deny all
+    // Deny access to all other paths by default
     match /{allPaths=**} {
       allow read, write: if false;
     }
