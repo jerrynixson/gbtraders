@@ -48,6 +48,14 @@ interface AdvertisementForm {
   registrationMonth: string
   registrationNumber: string
   images: File[]
+  location: {
+    city: string
+    country: string
+    coordinates: {
+      latitude: string
+      longitude: string
+    }
+  }
 }
 
 export default function AdvertisePage() {
@@ -75,6 +83,14 @@ export default function AdvertisePage() {
     registrationMonth: "",
     registrationNumber: "",
     images: [],
+    location: {
+      city: "",
+      country: "",
+      coordinates: {
+        latitude: "",
+        longitude: ""
+      }
+    }
   })
 
   // Don't render anything while checking authentication
@@ -199,6 +215,29 @@ export default function AdvertisePage() {
       <Progress value={progress} className="h-2" />
     </div>
   )
+
+  const handleLocationChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        [field]: value
+      }
+    }))
+  }
+
+  const handleCoordinatesChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        coordinates: {
+          ...prev.location.coordinates,
+          [field]: value
+        }
+      }
+    }))
+  }
 
   const renderStep1 = () => (
     <div className="space-y-6">
@@ -469,6 +508,70 @@ export default function AdvertisePage() {
             value={formData.call}
             onChange={handleInputChange}
             placeholder="e.g., +44 123 456 7890"
+            className="h-10"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="city" className="text-base">
+            City
+          </Label>
+          <Input
+            id="city"
+            name="city"
+            type="text"
+            required
+            value={formData.location.city}
+            onChange={(e) => handleLocationChange("city", e.target.value)}
+            placeholder="Enter city"
+            className="h-10"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="country" className="text-base">
+            Country
+          </Label>
+          <Input
+            id="country"
+            name="country"
+            type="text"
+            required
+            value={formData.location.country}
+            onChange={(e) => handleLocationChange("country", e.target.value)}
+            placeholder="Enter country"
+            className="h-10"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="latitude" className="text-base">
+            Latitude (Optional)
+          </Label>
+          <Input
+            id="latitude"
+            name="latitude"
+            type="number"
+            step="any"
+            value={formData.location.coordinates.latitude}
+            onChange={(e) => handleCoordinatesChange("latitude", e.target.value)}
+            placeholder="Enter latitude"
+            className="h-10"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="longitude" className="text-base">
+            Longitude (Optional)
+          </Label>
+          <Input
+            id="longitude"
+            name="longitude"
+            type="number"
+            step="any"
+            value={formData.location.coordinates.longitude}
+            onChange={(e) => handleCoordinatesChange("longitude", e.target.value)}
+            placeholder="Enter longitude"
             className="h-10"
           />
         </div>

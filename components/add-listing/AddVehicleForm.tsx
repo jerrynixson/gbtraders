@@ -49,11 +49,19 @@ interface ListingFormData {
   doors?: string
   seats?: string
   cargoVolume?: string
-  maxPayload?: string // Used by Van and Truck
+  maxPayload?: string
   length?: string
   height?: string
   axles?: string
   cabType?: 'day' | 'sleeper'
+  location: {
+    city: string
+    country: string
+    coordinates: {
+      latitude: string
+      longitude: string
+    }
+  }
 }
 
 interface FormErrors {
@@ -114,7 +122,15 @@ export default function AddVehicleForm() {
     fuel: "",
     transmission: "",
     description: "",
-    images: []
+    images: [],
+    location: {
+      city: "",
+      country: "",
+      coordinates: {
+        latitude: "",
+        longitude: ""
+      }
+    }
   })
   const [formErrors, setFormErrors] = useState<FormErrors>({})
 
@@ -140,6 +156,18 @@ export default function AddVehicleForm() {
     if (!formData.transmission) errors.transmission = "Transmission is required"
     if (!formData.description.trim()) errors.description = "Description is required"
     if (formData.images.length === 0) errors.images = "At least one image is required"
+
+    // Add location validation
+    if (!formData.location.city.trim()) errors['location.city'] = "City is required"
+    if (!formData.location.country.trim()) errors['location.country'] = "Country is required"
+    
+    // Optional coordinate validation if provided
+    if (formData.location.coordinates?.latitude && isNaN(Number(formData.location.coordinates.latitude))) {
+      errors['location.coordinates.latitude'] = "Latitude must be a valid number"
+    }
+    if (formData.location.coordinates?.longitude && isNaN(Number(formData.location.coordinates.longitude))) {
+      errors['location.coordinates.longitude'] = "Longitude must be a valid number"
+    }
 
     switch (formData.type) {
       case 'car':
@@ -385,6 +413,43 @@ export default function AddVehicleForm() {
     }
   }
 
+  const handleLocationChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        [field]: value
+      }
+    }))
+    if (formErrors[`location.${field}`]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[`location.${field}`]
+        return newErrors
+      })
+    }
+  }
+
+  const handleCoordinatesChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        coordinates: {
+          ...prev.location.coordinates,
+          [field]: value
+        }
+      }
+    }))
+    if (formErrors[`location.coordinates.${field}`]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[`location.coordinates.${field}`]
+        return newErrors
+      })
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* VIN Lookup Section */}
@@ -421,7 +486,7 @@ export default function AddVehicleForm() {
         )}
       </div>
 
-      <Separator />
+      <Separator className="my-6" />
 
       {/* Basic Information */}
       <div className="space-y-4">
@@ -489,7 +554,70 @@ export default function AddVehicleForm() {
         </div>
       </div>
 
-      <Separator />
+      <Separator className="my-6" />
+
+      {/* Location Information */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Location Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>City</Label>
+            <Input
+              value={formData.location.city}
+              onChange={(e) => handleLocationChange("city", e.target.value)}
+              placeholder="Enter city"
+              required
+              className={formErrors['location.city'] ? "border-red-500" : ""}
+            />
+            {formErrors['location.city'] && (
+              <p className="text-sm text-red-500">{formErrors['location.city']}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Country</Label>
+            <Input
+              value={formData.location.country}
+              onChange={(e) => handleLocationChange("country", e.target.value)}
+              placeholder="Enter country"
+              required
+              className={formErrors['location.country'] ? "border-red-500" : ""}
+            />
+            {formErrors['location.country'] && (
+              <p className="text-sm text-red-500">{formErrors['location.country']}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Latitude (Optional)</Label>
+            <Input
+              type="number"
+              step="any"
+              value={formData.location.coordinates?.latitude}
+              onChange={(e) => handleCoordinatesChange("latitude", e.target.value)}
+              placeholder="Enter latitude"
+              className={formErrors['location.coordinates.latitude'] ? "border-red-500" : ""}
+            />
+            {formErrors['location.coordinates.latitude'] && (
+              <p className="text-sm text-red-500">{formErrors['location.coordinates.latitude']}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Longitude (Optional)</Label>
+            <Input
+              type="number"
+              step="any"
+              value={formData.location.coordinates?.longitude}
+              onChange={(e) => handleCoordinatesChange("longitude", e.target.value)}
+              placeholder="Enter longitude"
+              className={formErrors['location.coordinates.longitude'] ? "border-red-500" : ""}
+            />
+            {formErrors['location.coordinates.longitude'] && (
+              <p className="text-sm text-red-500">{formErrors['location.coordinates.longitude']}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <Separator className="my-6" />
 
       {/* Type-specific Information */}
       <div className="space-y-4">
@@ -578,8 +706,6 @@ export default function AddVehicleForm() {
         <Textarea value={formData.description} onChange={(e) => handleFormChange("description", e.target.value)} placeholder="Enter vehicle description" rows={4} required className={formErrors.description ? "border-red-500" : ""} />
         {formErrors.description && <p className="text-sm text-red-500">{formErrors.description}</p>}
       </div>
-
-      <Separator />
 
       {/* Images */}
       <div className="space-y-4">

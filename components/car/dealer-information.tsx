@@ -1,5 +1,5 @@
-import Image from "next/image"
 import { MapPin, MessageCircle, Phone } from "lucide-react"
+import { GoogleMapComponent } from "@/components/ui/google-map"
 
 interface DealerInformationProps {
   name: string
@@ -19,7 +19,14 @@ export function DealerInformation({
   return (
     <div className="border border-border rounded-md p-4 mb-8">
       <div className="flex items-center mb-4">
-        <Image src="/map.jpg" alt={name} width={160} height={40} />
+        <div className="w-[160px] h-[80px] rounded-md overflow-hidden">
+          <GoogleMapComponent 
+            center={{ lat: 51.4543, lng: -2.5879 }} // Bristol coordinates
+            zoom={12}
+            height="80px"
+            width="160px"
+          />
+        </div>
       </div>
       <h3 className="font-semibold mb-2">
         {name} {location}
@@ -47,10 +54,11 @@ export function DealerInformation({
           Chat
         </button>
       </div>
+
       <div className="grid grid-cols-2 gap-4">
         <button className="flex items-center justify-center text-sm text-primary border border-border rounded-md py-2">
           <MapPin className="w-4 h-4 mr-2" />
-          Location map
+          Get Directions
         </button>
         <button className="flex items-center justify-center text-sm text-primary border border-border rounded-md py-2">
           <svg

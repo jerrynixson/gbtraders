@@ -14,6 +14,7 @@ import { Heart, ChevronRight, Flag } from "lucide-react"
 import { FeaturesDropdown } from "@/components/car/features-dropdown"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
+import { GoogleMapComponent } from "@/components/ui/google-map"
 
 interface VehicleSpecifications {
   fuelType: string;
@@ -251,6 +252,21 @@ export default function CarDetails() {
             </div>
             <CarDetailsPayment {...vehicleData.carDetails} />
             <DealerInformation {...vehicleData.dealerInfo} />
+            
+            {/* Vehicle Location Map */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">Vehicle Location</h3>
+              <div className="w-full h-[300px] rounded-lg overflow-hidden">
+                <GoogleMapComponent 
+                  center={{ lat: 51.4543, lng: -2.5879 }} // Bristol coordinates
+                  zoom={13}
+                />
+              </div>
+              <div className="mt-4 text-sm text-gray-600">
+                <p>This vehicle is currently located at our {vehicleData.dealerInfo.location} showroom.</p>
+              </div>
+            </div>
+
             <MoreFromDealer cars={vehicleData.dealerCars} />
           </div>
         </div>

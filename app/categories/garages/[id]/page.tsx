@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Phone, Star, Clock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { GoogleMapComponent } from "@/components/ui/google-map"
 
 // Mock data for demonstration
 const garage = {
@@ -120,9 +121,11 @@ export default function GarageInfoPage() {
             <div className="text-2xl font-bold text-blue-900 mb-2">{garage.price}</div>
           </div>
           <div className="bg-white/80 rounded-3xl shadow-lg p-4">
-            {/* Replace with real map if available */}
-            <div className="w-full h-48 bg-gray-200 rounded-2xl flex items-center justify-center text-blue-400">
-              Map Placeholder
+            <div className="w-full h-48 rounded-2xl overflow-hidden">
+              <GoogleMapComponent 
+                center={{ lat: 52.4862, lng: -1.8904 }} // Birmingham coordinates
+                zoom={13}
+              />
             </div>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { GarageCard } from "@/components/categories/garages/garage-listing"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { useState } from "react"
+import { GoogleMapComponent } from "@/components/ui/google-map"
 
 export default function SearchGaragesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -92,8 +93,8 @@ export default function SearchGaragesPage() {
           <div className="lg:w-1/3">
             <div className="bg-white rounded-3xl shadow-lg p-6 sticky top-8">
               <h2 className="text-xl font-bold text-blue-900 mb-4">Find Garages Near You</h2>
-              <div className="w-full h-[300px] bg-gray-200 rounded-2xl flex items-center justify-center text-blue-400">
-                Map Placeholder
+              <div className="w-full h-[300px] rounded-2xl overflow-hidden">
+                <GoogleMapComponent />
               </div>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center text-sm text-gray-600">

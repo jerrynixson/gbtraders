@@ -8,6 +8,7 @@ import { Footer } from "@/components/footer";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { GoogleMapComponent } from "@/components/ui/google-map"
 
 type DealerCardProps = {
   id: string;
@@ -150,8 +151,8 @@ export default function SearchDealerPage() {
           <div className="lg:w-1/3">
             <div className="bg-white rounded-3xl shadow-lg p-6 sticky top-8">
               <h2 className="text-xl font-bold text-blue-900 mb-4">Find Dealers Near You</h2>
-              <div className="w-full h-[300px] bg-gray-200 rounded-2xl flex items-center justify-center text-blue-400">
-                Map Placeholder
+              <div className="w-full h-[300px] rounded-2xl overflow-hidden">
+                <GoogleMapComponent />
               </div>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center text-sm text-gray-600">
