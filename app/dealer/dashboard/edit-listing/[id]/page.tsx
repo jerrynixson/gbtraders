@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { use } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,8 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useDropzone } from "react-dropzone"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
+import { doc, getDoc, updateDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 interface VehicleData {
   make: string
@@ -34,6 +37,7 @@ interface VehicleData {
 }
 
 interface ListingFormData {
+  type: 'car' | 'van' | 'truck'
   title: string
   price: string
   make: string
@@ -44,6 +48,23 @@ interface ListingFormData {
   transmission: string
   description: string
   images: (File | string)[]
+  bodyType?: 'sedan' | 'suv' | 'hatchback' | 'coupe' | 'wagon'
+  doors?: string
+  seats?: string
+  cargoVolume?: string
+  maxPayload?: string
+  length?: string
+  height?: string
+  axles?: string
+  cabType?: 'day' | 'sleeper'
+  location: {
+    city: string
+    country: string
+    coordinates: {
+      latitude: string
+      longitude: string
+    }
+  }
 }
 
 interface FormErrors {
@@ -63,16 +84,37 @@ const TRANSMISSION_TYPES = [
   { value: "semi-automatic", label: "Semi-Automatic" }
 ] as const
 
+const VEHICLE_TYPES = [
+  { value: 'car', label: 'Car' },
+  { value: 'van', label: 'Van' },
+  { value: 'truck', label: 'Truck' }
+] as const
+
+const BODY_TYPES = [
+  { value: 'sedan', label: 'Sedan' },
+  { value: 'suv', label: 'SUV' },
+  { value: 'hatchback', label: 'Hatchback' },
+  { value: 'coupe', label: 'Coupe' },
+  { value: 'wagon', label: 'Wagon' }
+] as const
+
+const CAB_TYPES = [
+  { value: 'day', label: 'Day Cab' },
+  { value: 'sleeper', label: 'Sleeper Cab' }
+] as const
+
 const MAX_IMAGES = 8
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
-export default function EditListing({ params }: { params: { id: string } }) {
+export default function EditListing({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
   const [vin, setVin] = useState("")
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null)
   const [formData, setFormData] = useState<ListingFormData>({
+    type: 'car',
     title: "",
     price: "",
     make: "",
@@ -82,41 +124,73 @@ export default function EditListing({ params }: { params: { id: string } }) {
     fuel: "",
     transmission: "",
     description: "",
-    images: []
+    images: [],
+    location: {
+      city: "",
+      country: "",
+      coordinates: {
+        latitude: "",
+        longitude: ""
+      }
+    }
   })
   const [formErrors, setFormErrors] = useState<FormErrors>({})
   const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
-    // TODO: Fetch listing data from Firebase
     const fetchListing = async () => {
       try {
-        // Mock data for demonstration
-        const mockListing = {
-          title: "2023 Toyota Camry",
-          price: "35000",
-          make: "Toyota",
-          model: "Camry",
-          year: "2023",
-          mileage: "5000",
-          fuel: "petrol",
-          transmission: "automatic",
-          description: "Excellent condition Toyota Camry",
-          images: [
-            "/cars/camry-1.jpg",
-            "/cars/camry-2.jpg",
-            "/cars/camry-3.jpg"
-          ]
+        const listingRef = doc(db, "vehicles", resolvedParams.id)
+        const listingDoc = await getDoc(listingRef)
+
+        if (!listingDoc.exists()) {
+          toast.error("Listing not found")
+          router.push("/dealer/dashboard")
+          return
         }
-        setFormData(mockListing)
+
+        const listingData = listingDoc.data()
+        console.log("Fetched listing data:", listingData) // Debug log
+
+        setFormData({
+          type: listingData.type || 'car',
+          title: listingData.title || "",
+          price: listingData.price?.toString() || "",
+          make: listingData.make || "",
+          model: listingData.model || "",
+          year: listingData.year?.toString() || "",
+          mileage: listingData.mileage?.toString() || "",
+          fuel: listingData.fuel || "",
+          transmission: listingData.transmission || "",
+          description: listingData.description || "",
+          images: listingData.images || [],
+          bodyType: listingData.bodyType,
+          doors: listingData.doors?.toString(),
+          seats: listingData.seats?.toString(),
+          cargoVolume: listingData.cargoVolume?.toString(),
+          maxPayload: listingData.maxPayload?.toString(),
+          length: listingData.length?.toString(),
+          height: listingData.height?.toString(),
+          axles: listingData.axles?.toString(),
+          cabType: listingData.cabType,
+          location: {
+            city: listingData.location?.city || "",
+            country: listingData.location?.country || "",
+            coordinates: {
+              latitude: listingData.location?.coordinates?.latitude?.toString() || "",
+              longitude: listingData.location?.coordinates?.longitude?.toString() || ""
+            }
+          }
+        })
       } catch (error) {
-        toast.error("Failed to fetch listing data")
         console.error("Error fetching listing:", error)
+        toast.error("Failed to fetch listing")
+        router.push("/dealer/dashboard")
       }
     }
 
     fetchListing()
-  }, [params.id])
+  }, [resolvedParams.id, router])
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {}
@@ -247,13 +321,46 @@ export default function EditListing({ params }: { params: { id: string } }) {
 
     setIsLoading(true)
     try {
-      // TODO: Implement Firebase update
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const listingRef = doc(db, "vehicles", resolvedParams.id)
+      const updateData = {
+        type: formData.type,
+        title: formData.title,
+        price: Number(formData.price),
+        make: formData.make,
+        model: formData.model,
+        year: Number(formData.year),
+        mileage: Number(formData.mileage),
+        fuel: formData.fuel,
+        transmission: formData.transmission,
+        description: formData.description,
+        images: formData.images,
+        bodyType: formData.bodyType,
+        doors: formData.doors ? Number(formData.doors) : undefined,
+        seats: formData.seats ? Number(formData.seats) : undefined,
+        cargoVolume: formData.cargoVolume ? Number(formData.cargoVolume) : undefined,
+        maxPayload: formData.maxPayload ? Number(formData.maxPayload) : undefined,
+        length: formData.length ? Number(formData.length) : undefined,
+        height: formData.height ? Number(formData.height) : undefined,
+        axles: formData.axles ? Number(formData.axles) : undefined,
+        cabType: formData.cabType,
+        location: {
+          city: formData.location.city,
+          country: formData.location.country,
+          coordinates: {
+            latitude: Number(formData.location.coordinates.latitude),
+            longitude: Number(formData.location.coordinates.longitude)
+          }
+        },
+        updatedAt: new Date().toISOString()
+      }
+
+      console.log("Updating listing with data:", updateData)
+      await updateDoc(listingRef, updateData)
       toast.success("Listing updated successfully")
       router.push("/dealer/dashboard")
     } catch (error) {
-      toast.error("Failed to update listing")
       console.error("Error updating listing:", error)
+      toast.error("Failed to update listing")
     } finally {
       setIsLoading(false)
     }
@@ -269,6 +376,29 @@ export default function EditListing({ params }: { params: { id: string } }) {
         return newErrors
       })
     }
+  }
+
+  const handleLocationChange = (field: keyof ListingFormData['location'], value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        [field]: value
+      }
+    }))
+  }
+
+  const handleCoordinatesChange = (field: keyof ListingFormData['location']['coordinates'], value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        coordinates: {
+          ...prev.location.coordinates,
+          [field]: value
+        }
+      }
+    }))
   }
 
   return (
@@ -336,6 +466,211 @@ export default function EditListing({ params }: { params: { id: string } }) {
               </div>
 
               <Separator />
+
+              {/* Vehicle Type Selection */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Vehicle Type</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(value) => handleFormChange("type", value as 'car' | 'van' | 'truck')}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select vehicle type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VEHICLE_TYPES.map(type => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.type === 'car' && (
+                    <div className="space-y-2">
+                      <Label>Body Type</Label>
+                      <Select
+                        value={formData.bodyType}
+                        onValueChange={(value) => handleFormChange("bodyType", value as 'sedan' | 'suv' | 'hatchback' | 'coupe' | 'wagon')}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select body type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {BODY_TYPES.map(type => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {formData.type === 'truck' && (
+                    <div className="space-y-2">
+                      <Label>Cab Type</Label>
+                      <Select
+                        value={formData.cabType}
+                        onValueChange={(value) => handleFormChange("cabType", value as 'day' | 'sleeper')}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select cab type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CAB_TYPES.map(type => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Location Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Location</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>City</Label>
+                    <Input
+                      value={formData.location.city}
+                      onChange={(e) => handleLocationChange("city", e.target.value)}
+                      placeholder="Enter city"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Country</Label>
+                    <Input
+                      value={formData.location.country}
+                      onChange={(e) => handleLocationChange("country", e.target.value)}
+                      placeholder="Enter country"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Latitude</Label>
+                    <Input
+                      type="number"
+                      value={formData.location.coordinates.latitude}
+                      onChange={(e) => handleCoordinatesChange("latitude", e.target.value)}
+                      placeholder="Enter latitude"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Longitude</Label>
+                    <Input
+                      type="number"
+                      value={formData.location.coordinates.longitude}
+                      onChange={(e) => handleCoordinatesChange("longitude", e.target.value)}
+                      placeholder="Enter longitude"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Vehicle-specific fields */}
+              {formData.type === 'car' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Car Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Doors</Label>
+                      <Input
+                        type="number"
+                        value={formData.doors}
+                        onChange={(e) => handleFormChange("doors", e.target.value)}
+                        placeholder="Number of doors"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Seats</Label>
+                      <Input
+                        type="number"
+                        value={formData.seats}
+                        onChange={(e) => handleFormChange("seats", e.target.value)}
+                        placeholder="Number of seats"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {formData.type === 'van' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Van Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Cargo Volume (m³)</Label>
+                      <Input
+                        type="number"
+                        value={formData.cargoVolume}
+                        onChange={(e) => handleFormChange("cargoVolume", e.target.value)}
+                        placeholder="Cargo volume"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Max Payload (kg)</Label>
+                      <Input
+                        type="number"
+                        value={formData.maxPayload}
+                        onChange={(e) => handleFormChange("maxPayload", e.target.value)}
+                        placeholder="Maximum payload"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Length (m)</Label>
+                      <Input
+                        type="number"
+                        value={formData.length}
+                        onChange={(e) => handleFormChange("length", e.target.value)}
+                        placeholder="Vehicle length"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Height (m)</Label>
+                      <Input
+                        type="number"
+                        value={formData.height}
+                        onChange={(e) => handleFormChange("height", e.target.value)}
+                        placeholder="Vehicle height"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {formData.type === 'truck' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Truck Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Max Payload (kg)</Label>
+                      <Input
+                        type="number"
+                        value={formData.maxPayload}
+                        onChange={(e) => handleFormChange("maxPayload", e.target.value)}
+                        placeholder="Maximum payload"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Number of Axles</Label>
+                      <Input
+                        type="number"
+                        value={formData.axles}
+                        onChange={(e) => handleFormChange("axles", e.target.value)}
+                        placeholder="Number of axles"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Basic Information */}
               <div className="space-y-4">
