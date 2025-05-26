@@ -41,10 +41,19 @@ interface ListingFormData {
   model: string
   year: string
   mileage: string
-  fuel: string
-  transmission: string
+  fuelType: 'petrol' | 'diesel' | 'electric' | 'hybrid'
+  transmission: 'manual' | 'automatic'
   description: string
   images: File[]
+  registrationNumber: string
+  color: string
+  range: string
+  euroStatus: string
+  dateOfLastV5CIssued: string
+  taxStatus: 'taxed' | 'tax-due' | 'tax-exempt'
+  engineCapacity: string
+  motStatus: 'passed' | 'failed' | 'due'
+  co2Emissions: string
   bodyType?: 'sedan' | 'suv' | 'hatchback' | 'coupe' | 'wagon'
   doors?: string
   seats?: string
@@ -101,6 +110,18 @@ const TRANSMISSION_TYPES = [
   { value: "semi-automatic", label: "Semi-Automatic" }
 ] as const
 
+const TAX_STATUS = [
+  { value: "taxed", label: "Taxed" },
+  { value: "tax-due", label: "Tax Due" },
+  { value: "tax-exempt", label: "Tax Exempt" }
+] as const
+
+const MOT_STATUS = [
+  { value: "passed", label: "Passed" },
+  { value: "failed", label: "Failed" },
+  { value: "due", label: "Due" }
+] as const
+
 const MAX_IMAGES = 8
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
@@ -119,10 +140,19 @@ export default function AddVehicleForm() {
     model: "",
     year: "",
     mileage: "",
-    fuel: "",
-    transmission: "",
+    fuelType: "petrol",
+    transmission: "automatic",
     description: "",
     images: [],
+    registrationNumber: "",
+    color: "",
+    range: "0",
+    euroStatus: "",
+    dateOfLastV5CIssued: new Date().toISOString(),
+    taxStatus: "tax-exempt",
+    engineCapacity: "",
+    motStatus: "due",
+    co2Emissions: "0",
     location: {
       city: "",
       country: "",
@@ -137,38 +167,50 @@ export default function AddVehicleForm() {
   const validateForm = (): boolean => {
     const errors: FormErrors = {}
     
+    // Required fields validation
     if (!formData.title.trim()) errors.title = "Title is required"
     if (!formData.price.trim()) errors.price = "Price is required"
-    if (isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
-      errors.price = "Price must be a positive number"
-    }
     if (!formData.make.trim()) errors.make = "Make is required"
     if (!formData.model.trim()) errors.model = "Model is required"
     if (!formData.year.trim()) errors.year = "Year is required"
-    if (isNaN(Number(formData.year)) || Number(formData.year) < 1900 || Number(formData.year) > new Date().getFullYear()) {
-      errors.year = "Year must be valid"
-    }
     if (!formData.mileage.trim()) errors.mileage = "Mileage is required"
-    if (isNaN(Number(formData.mileage)) || Number(formData.mileage) < 0) {
-      errors.mileage = "Mileage must be a positive number"
-    }
-    if (!formData.fuel) errors.fuel = "Fuel type is required"
+    if (!formData.fuelType) errors.fuelType = "Fuel type is required"
     if (!formData.transmission) errors.transmission = "Transmission is required"
     if (!formData.description.trim()) errors.description = "Description is required"
     if (formData.images.length === 0) errors.images = "At least one image is required"
+    if (!formData.registrationNumber.trim()) errors.registrationNumber = "Registration number is required"
+    if (!formData.color.trim()) errors.color = "Color is required"
+    if (!formData.euroStatus.trim()) errors.euroStatus = "Euro status is required"
+    if (!formData.engineCapacity.trim()) errors.engineCapacity = "Engine capacity is required"
 
-    // Add location validation
-    if (!formData.location.city.trim()) errors['location.city'] = "City is required"
-    if (!formData.location.country.trim()) errors['location.country'] = "Country is required"
-    
-    // Optional coordinate validation if provided
-    if (formData.location.coordinates?.latitude && isNaN(Number(formData.location.coordinates.latitude))) {
-      errors['location.coordinates.latitude'] = "Latitude must be a valid number"
+    // Numeric validation
+    if (isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
+      errors.price = "Price must be a positive number"
     }
-    if (formData.location.coordinates?.longitude && isNaN(Number(formData.location.coordinates.longitude))) {
-      errors['location.coordinates.longitude'] = "Longitude must be a valid number"
+    if (isNaN(Number(formData.year)) || Number(formData.year) < 1900 || Number(formData.year) > new Date().getFullYear()) {
+      errors.year = "Year must be valid"
+    }
+    if (isNaN(Number(formData.mileage)) || Number(formData.mileage) < 0) {
+      errors.mileage = "Mileage must be a positive number"
+    }
+    if (isNaN(Number(formData.range)) || Number(formData.range) < 0) {
+      errors.range = "Range must be a positive number"
+    }
+    if (isNaN(Number(formData.co2Emissions)) || Number(formData.co2Emissions) < 0) {
+      errors.co2Emissions = "CO2 emissions must be a positive number"
     }
 
+    // Location validation
+    if (!formData.location.city.trim()) errors["location.city"] = "City is required"
+    if (!formData.location.country.trim()) errors["location.country"] = "Country is required"
+    if (isNaN(Number(formData.location.coordinates.latitude))) {
+      errors["location.coordinates.latitude"] = "Latitude must be a valid number"
+    }
+    if (isNaN(Number(formData.location.coordinates.longitude))) {
+      errors["location.coordinates.longitude"] = "Longitude must be a valid number"
+    }
+
+    // Type-specific validation
     switch (formData.type) {
       case 'car':
         if (!formData.bodyType) errors.bodyType = "Body type is required"
@@ -200,7 +242,7 @@ export default function AddVehicleForm() {
         }
         break
       case 'truck':
-        if (!formData.maxPayload) errors.maxPayload = "Max payload is required" // Truck also has maxPayload
+        if (!formData.maxPayload) errors.maxPayload = "Max payload is required"
         if (isNaN(Number(formData.maxPayload)) || Number(formData.maxPayload) <= 0) {
           errors.maxPayload = "Max payload must be a positive number"
         }
@@ -232,8 +274,8 @@ export default function AddVehicleForm() {
       setFormData(prev => ({
         ...prev,
         make: mockData.make, model: mockData.model, year: mockData.year.toString(),
-        fuel: mockData.specifications.fuelType.toLowerCase(),
-        transmission: mockData.specifications.transmission.toLowerCase()
+        fuelType: mockData.specifications.fuelType.toLowerCase() as 'petrol' | 'diesel' | 'electric' | 'hybrid',
+        transmission: mockData.specifications.transmission.toLowerCase() as 'manual' | 'automatic'
       }))
       toast.success("Vehicle data fetched successfully")
     } catch (error) {
@@ -283,110 +325,130 @@ export default function AddVehicleForm() {
     }
     setIsLoading(true)
 
-    // 1. Generate new unique vehicle ID
-    const vehicleDocRef = doc(collection(db, "vehicles"))
-    const vehicleId = vehicleDocRef.id
-
     try {
-      // 2. Upload images in parallel to Firebase Storage
+      const vehicleId = doc(collection(db, "vehicles")).id
+
+      // Upload images
       const imageUrls: string[] = []
-      const uploadPromises = formData.images.map(async (imageFile, index) => {
-        const imagePath = `vehicles/${vehicleId}/${index}-${imageFile.name}`
+      for (const image of formData.images) {
+        const imagePath = `vehicles/${vehicleId}/${image.name}`
         const imageRef = ref(storage, imagePath)
         try {
-          await uploadBytes(imageRef, imageFile)
+          await uploadBytes(imageRef, image)
           const downloadURL = await getDownloadURL(imageRef)
           imageUrls.push(downloadURL)
         } catch (uploadError) {
-          console.error(`Error uploading image ${imageFile.name}:`, uploadError)
-          // We can decide to throw here to stop the whole process,
-          // or collect errors and continue, or just log.
-          // For now, let's re-throw to indicate a partial failure.
-          throw new Error(`Failed to upload image: ${imageFile.name}`)
+          console.error(`Error uploading image ${image.name}:`, uploadError)
+          throw new Error(`Failed to upload image: ${image.name}`)
         }
-      })
+      }
 
-      await Promise.all(uploadPromises)
-
-      // 3. Create Firestore document
       const vehicleDataFromForm = {
         make: formData.make,
         model: formData.model,
         year: Number(formData.year),
         price: Number(formData.price),
         mileage: Number(formData.mileage),
-        fuelType: formData.fuel as CarType['fuelType'],
-        transmission: formData.transmission as CarType['transmission'],
+        fuelType: formData.fuelType,
+        transmission: formData.transmission,
         description: formData.description,
+        registrationNumber: formData.registrationNumber,
+        color: formData.color,
+        range: Number(formData.range),
+        euroStatus: formData.euroStatus,
+        dateOfLastV5CIssued: new Date(formData.dateOfLastV5CIssued),
+        taxStatus: formData.taxStatus,
+        engineCapacity: formData.engineCapacity,
+        motStatus: formData.motStatus,
+        co2Emissions: Number(formData.co2Emissions),
       }
 
-      const commonFirestoreData: Omit<VehicleBase, 'type' | 'features' | 'bodyType' | 'doors' | 'seats' | 'cargoVolume' | 'maxPayload' | 'length' | 'height' | 'axles' | 'cabType'> = {
-        id: vehicleId,
-        ...vehicleDataFromForm,
-        registrationNumber: "N/A", 
-        color: "N/A", 
-        range: 0, 
-        euroStatus: "N/A", 
-        dateOfLastV5CIssued: new Date(), 
-        taxStatus: 'tax-exempt' as const, 
-        engineCapacity: "N/A", 
-        motStatus: 'due' as const, 
-        co2Emissions: 0, 
-        location: { city: "Default City", country: "Default Country" }, 
-        imageUrls: imageUrls, 
-        images: formData.images.map(f => f.name), 
-        createdAt: serverTimestamp() as any, 
-        updatedAt: serverTimestamp() as any, 
-        status: 'available' as const,
-        dealerUid: user.uid, 
-      };
-
-      let vehicleToSubmit: CarType | VanType | TruckType;
+      let vehicleToSubmit: CarType | VanType | TruckType
 
       switch (formData.type) {
         case 'car':
           vehicleToSubmit = {
-            ...commonFirestoreData,
+            ...vehicleDataFromForm,
+            id: vehicleId,
             type: 'car',
             bodyType: formData.bodyType as CarType['bodyType'],
             doors: Number(formData.doors),
             seats: Number(formData.seats),
             features: [],
-          } as CarType;
-          break;
+            location: {
+              city: formData.location.city,
+              country: formData.location.country,
+              coordinates: {
+                latitude: Number(formData.location.coordinates.latitude),
+                longitude: Number(formData.location.coordinates.longitude)
+              }
+            },
+            images: imageUrls,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: 'available' as const,
+            dealerUid: user?.uid || "N/A"
+          } as unknown as CarType
+          break
         case 'van':
           vehicleToSubmit = {
-            ...commonFirestoreData,
+            ...vehicleDataFromForm,
+            id: vehicleId,
             type: 'van',
             cargoVolume: Number(formData.cargoVolume!),
             maxPayload: Number(formData.maxPayload!),
             length: Number(formData.length!),
             height: Number(formData.height!),
             features: [],
-          } as VanType;
-          break;
+            location: {
+              city: formData.location.city,
+              country: formData.location.country,
+              coordinates: {
+                latitude: Number(formData.location.coordinates.latitude),
+                longitude: Number(formData.location.coordinates.longitude)
+              }
+            },
+            images: imageUrls,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: 'available' as const,
+            dealerUid: user?.uid || "N/A"
+          } as unknown as VanType
+          break
         case 'truck':
           vehicleToSubmit = {
-            ...commonFirestoreData,
+            ...vehicleDataFromForm,
+            id: vehicleId,
             type: 'truck',
             maxPayload: Number(formData.maxPayload!),
             axles: Number(formData.axles!),
             cabType: formData.cabType as TruckType['cabType'],
             features: [],
-          } as TruckType;
-          break;
+            location: {
+              city: formData.location.city,
+              country: formData.location.country,
+              coordinates: {
+                latitude: Number(formData.location.coordinates.latitude),
+                longitude: Number(formData.location.coordinates.longitude)
+              }
+            },
+            images: imageUrls,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: 'available' as const,
+            dealerUid: user?.uid || "N/A"
+          } as unknown as TruckType
+          break
         default:
-          toast.error("Invalid vehicle type selected.");
-          setIsLoading(false);
-          return; 
+          toast.error("Invalid vehicle type selected.")
+          setIsLoading(false)
+          return
       }
-      
-      console.log("Submitting vehicle data to Firestore:", vehicleToSubmit);
-      await setDoc(vehicleDocRef, vehicleToSubmit);
 
-      toast.success("Listing created successfully!");
+      console.log("Creating vehicle data in Firestore:", vehicleToSubmit)
+      await setDoc(doc(db, "vehicles", vehicleId), vehicleToSubmit)
+      toast.success("Listing created successfully")
       router.push("/dealer/dashboard")
-
     } catch (error) {
       console.error("Error creating listing:", error)
       let errorMessage = "Failed to create listing."
@@ -394,9 +456,6 @@ export default function AddVehicleForm() {
         errorMessage += ` ${error.message}`
       }
       toast.error(errorMessage)
-      // Potentially delete uploaded images if Firestore write fails to keep storage clean
-      // This would require tracking successful uploads and then deleting them on error.
-      // For simplicity, not implemented here but important for production.
     } finally {
       setIsLoading(false)
     }
@@ -533,23 +592,167 @@ export default function AddVehicleForm() {
           </div>
           <div className="space-y-2">
             <Label>Fuel Type</Label>
-            <Select value={formData.fuel} onValueChange={(value) => handleFormChange("fuel", value)}>
-              <SelectTrigger className={formErrors.fuel ? "border-red-500" : ""}><SelectValue placeholder="Select fuel type" /></SelectTrigger>
+            <Select value={formData.fuelType} onValueChange={(value) => handleFormChange("fuelType", value as 'petrol' | 'diesel' | 'electric' | 'hybrid')}>
+              <SelectTrigger className={formErrors.fuelType ? "border-red-500" : ""}><SelectValue placeholder="Select fuel type" /></SelectTrigger>
               <SelectContent>
                 {FUEL_TYPES.map(type => (<SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>))}
               </SelectContent>
             </Select>
-            {formErrors.fuel && <p className="text-sm text-red-500">{formErrors.fuel}</p>}
+            {formErrors.fuelType && <p className="text-sm text-red-500">{formErrors.fuelType}</p>}
           </div>
           <div className="space-y-2">
             <Label>Transmission</Label>
-            <Select value={formData.transmission} onValueChange={(value) => handleFormChange("transmission", value)}>
+            <Select value={formData.transmission} onValueChange={(value) => handleFormChange("transmission", value as 'manual' | 'automatic')}>
               <SelectTrigger className={formErrors.transmission ? "border-red-500" : ""}><SelectValue placeholder="Select transmission" /></SelectTrigger>
               <SelectContent>
                 {TRANSMISSION_TYPES.map(type => (<SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>))}
               </SelectContent>
             </Select>
             {formErrors.transmission && <p className="text-sm text-red-500">{formErrors.transmission}</p>}
+          </div>
+        </div>
+      </div>
+
+      <Separator className="my-6" />
+
+      {/* Common Vehicle Details */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Vehicle Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Registration Number</Label>
+            <Input
+              value={formData.registrationNumber}
+              onChange={(e) => handleFormChange("registrationNumber", e.target.value)}
+              placeholder="Enter registration number"
+              required
+              className={formErrors.registrationNumber ? "border-red-500" : ""}
+            />
+            {formErrors.registrationNumber && (
+              <p className="text-sm text-red-500">{formErrors.registrationNumber}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Color</Label>
+            <Input
+              value={formData.color}
+              onChange={(e) => handleFormChange("color", e.target.value)}
+              placeholder="Enter vehicle color"
+              required
+              className={formErrors.color ? "border-red-500" : ""}
+            />
+            {formErrors.color && (
+              <p className="text-sm text-red-500">{formErrors.color}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Range (miles)</Label>
+            <Input
+              type="number"
+              value={formData.range}
+              onChange={(e) => handleFormChange("range", e.target.value)}
+              placeholder="Enter vehicle range"
+              required
+              className={formErrors.range ? "border-red-500" : ""}
+            />
+            {formErrors.range && (
+              <p className="text-sm text-red-500">{formErrors.range}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Euro Status</Label>
+            <Input
+              value={formData.euroStatus}
+              onChange={(e) => handleFormChange("euroStatus", e.target.value)}
+              placeholder="Enter Euro status"
+              required
+              className={formErrors.euroStatus ? "border-red-500" : ""}
+            />
+            {formErrors.euroStatus && (
+              <p className="text-sm text-red-500">{formErrors.euroStatus}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Date of Last V5C Issued</Label>
+            <Input
+              type="date"
+              value={formData.dateOfLastV5CIssued}
+              onChange={(e) => handleFormChange("dateOfLastV5CIssued", e.target.value)}
+              required
+              className={formErrors.dateOfLastV5CIssued ? "border-red-500" : ""}
+            />
+            {formErrors.dateOfLastV5CIssued && (
+              <p className="text-sm text-red-500">{formErrors.dateOfLastV5CIssued}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Tax Status</Label>
+            <Select
+              value={formData.taxStatus}
+              onValueChange={(value) => handleFormChange("taxStatus", value as 'taxed' | 'tax-due' | 'tax-exempt')}
+            >
+              <SelectTrigger className={formErrors.taxStatus ? "border-red-500" : ""}>
+                <SelectValue placeholder="Select tax status" />
+              </SelectTrigger>
+              <SelectContent>
+                {TAX_STATUS.map(status => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formErrors.taxStatus && (
+              <p className="text-sm text-red-500">{formErrors.taxStatus}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Engine Capacity</Label>
+            <Input
+              value={formData.engineCapacity}
+              onChange={(e) => handleFormChange("engineCapacity", e.target.value)}
+              placeholder="Enter engine capacity"
+              required
+              className={formErrors.engineCapacity ? "border-red-500" : ""}
+            />
+            {formErrors.engineCapacity && (
+              <p className="text-sm text-red-500">{formErrors.engineCapacity}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>MOT Status</Label>
+            <Select
+              value={formData.motStatus}
+              onValueChange={(value) => handleFormChange("motStatus", value as 'passed' | 'failed' | 'due')}
+            >
+              <SelectTrigger className={formErrors.motStatus ? "border-red-500" : ""}>
+                <SelectValue placeholder="Select MOT status" />
+              </SelectTrigger>
+              <SelectContent>
+                {MOT_STATUS.map(status => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formErrors.motStatus && (
+              <p className="text-sm text-red-500">{formErrors.motStatus}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>CO2 Emissions (g/km)</Label>
+            <Input
+              type="number"
+              value={formData.co2Emissions}
+              onChange={(e) => handleFormChange("co2Emissions", e.target.value)}
+              placeholder="Enter CO2 emissions"
+              required
+              className={formErrors.co2Emissions ? "border-red-500" : ""}
+            />
+            {formErrors.co2Emissions && (
+              <p className="text-sm text-red-500">{formErrors.co2Emissions}</p>
+            )}
           </div>
         </div>
       </div>
@@ -621,81 +824,175 @@ export default function AddVehicleForm() {
 
       {/* Type-specific Information */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Vehicle Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {formData.type === 'car' && (
-            <>
-              <div className="space-y-2">
-                <Label>Body Type</Label>
-                <Select value={formData.bodyType} onValueChange={(value) => handleFormChange("bodyType", value)}>
-                  <SelectTrigger className={formErrors.bodyType ? "border-red-500" : ""}><SelectValue placeholder="Select body type" /></SelectTrigger>
-                  <SelectContent>
-                    {BODY_TYPES.map(type => (<SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-                {formErrors.bodyType && <p className="text-sm text-red-500">{formErrors.bodyType}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Number of Doors</Label>
-                <Input type="number" value={formData.doors} onChange={(e) => handleFormChange("doors", e.target.value)} placeholder="Enter number of doors" className={formErrors.doors ? "border-red-500" : ""} />
-                {formErrors.doors && <p className="text-sm text-red-500">{formErrors.doors}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Number of Seats</Label>
-                <Input type="number" value={formData.seats} onChange={(e) => handleFormChange("seats", e.target.value)} placeholder="Enter number of seats" className={formErrors.seats ? "border-red-500" : ""} />
-                {formErrors.seats && <p className="text-sm text-red-500">{formErrors.seats}</p>}
-              </div>
-            </>
-          )}
-          {formData.type === 'van' && (
-            <>
-              <div className="space-y-2">
-                <Label>Cargo Volume (m³)</Label>
-                <Input type="number" value={formData.cargoVolume} onChange={(e) => handleFormChange("cargoVolume", e.target.value)} placeholder="Enter cargo volume" className={formErrors.cargoVolume ? "border-red-500" : ""} />
-                {formErrors.cargoVolume && <p className="text-sm text-red-500">{formErrors.cargoVolume}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Max Payload (kg)</Label>
-                <Input type="number" value={formData.maxPayload} onChange={(e) => handleFormChange("maxPayload", e.target.value)} placeholder="Enter max payload" className={formErrors.maxPayload ? "border-red-500" : ""} />
-                {formErrors.maxPayload && <p className="text-sm text-red-500">{formErrors.maxPayload}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Length (m)</Label>
-                <Input type="number" value={formData.length} onChange={(e) => handleFormChange("length", e.target.value)} placeholder="Enter length" className={formErrors.length ? "border-red-500" : ""} />
-                {formErrors.length && <p className="text-sm text-red-500">{formErrors.length}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Height (m)</Label>
-                <Input type="number" value={formData.height} onChange={(e) => handleFormChange("height", e.target.value)} placeholder="Enter height" className={formErrors.height ? "border-red-500" : ""} />
-                {formErrors.height && <p className="text-sm text-red-500">{formErrors.height}</p>}
-              </div>
-            </>
-          )}
-          {formData.type === 'truck' && (
-            <>
-              <div className="space-y-2">
-                <Label>Max Payload (kg)</Label>
-                <Input type="number" value={formData.maxPayload} onChange={(e) => handleFormChange("maxPayload", e.target.value)} placeholder="Enter max payload" className={formErrors.maxPayload ? "border-red-500" : ""} />
-                {formErrors.maxPayload && <p className="text-sm text-red-500">{formErrors.maxPayload}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Number of Axles</Label>
-                <Input type="number" value={formData.axles} onChange={(e) => handleFormChange("axles", e.target.value)} placeholder="Enter number of axles" className={formErrors.axles ? "border-red-500" : ""} />
-                {formErrors.axles && <p className="text-sm text-red-500">{formErrors.axles}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Cab Type</Label>
-                <Select value={formData.cabType} onValueChange={(value) => handleFormChange("cabType", value)}>
-                  <SelectTrigger className={formErrors.cabType ? "border-red-500" : ""}><SelectValue placeholder="Select cab type" /></SelectTrigger>
-                  <SelectContent>
-                    {CAB_TYPES.map(type => (<SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-                {formErrors.cabType && <p className="text-sm text-red-500">{formErrors.cabType}</p>}
-              </div>
-            </>
-          )}
-        </div>
+        <h3 className="text-lg font-medium">Type-specific Details</h3>
+        {formData.type === 'car' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Body Type</Label>
+              <Select
+                value={formData.bodyType}
+                onValueChange={(value) => handleFormChange("bodyType", value as 'hatchback' | 'saloon' | 'suv' | 'coupe' | 'convertible' | 'estate' | 'mpv')}
+              >
+                <SelectTrigger className={formErrors.bodyType ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Select body type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BODY_TYPES.map(type => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formErrors.bodyType && (
+                <p className="text-sm text-red-500">{formErrors.bodyType}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Number of Doors</Label>
+              <Input
+                type="number"
+                value={formData.doors}
+                onChange={(e) => handleFormChange("doors", e.target.value)}
+                placeholder="Enter number of doors"
+                required
+                className={formErrors.doors ? "border-red-500" : ""}
+              />
+              {formErrors.doors && (
+                <p className="text-sm text-red-500">{formErrors.doors}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Number of Seats</Label>
+              <Input
+                type="number"
+                value={formData.seats}
+                onChange={(e) => handleFormChange("seats", e.target.value)}
+                placeholder="Enter number of seats"
+                required
+                className={formErrors.seats ? "border-red-500" : ""}
+              />
+              {formErrors.seats && (
+                <p className="text-sm text-red-500">{formErrors.seats}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {formData.type === 'van' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Cargo Volume (m³)</Label>
+              <Input
+                type="number"
+                value={formData.cargoVolume}
+                onChange={(e) => handleFormChange("cargoVolume", e.target.value)}
+                placeholder="Enter cargo volume"
+                required
+                className={formErrors.cargoVolume ? "border-red-500" : ""}
+              />
+              {formErrors.cargoVolume && (
+                <p className="text-sm text-red-500">{formErrors.cargoVolume}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Max Payload (kg)</Label>
+              <Input
+                type="number"
+                value={formData.maxPayload}
+                onChange={(e) => handleFormChange("maxPayload", e.target.value)}
+                placeholder="Enter max payload"
+                required
+                className={formErrors.maxPayload ? "border-red-500" : ""}
+              />
+              {formErrors.maxPayload && (
+                <p className="text-sm text-red-500">{formErrors.maxPayload}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Length (m)</Label>
+              <Input
+                type="number"
+                value={formData.length}
+                onChange={(e) => handleFormChange("length", e.target.value)}
+                placeholder="Enter length"
+                required
+                className={formErrors.length ? "border-red-500" : ""}
+              />
+              {formErrors.length && (
+                <p className="text-sm text-red-500">{formErrors.length}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Height (m)</Label>
+              <Input
+                type="number"
+                value={formData.height}
+                onChange={(e) => handleFormChange("height", e.target.value)}
+                placeholder="Enter height"
+                required
+                className={formErrors.height ? "border-red-500" : ""}
+              />
+              {formErrors.height && (
+                <p className="text-sm text-red-500">{formErrors.height}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {formData.type === 'truck' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Max Payload (kg)</Label>
+              <Input
+                type="number"
+                value={formData.maxPayload}
+                onChange={(e) => handleFormChange("maxPayload", e.target.value)}
+                placeholder="Enter max payload"
+                required
+                className={formErrors.maxPayload ? "border-red-500" : ""}
+              />
+              {formErrors.maxPayload && (
+                <p className="text-sm text-red-500">{formErrors.maxPayload}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Number of Axles</Label>
+              <Input
+                type="number"
+                value={formData.axles}
+                onChange={(e) => handleFormChange("axles", e.target.value)}
+                placeholder="Enter number of axles"
+                required
+                className={formErrors.axles ? "border-red-500" : ""}
+              />
+              {formErrors.axles && (
+                <p className="text-sm text-red-500">{formErrors.axles}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Cab Type</Label>
+              <Select
+                value={formData.cabType}
+                onValueChange={(value) => handleFormChange("cabType", value as 'day' | 'sleeper' | 'crew')}
+              >
+                <SelectTrigger className={formErrors.cabType ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Select cab type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CAB_TYPES.map(type => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formErrors.cabType && (
+                <p className="text-sm text-red-500">{formErrors.cabType}</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <Separator />

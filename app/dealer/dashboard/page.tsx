@@ -20,6 +20,7 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAuth } from "@/hooks/useAuth"
 
 interface Listing {
   id: string
@@ -33,6 +34,12 @@ interface Listing {
   make: string
   model: string
   year: number
+  mileage: number
+  fuel: string
+  transmission: string
+  description: string
+  images: string[]
+  updatedAt: string
 }
 
 interface DealerProfile {
@@ -91,48 +98,20 @@ interface VehicleAPIResponse {
   }
 }
 
-// Mock data for demonstration
-const mockListings: Listing[] = [
-  {
-    id: "1",
-    title: "2023 BMW 3 Series",
-    price: 35000,
-    status: "active",
-    views: 245,
-    inquiries: 12,
-    createdAt: "2024-03-15",
-    image: "/cars/bmw-3.jpg",
-    make: "BMW",
-    model: "3 Series",
-    year: 2023
-  },
-  {
-    id: "2",
-    title: "2022 Mercedes-Benz C-Class",
-    price: 42000,
-    status: "pending",
-    views: 189,
-    inquiries: 8,
-    createdAt: "2024-03-10",
-    image: "/cars/mercedes-c.jpg",
-    make: "Mercedes-Benz",
-    model: "C-Class",
-    year: 2022
-  },
-  {
-    id: "3",
-    title: "2023 Audi A4",
-    price: 38000,
-    status: "sold",
-    views: 320,
-    inquiries: 15,
-    createdAt: "2024-03-05",
-    image: "/cars/audi-a4.jpg",
-    make: "Audi",
-    model: "A4",
-    year: 2023
-  }
-]
+interface FirebaseListing {
+  id: string;
+  title?: string;
+  price?: number;
+  status?: "active" | "pending" | "sold";
+  views?: number;
+  inquiries?: number;
+  createdAt?: string;
+  image?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  [key: string]: any; // Allow for additional fields from Firebase
+}
 
 const defaultProfile: DealerProfile = {
   businessName: "Premium Auto Dealership",
@@ -189,10 +168,11 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function DealerDashboard() {
   const router = useRouter()
-  const [listings, setListings] = useState<Listing[]>(mockListings)
+  const { user } = useAuth()
+  const [listings, setListings] = useState<Listing[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [profile, setProfile] = useState<DealerProfile>(defaultProfile)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -204,22 +184,26 @@ export default function DealerDashboard() {
   // Load listings from Firebase
   useEffect(() => {
     const loadListings = async () => {
+      if (!user) {
+        console.log("No authenticated user found")
+        setIsLoading(false)
+        return
+      }
+
       try {
-        // For now, use a mock userId since we're not using auth
-        const mockUserId = "mock-dealer-id"
-        const dealerListings = await getDealerListings(mockUserId)
-        if (dealerListings.length > 0) {
-          setListings(dealerListings as Listing[])
-        }
+        const dealerListings = await getDealerListings(user.uid)
+        console.log("Fetched listings from Firebase:", dealerListings)
+        setListings(dealerListings)
       } catch (error) {
         console.error("Error loading listings:", error)
-        // Keep using mock data if Firebase fails
-        setListings(mockListings)
+        toast.error("Failed to load listings")
+      } finally {
+        setIsLoading(false)
       }
     }
 
     loadListings()
-  }, [])
+  }, [user])
 
   const handleAddListing = () => {
     router.push("/dealer/dashboard/add-listing")
@@ -333,10 +317,11 @@ export default function DealerDashboard() {
     }
   }
 
+  // Filter listings based on search query and status
   const filteredListings = listings.filter(listing => {
     const matchesSearch = listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         listing.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         listing.model.toLowerCase().includes(searchQuery.toLowerCase())
+      listing.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      listing.model.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = statusFilter === "all" || listing.status === statusFilter
     return matchesSearch && matchesStatus
   })
@@ -347,6 +332,27 @@ export default function DealerDashboard() {
     totalViews: listings.reduce((sum, l) => sum + l.views, 0),
     totalInquiries: listings.reduce((sum, l) => sum + l.inquiries, 0),
     totalValue: listings.reduce((sum, l) => sum + l.price, 0)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
+  if (listings.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <h2 className="text-2xl font-semibold mb-4">No Listings Found</h2>
+        <p className="text-gray-600 mb-6">Try adjusting your search filters or add a new listing to get started.</p>
+        <Button onClick={handleAddListing}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add New Listing
+        </Button>
+      </div>
+    )
   }
 
   return (
