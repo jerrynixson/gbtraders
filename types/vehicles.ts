@@ -1,22 +1,18 @@
-export interface VehicleBase {
+// Base vehicle interface with common fields
+export interface BaseVehicle {
   id: string;
-  registrationNumber: string;
+  type: VehicleType;
   make: string;
   model: string;
-  color: string;
   year: number;
   price: number;
+  monthlyPrice?: number;
   mileage: number;
-  range: number;
-  euroStatus: string;
-  dateOfLastV5CIssued: Date;
-  taxStatus: 'taxed' | 'tax-due' | 'tax-exempt';
-  engineCapacity: string;
-  motStatus: 'passed' | 'failed' | 'due';
-  co2Emissions: number;
-  fuelType: 'petrol' | 'diesel' | 'electric' | 'hybrid';
-  transmission: 'manual' | 'automatic';
+  fuel?: FuelType;
+  transmission?: TransmissionType;
+  color: string;
   location: {
+    address: string;
     city: string;
     country: string;
     coordinates?: {
@@ -24,61 +20,148 @@ export interface VehicleBase {
       longitude: number;
     };
   };
+  features: string[];
   images: string[];
-  imageUrls?: string[];
+  dealerUid: string;
   createdAt: Date;
   updatedAt: Date;
-  status: 'available' | 'sold' | 'pending';
-  dealerUid: string;
+  status: VehicleStatus;
 }
 
-export interface VehicleSummary extends Pick<VehicleBase, 
-  'id' | 'make' | 'model' | 'year' | 'price' | 'imageUrls' | 'location' | 'registrationNumber' | 'fuelType' 	
-> {
-  type: VehicleType;
-  image: string;
-}
-
-export interface Car extends VehicleBase {
+// Vehicle type-specific interfaces
+export interface Car extends BaseVehicle {
   type: 'car';
-  bodyType: 'sedan' | 'suv' | 'hatchback' | 'coupe' | 'wagon';
+  bodyStyle: CarBodyStyle;
   doors: number;
   seats: number;
-  features: string[];
+  engineSize: number;
+  safetyRating?: number;
 }
 
-export interface Van extends VehicleBase {
+export interface UsedCar extends Omit<Car, 'type'> {
+  type: 'used-car';
+  previousOwners: number;
+  serviceHistory: boolean;
+  mot?: {
+    expiryDate: Date;
+    advisories: string[];
+  };
+}
+
+export interface Van extends BaseVehicle {
   type: 'van';
-  cargoVolume: number; // in cubic meters
-  maxPayload: number; // in kg
-  length: number; // in meters
-  height: number; // in meters
-  features: string[];
+  loadVolume: number; // in cubic meters
+  loadLength: number; // in meters
+  roofHeight: number; // in meters
+  wheelbase: number; // in meters
+  payload: number; // in kg
+  grossWeight: number; // in kg
+  bodyType: VanBodyType;
+  doors: number;
 }
 
-export interface Truck extends VehicleBase {
+export interface Truck extends BaseVehicle {
   type: 'truck';
-  maxPayload: number; // in kg
   axles: number;
-  cabType: 'day' | 'sleeper';
-  features: string[];
+  maxPayload: number; // in kg
+  grossWeight: number; // in kg
+  bodyType: TruckBodyType;
+  cabType: TruckCabType;
+  transmission: 'manual' | 'automatic';
 }
 
-export type Vehicle = Car | Van | Truck;
-export type VehicleType = Vehicle['type'];
+// Union type for all vehicle types
+export type Vehicle = Car | UsedCar | Truck | Van;
 
-export interface VehicleFilter {
-  type?: VehicleType;
-  make?: string;
-  model?: string;
-  minYear?: number;
-  maxYear?: number;
+// Enums and types
+export type VehicleType = 'car' | 'used-car' | 'truck' | 'van';
+export type VehicleStatus = 'available' | 'sold' | 'reserved' | 'maintenance';
+
+export type FuelType = 'petrol' | 'diesel' | 'hybrid' | 'electric';
+export type TransmissionType = 'manual' | 'automatic' | 'semi-automatic';
+
+export type CarBodyStyle = 'sedan' | 'suv' | 'hatchback' | 'coupe' | 'convertible' | 'wagon' | 'van' | 'truck';
+
+export type VanBodyType = 'panel' | 'dropside' | 'tipper' | 'luton' | 'curtainside' | 'box';
+
+export type TruckBodyType = 'flatbed' | 'box' | 'curtainside' | 'tipper' | 'tanker' | 'refrigerated';
+
+export type TruckCabType = 'day' | 'sleeper' | 'crew';
+
+// Filter types
+export interface VehicleFilters {
+  type: VehicleType;
+  make?: string[];
+  model?: string[];
   minPrice?: number;
   maxPrice?: number;
-  fuelType?: VehicleBase['fuelType'];
-  transmission?: VehicleBase['transmission'];
-  location?: {
-    city?: string;
-    country?: string;
+  minYear?: number;
+  maxYear?: number;
+  minMileage?: number;
+  maxMileage?: number;
+  fuelType?: FuelType[];
+  transmission?: TransmissionType[];
+  bodyStyle?: CarBodyStyle[];
+}
+
+// Repository types
+export interface VehicleQueryOptions {
+  filters?: VehicleFilters;
+  sort?: {
+    field: keyof BaseVehicle;
+    direction: 'asc' | 'desc';
   };
+  pagination?: {
+    page: number;
+    limit: number;
+  };
+}
+
+export interface VehicleQueryResult<T extends Vehicle = Vehicle> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+// Vehicle summary type for list views
+export interface VehicleSummary {
+  id: string;
+  type: VehicleType;
+  make: string;
+  model: string;
+  year: number;
+  price: number;
+  monthlyPrice?: number;
+  mileage: number;
+  fuel?: FuelType;
+  transmission?: TransmissionType;
+  color: string;
+  location: {
+    address: string;
+    city: string;
+    country: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+  };
+  mainImage: string;
+}
+
+// Component Props Types
+export interface VehicleCardProps {
+  vehicle: VehicleSummary;
+  view?: 'grid' | 'list';
+  isHighlighted?: boolean;
+  onShare?: () => void;
+}
+
+export interface FilterSidebarProps {
+  initialFilters?: VehicleFilters;
+  onFilterChange: (filters: VehicleFilters) => void;
+  availableMakes: string[];
+  availableModels: Record<string, string[]>;
+  selectedVehicleType: VehicleType;
 } 

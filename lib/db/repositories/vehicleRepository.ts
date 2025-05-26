@@ -1,187 +1,260 @@
-import { where, orderBy, QueryConstraint } from 'firebase/firestore';
-import { BaseRepository } from '../repository';
-import { Vehicle, VehicleFilter, VehicleSummary } from '../../../types/vehicles';
+import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, QueryConstraint, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/db/firebase';
+import { Vehicle, VehicleType, VehicleFilters, VehicleQueryOptions, VehicleQueryResult, VehicleSummary, BaseVehicle } from '@/types/vehicles';
 
-export class VehicleRepository extends BaseRepository<Vehicle> {
-  protected collectionName = 'vehicles';
+export class VehicleRepository {
+  private collection = collection(db, 'vehicles');
 
-  async findSummaries(filter: VehicleFilter = {}, page = 1, pageSize = 20): Promise<VehicleSummary[]> {
-    const constraints: QueryConstraint[] = [];
-    const offset = (page - 1) * pageSize;
-
-    // Apply filters
-    if (filter.type) {
-      constraints.push(where('type', '==', filter.type));
-    }
-    if (filter.make) {
-      constraints.push(where('make', '==', filter.make));
-    }
-    if (filter.model) {
-      constraints.push(where('model', '==', filter.model));
-    }
-    if (filter.minYear) {
-      constraints.push(where('year', '>=', filter.minYear));
-    }
-    if (filter.maxYear) {
-      constraints.push(where('year', '<=', filter.maxYear));
-    }
-    if (filter.minPrice) {
-      constraints.push(where('price', '>=', filter.minPrice));
-    }
-    if (filter.maxPrice) {
-      constraints.push(where('price', '<=', filter.maxPrice));
-    }
-    if (filter.fuelType) {
-      constraints.push(where('fuelType', '==', filter.fuelType));
-    }
-    if (filter.transmission) {
-      constraints.push(where('transmission', '==', filter.transmission));
-    }
-    if (filter.location?.city) {
-      constraints.push(where('location.city', '==', filter.location.city));
-    }
-    if (filter.location?.country) {
-      constraints.push(where('location.country', '==', filter.location.country));
-    }
-
-    // Add default ordering by createdAt
-    constraints.push(orderBy('createdAt', 'desc'));
-
-    const vehicles = await this.findAll(constraints);
-
-    // Manual pagination since Firestore doesn't support offset
-    return vehicles
-      .slice(offset, offset + pageSize)
-      .map(vehicle => ({
-        id: vehicle.id,
-        type: vehicle.type,
-        make: vehicle.make,
-        model: vehicle.model,
-        year: vehicle.year,
-        price: vehicle.price,
-        images: vehicle.images,
-        location: vehicle.location,
-        registrationNumber: vehicle.registrationNumber,
-        fuelType: vehicle.fuelType,
-        image: vehicle.images[0] || '/placeholder-vehicle.jpg' // Add first image or placeholder
-      }));
-  }
-
-  async findByIdWithType<T extends Vehicle>(id: string): Promise<T | null> {
-    const vehicle = await this.findById(id);
-    return vehicle as T | null;
-  }
-
-  async findByDealerId(dealerId: string, page = 1, pageSize = 20): Promise<VehicleSummary[]> {
-    const constraints = [
-      where('dealerUid', '==', dealerId),
-      orderBy('createdAt', 'desc')
-    ];
-
-    const vehicles = await this.findAll(constraints);
-
-    return vehicles
-      .slice((page - 1) * pageSize, page * pageSize)
-      .map(vehicle => ({
-        id: vehicle.id,
-        type: vehicle.type,
-        make: vehicle.make,
-        model: vehicle.model,
-        year: vehicle.year,
-        price: vehicle.price,
-        images: vehicle.images,
-        location: vehicle.location,
-        registrationNumber: vehicle.registrationNumber,
-        fuelType: vehicle.fuelType,
-        image: vehicle.images[0] || '/placeholder-vehicle.jpg' // Add first image or placeholder
-      }));
-  }
-
-  async searchByMakeModel(searchTerm: string, limit = 10): Promise<VehicleSummary[]> {
-    const makeConstraints = [
-      where('make', '>=', searchTerm),
-      where('make', '<=', searchTerm + '\uf8ff'),
-      orderBy('make'),
-    ];
-
-    const modelConstraints = [
-      where('model', '>=', searchTerm),
-      where('model', '<=', searchTerm + '\uf8ff'),
-      orderBy('model'),
-    ];
-
-    const [makeResults, modelResults] = await Promise.all([
-      this.findAll(makeConstraints),
-      this.findAll(modelConstraints)
-    ]);
-
-    // Combine and deduplicate results
-    const combinedResults = [...makeResults, ...modelResults];
-    const uniqueResults = Array.from(new Map(combinedResults.map(v => [v.id, v])).values());
-
-    return uniqueResults
-      .slice(0, limit)
-      .map(vehicle => ({
-        id: vehicle.id,
-        type: vehicle.type,
-        make: vehicle.make,
-        model: vehicle.model,
-        year: vehicle.year,
-        price: vehicle.price,
-        images: vehicle.images,
-        location: vehicle.location,
-        registrationNumber: vehicle.registrationNumber,
-        fuelType: vehicle.fuelType,
-        image: vehicle.images[0] || '/placeholder-vehicle.jpg' // Add first image or placeholder
-      }));
-  }
-
-  async getMakes(): Promise<string[]> {
-    const constraints = [orderBy('make')];
-    const vehicles = await this.findAll(constraints);
-    return Array.from(new Set(vehicles.map(v => v.make)));
-  }
-
-  async getModels(make: string): Promise<string[]> {
-    const constraints = [
-      where('make', '==', make),
-      orderBy('model')
-    ];
-    const vehicles = await this.findAll(constraints);
-    return Array.from(new Set(vehicles.map(v => v.model)));
-  }
-
-  // Method to create a vehicle with authenticated dealer
-  async createVehicle(data: Omit<Vehicle, 'id' | 'dealerUid'>, dealerUid: string): Promise<Vehicle> {
-    return this.create({
+  /**
+   * Convert Firestore document to Vehicle type
+   */
+  private convertToVehicle(doc: QueryDocumentSnapshot<DocumentData>): Vehicle {
+    const data = doc.data();
+    return {
       ...data,
-      dealerUid,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    } as Omit<Vehicle, 'id'>);
+      id: doc.id,
+      createdAt: data.createdAt?.toDate(),
+      updatedAt: data.updatedAt?.toDate(),
+      mot: data.mot ? {
+        ...data.mot,
+        expiryDate: data.mot.expiryDate?.toDate(),
+        history: data.mot.history?.map((entry: any) => ({
+          ...entry,
+          date: entry.date?.toDate()
+        }))
+      } : undefined
+    } as Vehicle;
   }
 
-  // Method to ensure dealer owns vehicle before update/delete
-  private async verifyDealerOwnership(vehicleId: string, dealerUid: string): Promise<boolean> {
-    const vehicle = await this.findById(vehicleId);
-    return vehicle?.dealerUid === dealerUid;
+  /**
+   * Convert Vehicle to VehicleSummary
+   */
+  private convertToSummary(vehicle: Vehicle): VehicleSummary {
+    const { id, type, make, model, year, price, monthlyPrice, mileage, fuel, transmission, color, location, images } = vehicle;
+    return {
+      id,
+      type,
+      make,
+      model,
+      year,
+      price,
+      monthlyPrice,
+      mileage,
+      fuel,
+      transmission,
+      color,
+      location,
+      mainImage: images[0],
+    };
   }
 
-  // Override update method to check ownership
-  async updateVehicle(id: string, data: Partial<Vehicle>, dealerUid: string): Promise<void> {
-    const hasAccess = await this.verifyDealerOwnership(id, dealerUid);
-    if (!hasAccess) {
-      throw new Error('Unauthorized: You do not have permission to modify this vehicle');
+  /**
+   * Build query constraints from filters
+   */
+  private buildQueryConstraints(filters: VehicleFilters): QueryConstraint[] {
+    const constraints: QueryConstraint[] = [];
+
+    // Type filter (required)
+    constraints.push(where('type', '==', filters.type));
+
+    // Optional filters
+    if (filters.make?.length) {
+      constraints.push(where('make', 'in', filters.make));
     }
-    return this.update(id, data);
+
+    if (filters.model?.length) {
+      constraints.push(where('model', 'in', filters.model));
+    }
+
+    if (filters.minPrice !== undefined) {
+      constraints.push(where('price', '>=', filters.minPrice));
+    }
+
+    if (filters.maxPrice !== undefined) {
+      constraints.push(where('price', '<=', filters.maxPrice));
+    }
+
+    if (filters.minYear !== undefined) {
+      constraints.push(where('year', '>=', filters.minYear));
+    }
+
+    if (filters.maxYear !== undefined) {
+      constraints.push(where('year', '<=', filters.maxYear));
+    }
+
+    if (filters.minMileage !== undefined) {
+      constraints.push(where('mileage', '>=', filters.minMileage));
+    }
+
+    if (filters.maxMileage !== undefined) {
+      constraints.push(where('mileage', '<=', filters.maxMileage));
+    }
+
+    if (filters.fuelType?.length) {
+      constraints.push(where('fuel', 'in', filters.fuelType));
+    }
+
+    if (filters.transmission?.length) {
+      constraints.push(where('transmission', 'in', filters.transmission));
+    }
+
+    if (filters.bodyStyle?.length) {
+      constraints.push(where('bodyStyle', 'in', filters.bodyStyle));
+    }
+
+    return constraints;
   }
 
-  // Override delete method to check ownership
-  async deleteVehicle(id: string, dealerUid: string): Promise<void> {
-    const hasAccess = await this.verifyDealerOwnership(id, dealerUid);
-    if (!hasAccess) {
-      throw new Error('Unauthorized: You do not have permission to delete this vehicle');
+  /**
+   * Search vehicles with filters and pagination
+   */
+  async searchVehicles(
+    filters: VehicleFilters,
+    options: { page?: number; limit?: number } = {}
+  ): Promise<VehicleQueryResult<VehicleSummary>> {
+    const { page = 1, limit = 12 } = options;
+    const constraints = this.buildQueryConstraints(filters);
+    
+    // Add pagination
+    constraints.push(orderBy('createdAt', 'desc'));
+    constraints.push(limit(limit));
+
+    if (page > 1) {
+      // Get the last document from the previous page
+      const lastDoc = await this.getLastDocumentFromPage(filters, page - 1, limit);
+      if (lastDoc) {
+        constraints.push(startAfter(lastDoc));
+      }
     }
-    return this.delete(id);
+
+    const q = query(this.collection, ...constraints);
+    const snapshot = await getDocs(q);
+    
+    const vehicles = snapshot.docs.map(doc => this.convertToVehicle(doc));
+    const summaries = vehicles.map(vehicle => this.convertToSummary(vehicle));
+
+    return {
+      items: summaries,
+      total: snapshot.size, // Note: This is not the total count, just the current page size
+      page,
+      limit,
+      hasMore: snapshot.size === limit,
+    };
+  }
+
+  /**
+   * Get the last document from a specific page
+   */
+  private async getLastDocumentFromPage(
+    filters: VehicleFilters,
+    page: number,
+    limit: number
+  ): Promise<QueryDocumentSnapshot<DocumentData> | null> {
+    const constraints = this.buildQueryConstraints(filters);
+    constraints.push(orderBy('createdAt', 'desc'));
+    constraints.push(limit(page * limit));
+
+    const q = query(this.collection, ...constraints);
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs;
+
+    return docs.length > 0 ? docs[docs.length - 1] : null;
+  }
+
+  /**
+   * Get available makes for a vehicle type
+   */
+  async getAvailableMakes(type: VehicleType): Promise<string[]> {
+    const q = query(
+      this.collection,
+      where('type', '==', type),
+      orderBy('make', 'asc')
+    );
+
+    const snapshot = await getDocs(q);
+    const makes = new Set<string>();
+    
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.make) {
+        makes.add(data.make);
+      }
+    });
+
+    return Array.from(makes);
+  }
+
+  /**
+   * Get available models for a vehicle type and make
+   */
+  async getAvailableModels(type: VehicleType, make: string): Promise<string[]> {
+    const q = query(
+      this.collection,
+      where('type', '==', type),
+      where('make', '==', make),
+      orderBy('model', 'asc')
+    );
+
+    const snapshot = await getDocs(q);
+    const models = new Set<string>();
+    
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.model) {
+        models.add(data.model);
+      }
+    });
+
+    return Array.from(models);
+  }
+
+  /**
+   * Get a single vehicle by ID
+   */
+  async getVehicle(id: string): Promise<Vehicle | null> {
+    const docRef = doc(this.collection, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return null;
+    }
+
+    return this.convertToVehicle(docSnap);
+  }
+
+  /**
+   * Create a new vehicle
+   */
+  async createVehicle(vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt'>): Promise<Vehicle> {
+    const now = new Date();
+    const data = {
+      ...vehicle,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const docRef = await addDoc(this.collection, data);
+    const docSnap = await getDoc(docRef);
+
+    return this.convertToVehicle(docSnap);
+  }
+
+  /**
+   * Update an existing vehicle
+   */
+  async updateVehicle(id: string, updates: Partial<Vehicle>): Promise<void> {
+    const docRef = doc(this.collection, id);
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: new Date(),
+    });
+  }
+
+  /**
+   * Delete a vehicle
+   */
+  async deleteVehicle(id: string): Promise<void> {
+    const docRef = doc(this.collection, id);
+    await deleteDoc(docRef);
   }
 } 
