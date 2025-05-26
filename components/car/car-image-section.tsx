@@ -5,17 +5,11 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 
-export function CarImageSection() { 
-  // Simulated car images (replace with your actual image paths)
-  const carImages = [
-    '/cars/car1.jpg',
-    '/cars/car1b.jpg',
-    '/cars/car1c.jpg',
-    '/cars/car1d.jpg',
-    '/cars/car1e.jpg',
-    '/cars/car1f.jpg'
-  ]
+interface CarImageSectionProps {
+  images: string[];
+}
 
+export function CarImageSection({ images }: CarImageSectionProps) { 
   const [mainImageIndex, setMainImageIndex] = useState(0)
 
   const handleImagePreviewClick = (index: number) => {
@@ -23,11 +17,23 @@ export function CarImageSection() {
   }
 
   const handlePrevImage = () => {
-    setMainImageIndex((prev) => (prev === 0 ? carImages.length - 1 : prev - 1))
+    setMainImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
   }
 
   const handleNextImage = () => {
-    setMainImageIndex((prev) => (prev === carImages.length - 1 ? 0 : prev + 1))
+    setMainImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+  }
+
+  if (!images || images.length === 0) {
+    return (
+      <div className="relative rounded-lg border bg-card text-card-foreground shadow-sm group">
+        <div className="relative aspect-[16/10] w-full overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <span className="text-gray-400">No images available</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -35,7 +41,7 @@ export function CarImageSection() {
       {/* Main Image Container */}
       <div className="relative aspect-[16/10] w-full overflow-hidden">
         <Image
-          src={carImages[mainImageIndex]}
+          src={images[mainImageIndex]}
           alt="Car view"
           fill
           className="object-cover transition-transform duration-300 hover:scale-105"
@@ -56,7 +62,7 @@ export function CarImageSection() {
 
             {/* Dots Indicator */}
             <div className="flex gap-1">
-              {carImages.map((_, index) => (
+              {images.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => handleImagePreviewClick(index)}
@@ -84,7 +90,7 @@ export function CarImageSection() {
       
       {/* Thumbnails Section */}
       <div className="flex gap-2 p-4 bg-background">
-        {carImages.map((image, index) => (
+        {images.map((image, index) => (
           <button 
             key={index}
             onClick={() => handleImagePreviewClick(index)}
