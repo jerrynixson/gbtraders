@@ -112,16 +112,16 @@ export class VehicleRepository {
     filters: VehicleFilters,
     options: { page?: number; limit?: number } = {}
   ): Promise<VehicleQueryResult<VehicleSummary>> {
-    const { page = 1, limit = 12 } = options;
+    const { page = 1, limit: pageSize = 12 } = options;
     const constraints = this.buildQueryConstraints(filters);
     
     // Add pagination
     constraints.push(orderBy('createdAt', 'desc'));
-    constraints.push(limit(limit));
+    constraints.push(limit(pageSize));
 
     if (page > 1) {
       // Get the last document from the previous page
-      const lastDoc = await this.getLastDocumentFromPage(filters, page - 1, limit);
+      const lastDoc = await this.getLastDocumentFromPage(filters, page - 1, pageSize);
       if (lastDoc) {
         constraints.push(startAfter(lastDoc));
       }
@@ -137,8 +137,8 @@ export class VehicleRepository {
       items: summaries,
       total: snapshot.size, // Note: This is not the total count, just the current page size
       page,
-      limit,
-      hasMore: snapshot.size === limit,
+      limit: pageSize,
+      hasMore: snapshot.size === pageSize,
     };
   }
 

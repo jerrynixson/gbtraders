@@ -7,7 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { MapPin, Car, PoundSterling, Clock, Gauge, Tag, Shield, Star, ChevronRight, RotateCcw } from "lucide-react"
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Slider } from '@/components/ui/slider'
 import { VehicleType, VehicleFilters, FuelType, TransmissionType, CarBodyStyle } from '@/types/vehicles'
 import { debounce } from '@/lib/utils'
 
@@ -115,24 +114,28 @@ export function FilterSidebar({
   availableModels,
   selectedVehicleType,
 }: FilterSidebarProps) {
-  // State for filters
   const [filters, setFilters] = useState<VehicleFilters>(initialFilters)
+  const [priceToggle, setPriceToggle] = useState(0)
+  const [yearToggle, setYearToggle] = useState(0)
 
-  // Update filters when initialFilters change
   useEffect(() => {
     setFilters(initialFilters)
   }, [initialFilters])
 
-  // Debounced filter change handler
   const debouncedFilterChange = debounce((newFilters: VehicleFilters) => {
     onFilterChange(newFilters)
   }, 500)
 
-  // Update filters and notify parent
   const updateFilters = (updates: Partial<VehicleFilters>) => {
     const newFilters = { ...filters, ...updates }
     setFilters(newFilters)
     debouncedFilterChange(newFilters)
+  }
+
+  const handleReset = () => {
+    setFilters(initialFilters)
+    setPriceToggle(0)
+    setYearToggle(0)
   }
 
   const commonFeatures = ["Wheelchair Access", "Left Hand Drive", "Sat Nav", "Bluetooth", "Leather Seats"]
@@ -144,246 +147,264 @@ export function FilterSidebar({
   const vehicleUsages = ["Private", "Business", "Taxi", "Other"]
   const dealerRatings = ["5 Star", "4 Star", "3 Star", "2 Star", "1 Star"]
 
-  // Add predefined options for makes, models, trims, and body types
-  const makes = [
-    "Audi", "BMW", "Ford", "Honda", "Hyundai", "Kia", "Land Rover", "Lexus",
-    "Mercedes-Benz", "Nissan", "Porsche", "Renault", "Skoda", "Tesla", "Toyota",
-    "Volkswagen", "Volvo"
-  ]
-
-  const models = {
-    "Audi": ["A1", "A3", "A4", "A5", "A6", "A7", "A8", "Q2", "Q3", "Q5", "Q7", "Q8", "e-tron"],
-    "BMW": ["1 Series", "2 Series", "3 Series", "4 Series", "5 Series", "7 Series", "X1", "X3", "X5", "X7", "i3", "i4", "iX"],
-    "Ford": ["Fiesta", "Focus", "Mondeo", "Kuga", "Puma", "Mustang", "Ranger", "Transit"],
-    "Honda": ["Civic", "CR-V", "HR-V", "Jazz", "Accord"],
-    "Hyundai": ["i10", "i20", "i30", "Tucson", "Santa Fe", "Kona", "IONIQ"],
-    "Kia": ["Picanto", "Rio", "Ceed", "Sportage", "Sorento", "Niro", "EV6"],
-    "Land Rover": ["Defender", "Discovery", "Discovery Sport", "Range Rover", "Range Rover Sport", "Range Rover Evoque"],
-    "Lexus": ["UX", "NX", "RX", "ES", "LS"],
-    "Mercedes-Benz": ["A-Class", "C-Class", "E-Class", "S-Class", "GLA", "GLC", "GLE", "GLS", "EQC"],
-    "Nissan": ["Micra", "Juke", "Qashqai", "X-Trail", "Leaf", "Ariya"],
-    "Porsche": ["911", "Taycan", "Macan", "Cayenne", "Panamera"],
-    "Renault": ["Clio", "Captur", "Megane", "Kadjar", "Zoe"],
-    "Skoda": ["Fabia", "Scala", "Octavia", "Karoq", "Kodiaq", "Enyaq"],
-    "Tesla": ["Model 3", "Model S", "Model X", "Model Y"],
-    "Toyota": ["Yaris", "Corolla", "RAV4", "C-HR", "Prius", "bZ4X"],
-    "Volkswagen": ["Polo", "Golf", "Passat", "Tiguan", "T-Roc", "ID.3", "ID.4", "ID.5"],
-    "Volvo": ["XC40", "XC60", "XC90", "S60", "S90", "V60", "V90", "C40"]
-  }
-
-  const trims = [
-    "Standard", "SE", "SEL", "Sport", "GT", "R-Line", "M Sport", "AMG Line",
-    "S Line", "RS", "M", "AMG", "Vorsprung", "Exclusive", "Luxury", "Premium"
-  ]
-
-  const bodyTypes = [
-    "Hatchback", "Saloon", "Estate", "SUV", "MPV", "Coupe", "Convertible",
-    "Pickup", "Van", "Sports Car", "Supercar", "Electric"
-  ]
-
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
-      {/* Vehicle Type */}
-      <div className="space-y-2">
-        <Label>Vehicle Type</Label>
-        <Select
-          value={filters.type}
-          onValueChange={(value: VehicleType) => updateFilters({ type: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select vehicle type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="car">Car</SelectItem>
-            <SelectItem value="used-car">Used Car</SelectItem>
-            <SelectItem value="truck">Truck</SelectItem>
-            <SelectItem value="van">Van</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <aside 
+      className="w-full max-w-xs border-r border-gray-200 bg-white shadow-sm"
+      aria-label="Vehicle search filters"
+    >
+      <div className="p-4">
+        {/* Header */}
+        <header className="mb-3">
+          <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+        </header>
 
-      {/* Make */}
-      <div className="space-y-2">
-        <Label>Make</Label>
-        <Select
-          value={filters.make?.[0] || ''}
-          onValueChange={(value) => updateFilters({ make: value ? [value] : undefined })}
+        {/* Reset Button */}
+        <Button
+          variant="outline"
+          className="flex items-center text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 w-full justify-center mb-3 text-sm"
+          onClick={handleReset}
+          aria-label="Reset all filters"
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Select make" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableMakes.map((make) => (
-              <SelectItem key={make} value={make}>
-                {make}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+          <RotateCcw className="h-3 w-3 mr-1" aria-hidden="true" />
+          Reset All Filters
+        </Button>
 
-      {/* Model (only show if make is selected) */}
-      {filters.make && (
-        <div className="space-y-2">
-          <Label>Model</Label>
+        {/* Vehicle Type */}
+        <section className="border-t border-gray-100 py-3">
+          <div className="flex items-center mb-2">
+            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
+              <Car className="h-4 w-4 text-blue-600" />
+            </div>
+            <h3 className="font-medium text-sm text-gray-900">Vehicle Type</h3>
+          </div>
           <Select
-            value={filters.model?.[0] || ''}
-            onValueChange={(value) => updateFilters({ model: value ? [value] : undefined })}
+            value={filters.type}
+            onValueChange={(value: VehicleType) => updateFilters({ type: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select model" />
+              <SelectValue placeholder="Select vehicle type" />
             </SelectTrigger>
             <SelectContent>
-              {availableModels.map((model) => (
-                <SelectItem key={model} value={model}>
-                  {model}
-                </SelectItem>
-              ))}
+              <SelectItem value="car">Car</SelectItem>
+              <SelectItem value="used-car">Used Car</SelectItem>
+              <SelectItem value="truck">Truck</SelectItem>
+              <SelectItem value="van">Van</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      )}
+        </section>
 
-      {/* Price Range */}
-      <div className="space-y-4">
-        <Label>Price Range</Label>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        {/* Make & Model */}
+        <section className="border-t border-gray-100 py-3">
+          <div className="flex items-center mb-2">
+            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
+              <Car className="h-4 w-4 text-blue-600" />
+            </div>
+            <h3 className="font-medium text-sm text-gray-900">Make & Model</h3>
+          </div>
+          <div className="space-y-2">
+            <Select
+              value={filters.make?.[0] || ''}
+              onValueChange={(value) => updateFilters({ make: value ? [value] : undefined })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select make" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableMakes.map((make) => (
+                  <SelectItem key={make} value={make}>
+                    {make}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={filters.model?.[0] || ''}
+              onValueChange={(value) => updateFilters({ model: value ? [value] : undefined })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableModels.map((model) => (
+                  <SelectItem key={model} value={model}>
+                    {model}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </section>
+
+        {/* Price Range */}
+        <section className="border-t border-gray-100 py-3">
+          <div className="flex items-center mb-2">
+            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
+              <PoundSterling className="h-4 w-4 text-blue-600" />
+            </div>
+            <h3 className="font-medium text-sm text-gray-900">Price Range</h3>
+          </div>
+
+          <div className="mb-2" role="radiogroup" aria-label="Price type">
+            <ToggleButton options={["Price", "Monthly cost"]} activeIndex={priceToggle} onChange={setPriceToggle} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             <Input
               type="number"
               placeholder="Min"
               value={filters.minPrice || ''}
               onChange={(e) => updateFilters({ minPrice: e.target.value ? parseInt(e.target.value) : undefined })}
+              className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
             />
-          </div>
-          <div>
             <Input
               type="number"
               placeholder="Max"
               value={filters.maxPrice || ''}
               onChange={(e) => updateFilters({ maxPrice: e.target.value ? parseInt(e.target.value) : undefined })}
+              className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
             />
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Year Range */}
-      <div className="space-y-4">
-        <Label>Year Range</Label>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        {/* Year Range */}
+        <section className="border-t border-gray-100 py-3">
+          <div className="flex items-center mb-2">
+            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
+              <Clock className="h-4 w-4 text-blue-600" />
+            </div>
+            <h3 className="font-medium text-sm text-gray-900">Year Range</h3>
+          </div>
+
+          <div className="mb-2" role="radiogroup" aria-label="Year or age selection">
+            <ToggleButton options={["Year", "Age"]} activeIndex={yearToggle} onChange={setYearToggle} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             <Input
               type="number"
               placeholder="Min"
               value={filters.minYear || ''}
               onChange={(e) => updateFilters({ minYear: e.target.value ? parseInt(e.target.value) : undefined })}
+              className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
             />
-          </div>
-          <div>
             <Input
               type="number"
               placeholder="Max"
               value={filters.maxYear || ''}
               onChange={(e) => updateFilters({ maxYear: e.target.value ? parseInt(e.target.value) : undefined })}
+              className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
             />
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Mileage Range */}
-      <div className="space-y-4">
-        <Label>Mileage Range</Label>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Input
-              type="number"
-              placeholder="Min"
-              value={filters.minMileage || ''}
-              onChange={(e) => updateFilters({ minMileage: e.target.value ? parseInt(e.target.value) : undefined })}
-            />
+        {/* Vehicle Attributes */}
+        <section className="border-t border-gray-100 py-3">
+          <div className="flex items-center mb-2">
+            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
+              <Gauge className="h-4 w-4 text-blue-600" />
+            </div>
+            <h3 className="font-medium text-sm text-gray-900">Vehicle Attributes</h3>
           </div>
-          <div>
-            <Input
-              type="number"
-              placeholder="Max"
-              value={filters.maxMileage || ''}
-              onChange={(e) => updateFilters({ maxMileage: e.target.value ? parseInt(e.target.value) : undefined })}
-            />
+
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-1">Mileage</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="number"
+                  placeholder="Min"
+                  value={filters.minMileage || ''}
+                  onChange={(e) => updateFilters({ minMileage: e.target.value ? parseInt(e.target.value) : undefined })}
+                  className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
+                />
+                <Input
+                  type="number"
+                  placeholder="Max"
+                  value={filters.maxMileage || ''}
+                  onChange={(e) => updateFilters({ maxMileage: e.target.value ? parseInt(e.target.value) : undefined })}
+                  className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-1">Fuel Type</Label>
+              <div className="grid grid-cols-2 gap-1">
+                {fuelTypes.map((type) => (
+                  <div key={type} className="flex items-center">
+                    <Checkbox
+                      id={`fuel-${type}`}
+                      checked={filters.fuelType?.includes(type.toLowerCase() as FuelType)}
+                      onCheckedChange={(checked) => {
+                        const newFuelTypes = checked
+                          ? [...(filters.fuelType || []), type.toLowerCase() as FuelType]
+                          : (filters.fuelType || []).filter(f => f !== type.toLowerCase())
+                        updateFilters({ fuelType: newFuelTypes })
+                      }}
+                      className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4"
+                    />
+                    <label htmlFor={`fuel-${type}`} className="text-xs ml-1.5 text-gray-700">{type}</label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-1">Transmission</Label>
+              <div className="grid grid-cols-2 gap-1">
+                {transmissions.map((type) => (
+                  <div key={type} className="flex items-center">
+                    <Checkbox
+                      id={`transmission-${type}`}
+                      checked={filters.transmission?.includes(type.toLowerCase() as TransmissionType)}
+                      onCheckedChange={(checked) => {
+                        const newTransmissions = checked
+                          ? [...(filters.transmission || []), type.toLowerCase() as TransmissionType]
+                          : (filters.transmission || []).filter(t => t !== type.toLowerCase())
+                        updateFilters({ transmission: newTransmissions })
+                      }}
+                      className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4"
+                    />
+                    <label htmlFor={`transmission-${type}`} className="text-xs ml-1.5 text-gray-700">{type}</label>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
+
+        {/* Body Style (only for cars) */}
+        {selectedVehicleType === 'car' && (
+          <section className="border-t border-gray-100 py-3">
+            <div className="flex items-center mb-2">
+              <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
+                <Car className="h-4 w-4 text-blue-600" />
+              </div>
+              <h3 className="font-medium text-sm text-gray-900">Body Style</h3>
+            </div>
+            <Select
+              value={filters.bodyStyle?.[0] || ''}
+              onValueChange={(value: CarBodyStyle) => updateFilters({ bodyStyle: value ? [value] : undefined })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select body style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sedan">Sedan</SelectItem>
+                <SelectItem value="suv">SUV</SelectItem>
+                <SelectItem value="hatchback">Hatchback</SelectItem>
+                <SelectItem value="coupe">Coupe</SelectItem>
+                <SelectItem value="convertible">Convertible</SelectItem>
+                <SelectItem value="wagon">Wagon</SelectItem>
+                <SelectItem value="van">Van</SelectItem>
+                <SelectItem value="truck">Truck</SelectItem>
+              </SelectContent>
+            </Select>
+          </section>
+        )}
       </div>
-
-      {/* Fuel Type */}
-      <div className="space-y-2">
-        <Label>Fuel Type</Label>
-        <Select
-          value={filters.fuelType?.[0] || ''}
-          onValueChange={(value: FuelType) => updateFilters({ fuelType: value ? [value] : undefined })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select fuel type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="petrol">Petrol</SelectItem>
-            <SelectItem value="diesel">Diesel</SelectItem>
-            <SelectItem value="hybrid">Hybrid</SelectItem>
-            <SelectItem value="electric">Electric</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Transmission */}
-      <div className="space-y-2">
-        <Label>Transmission</Label>
-        <Select
-          value={filters.transmission?.[0] || ''}
-          onValueChange={(value: TransmissionType) => updateFilters({ transmission: value ? [value] : undefined })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select transmission" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="manual">Manual</SelectItem>
-            <SelectItem value="automatic">Automatic</SelectItem>
-            <SelectItem value="semi-automatic">Semi-Automatic</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Body Style (only for cars) */}
-      {(filters.type === 'car' || filters.type === 'used-car') && (
-        <div className="space-y-2">
-          <Label>Body Style</Label>
-          <Select
-            value={filters.bodyStyle?.[0] || ''}
-            onValueChange={(value: CarBodyStyle) => updateFilters({ bodyStyle: value ? [value] : undefined })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select body style" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="sedan">Sedan</SelectItem>
-              <SelectItem value="suv">SUV</SelectItem>
-              <SelectItem value="hatchback">Hatchback</SelectItem>
-              <SelectItem value="coupe">Coupe</SelectItem>
-              <SelectItem value="convertible">Convertible</SelectItem>
-              <SelectItem value="wagon">Wagon</SelectItem>
-              <SelectItem value="van">Van</SelectItem>
-              <SelectItem value="truck">Truck</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Reset Filters */}
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={() => updateFilters(initialFilters)}
-      >
-        Reset Filters
-      </Button>
-    </div>
+    </aside>
   )
 }
 
