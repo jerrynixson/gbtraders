@@ -21,6 +21,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/hooks/useAuth"
+import { getDocs, query, collection, where, orderBy, limit } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 interface Listing {
   id: string
@@ -180,6 +182,44 @@ export default function DealerDashboard() {
   const [isUploading, setIsUploading] = useState(false)
   const [selectedAPI, setSelectedAPI] = useState<string>("")
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
+
+  // Check user role on component mount
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (!user) {
+        router.push('/signin?redirectTo=/dealer/dashboard')
+        return
+      }
+
+      try {
+        // Get the latest role from roleAuditLog
+        const roleAuditLogQuery = await getDocs(
+          query(
+            collection(db, 'roleAuditLog'),
+            where('uid', '==', user.uid),
+            orderBy('timestamp', 'desc'),
+            limit(1)
+          )
+        )
+
+        if (roleAuditLogQuery.empty) {
+          router.push('/')
+          return
+        }
+
+        const latestRole = roleAuditLogQuery.docs[0].data().role
+        if (latestRole !== 'dealer') {
+          router.push('/')
+          return
+        }
+      } catch (error) {
+        console.error('Error checking user role:', error)
+        router.push('/')
+      }
+    }
+
+    checkUserRole()
+  }, [user, router])
 
   // Load listings from Firebase
   useEffect(() => {
