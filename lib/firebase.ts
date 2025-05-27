@@ -85,13 +85,31 @@ export const getDealerListings = async (userId: string) => {
     const q = query(vehiclesRef, where('dealerUid', '==', userId));
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title || `${data.make} ${data.model}`,
+        price: data.price || 0,
+        status: data.status || "active",
+        views: data.views || 0,
+        inquiries: data.inquiries || 0,
+        createdAt: data.createdAt || new Date().toISOString(),
+        image: data.images?.[0] || "/placeholder-vehicle.jpg",
+        make: data.make || "",
+        model: data.model || "",
+        year: data.year || new Date().getFullYear(),
+        mileage: data.mileage || 0,
+        fuel: data.fuel || "",
+        transmission: data.transmission || "",
+        description: data.description || "",
+        images: data.images || [],
+        updatedAt: data.updatedAt || new Date().toISOString()
+      };
+    });
   } catch (error) {
     console.error('Error getting dealer listings:', error);
-    throw error;
+    return [];
   }
 };
 
