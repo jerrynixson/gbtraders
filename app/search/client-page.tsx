@@ -119,7 +119,7 @@ export default function ClientPage({
               isFilterOpen ? "block" : "hidden lg:block"
             }`}>
               <div className="sticky top-6">
-                <MapSection />
+                <MapSection vehicles={initialVehicles.items} />
                 <FilterSidebar
                   initialFilters={initialFilters}
                   onFilterChange={handleFilterChange}

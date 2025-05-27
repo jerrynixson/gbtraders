@@ -17,6 +17,10 @@ interface GoogleMapComponentProps {
       lng: number;
     };
     title?: string;
+    icon?: {
+      url: string;
+      scaledSize?: google.maps.Size;
+    };
   }>;
 }
 
@@ -72,6 +76,7 @@ export function GoogleMapComponent({
           key={index}
           position={marker.position}
           title={marker.title}
+          icon={marker.icon}
         />
       ))}
     </GoogleMap>

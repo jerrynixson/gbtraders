@@ -85,6 +85,7 @@ interface VehiclePageState {
   vehicle: Vehicle | null;
   loading: boolean;
   error: string | null;
+  userLocation: { lat: number; lng: number } | null;
 }
 
 export default function VehicleDetails() {
@@ -93,7 +94,8 @@ export default function VehicleDetails() {
   const [state, setState] = useState<VehiclePageState>({
     vehicle: null,
     loading: true,
-    error: null
+    error: null,
+    userLocation: null
   });
 
   useEffect(() => {
@@ -101,20 +103,40 @@ export default function VehicleDetails() {
       try {
         const repository = new VehicleRepository();
         const vehicle = await repository.getVehicle(vehicleId);
-        setState({
+        setState(prev => ({
+          ...prev,
           vehicle,
           loading: false,
           error: vehicle ? null : "Vehicle not found"
-        });
+        }));
       } catch (error) {
-        setState({
+        setState(prev => ({
+          ...prev,
           vehicle: null,
           loading: false,
           error: "Failed to load vehicle details"
-        });
+        }));
         console.error("Error fetching vehicle:", error);
       }
     };
+
+    // Get user's location
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setState(prev => ({
+            ...prev,
+            userLocation: {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            }
+          }));
+        },
+        (error) => {
+          console.error("Error getting user location:", error);
+        }
+      );
+    }
 
     fetchVehicle();
   }, [vehicleId]);
@@ -259,6 +281,20 @@ export default function VehicleDetails() {
                     { lat: 51.4543, lng: -2.5879 }
                   }
                   zoom={13}
+                  markers={[
+                    // Vehicle marker
+                    {
+                      position: vehicle.location.coordinates ? 
+                        { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
+                        { lat: 51.4543, lng: -2.5879 },
+                      title: `${vehicle.make} ${vehicle.model}`
+                    },
+                    // User location marker (if available)
+                    ...(state.userLocation ? [{
+                      position: state.userLocation,
+                      title: "Your Location"
+                    }] : [])
+                  ]}
                 />
               </div>
               <div className="mt-4 text-sm text-gray-600">
