@@ -16,6 +16,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
     domains: ['firebasestorage.googleapis.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.a.run.app'
+      }
+    ]
   },
   experimental: {
     webpackBuildWorker: true,
@@ -49,9 +55,30 @@ const nextConfig = {
         source: '/breakdown-services',
         destination: '/categories/breakdown-services',
         permanent: true,
+      },
+      {
+        source: '/sign-up',
+        destination: '/signup',
+        permanent: true,
       }
     ];
   },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/:path*/_next/:asset*',
+          destination: '/_next/:asset*'
+        }
+      ],
+      afterFiles: [
+        {
+          source: '/:path*',
+          destination: '/:path*'
+        }
+      ]
+    };
+  }
 }
 
 mergeConfig(nextConfig, userConfig)
