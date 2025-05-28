@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react"
 import { VehicleCard } from "./vehicle-card"
 import { useEffect, useState } from "react"
 import { VehicleSummary } from "@/types/vehicles"
+import { VehicleRepository } from "@/lib/db/repositories/vehicleRepository"
 
 export function LeaseCarListings() {
   const [leaseCars, setLeaseCars] = useState<VehicleSummary[]>([]);
@@ -14,12 +15,12 @@ export function LeaseCarListings() {
   useEffect(() => {
     const fetchLeaseCars = async () => {
       try {
-        const response = await fetch('/api/vehicles?type=used-car&limit=4');
-        if (!response.ok) {
-          throw new Error('Failed to fetch lease cars');
-        }
-        const data = await response.json();
-        setLeaseCars(data.items);
+        const vehicleRepo = new VehicleRepository();
+        const result = await vehicleRepo.searchVehicles(
+          { type: 'used-car' },
+          { page: 1, limit: 4 }
+        );
+        setLeaseCars(result.items);
       } catch (error) {
         console.error('Error fetching lease cars:', error);
       } finally {

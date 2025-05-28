@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react"
 import { VehicleCard } from "./vehicle-card"
 import { useEffect, useState } from "react"
 import { VehicleSummary } from "@/types/vehicles"
+import { VehicleRepository } from "@/lib/db/repositories/vehicleRepository"
 
 export function CarListings() {
   const [featuredCars, setFeaturedCars] = useState<VehicleSummary[]>([]);
@@ -14,12 +15,12 @@ export function CarListings() {
   useEffect(() => {
     const fetchFeaturedCars = async () => {
       try {
-        const response = await fetch('/api/vehicles?type=car&limit=4');
-        if (!response.ok) {
-          throw new Error('Failed to fetch featured cars');
-        }
-        const data = await response.json();
-        setFeaturedCars(data.items);
+        const vehicleRepo = new VehicleRepository();
+        const result = await vehicleRepo.searchVehicles(
+          { type: 'car' },
+          { page: 1, limit: 4 }
+        );
+        setFeaturedCars(result.items);
       } catch (error) {
         console.error('Error fetching featured cars:', error);
       } finally {
