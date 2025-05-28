@@ -1,0 +1,14 @@
+# Set all text files to use CRLF (Windows-style line endings)
+* text eol=crlf
+
+# Ensure scripts remain with LF (useful for bash scripts)
+*.sh text eol=lf
+
+# Keep binary files unchanged
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.exe binary
