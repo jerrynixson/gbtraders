@@ -23,6 +23,10 @@
         "destination": "/_next/data/**"
       },
       {
+        "source": "/_rsc/**",
+        "destination": "/_rsc/**"
+      },
+      {
         "source": "/static/**",
         "destination": "/static/**"
       },
@@ -36,7 +40,7 @@
       },
       {
         "source": "**",
-        "function": "nextjsServer"
+        "destination": "/index.html"
       }
     ],
     "headers": [
@@ -64,6 +68,15 @@
           {
             "key": "Cache-Control",
             "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/_rsc/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
           }
         ]
       },
