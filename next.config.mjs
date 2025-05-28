@@ -28,7 +28,9 @@ const nextConfig = {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
-    serverActions: true,
+    serverActions: {
+      allowedOrigins: ['localhost:3000', 'gbtraders--gbweb-208de.asia-east1.hosted.app']
+    }
   },
   async redirects() {
     return [

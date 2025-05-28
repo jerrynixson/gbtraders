@@ -7,7 +7,7 @@ import { getStorage } from 'firebase/storage';
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim(),
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
@@ -53,9 +53,13 @@ if (typeof window !== 'undefined') {
       console.error("Auth persistence error:", error);
     });
 
-  // Enable offline persistence for Firestore with error handling
-  enableIndexedDbPersistence(db)
-    .catch((err) => {
+  // Enable offline persistence for Firestore with error handling and retry
+  const enablePersistence = async () => {
+    try {
+      await enableIndexedDbPersistence(db, {
+        synchronizeTabs: true // Enable multi-tab support
+      });
+    } catch (err: any) {
       if (err.code === 'failed-precondition') {
         // Multiple tabs open, persistence can only be enabled in one tab at a time
         console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
@@ -67,15 +71,20 @@ if (typeof window !== 'undefined') {
         console.warn('IndexedDB is corrupted. Clearing data...');
         if (window.indexedDB) {
           try {
-            window.indexedDB.deleteDatabase('firebaseLocalStorageDb');
-            window.indexedDB.deleteDatabase('firestore');
+            await window.indexedDB.deleteDatabase('firebaseLocalStorageDb');
+            await window.indexedDB.deleteDatabase('firestore');
             console.log('IndexedDB databases cleared. Please refresh the page.');
+            // Retry enabling persistence after clearing
+            setTimeout(enablePersistence, 1000);
           } catch (e) {
             console.error('Error clearing IndexedDB:', e);
           }
         }
       }
-    });
+    }
+  };
+
+  enablePersistence();
 }
 
 // Dealer listing functions
