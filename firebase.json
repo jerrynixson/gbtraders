@@ -11,26 +11,34 @@
     },
     "rewrites": [
       {
+        "source": "/_next/**",
+        "destination": "/_next/**"
+      },
+      {
+        "source": "/static/**",
+        "destination": "/static/**"
+      },
+      {
         "source": "**",
-        "destination": "/index.html"
+        "function": "nextjsFunc"
       }
     ],
     "headers": [
       {
-        "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|js|css|eot|otf|ttf|ttc|woff|woff2|font.css)",
+        "source": "/_next/**",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "max-age=31536000"
+            "value": "public, max-age=31536000, immutable"
           }
         ]
       },
       {
-        "source": "**",
+        "source": "/static/**",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
+            "value": "public, max-age=31536000, immutable"
           }
         ]
       }
@@ -54,5 +62,9 @@
       "firebase-debug.*.log",
       "functions"
     ]
+  },
+  "functions": {
+    "source": ".",
+    "runtime": "nodejs18"
   }
 }

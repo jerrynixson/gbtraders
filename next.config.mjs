@@ -15,11 +15,42 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    domains: ['firebasestorage.googleapis.com'],
   },
   experimental: {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
+    serverActions: true,
+  },
+  async redirects() {
+    return [
+      {
+        source: '/cars',
+        destination: '/categories/cars',
+        permanent: true,
+      },
+      {
+        source: '/dealers',
+        destination: '/categories/dealers',
+        permanent: true,
+      },
+      {
+        source: '/garages',
+        destination: '/categories/garages',
+        permanent: true,
+      },
+      {
+        source: '/car-parts',
+        destination: '/categories/shop',
+        permanent: true,
+      },
+      {
+        source: '/breakdown-services',
+        destination: '/categories/breakdown-services',
+        permanent: true,
+      }
+    ];
   },
 }
 
