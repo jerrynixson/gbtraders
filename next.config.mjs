@@ -13,6 +13,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  output: 'standalone',
   images: {
     unoptimized: true,
     domains: ['firebasestorage.googleapis.com'],
@@ -73,8 +74,18 @@ const nextConfig = {
       ],
       afterFiles: [
         {
+          source: '/api/:path*',
+          destination: '/api/:path*'
+        },
+        {
           source: '/:path*',
           destination: '/:path*'
+        }
+      ],
+      fallback: [
+        {
+          source: '/:path*',
+          destination: `/:path*`
         }
       ]
     };

@@ -11,8 +11,16 @@
     },
     "rewrites": [
       {
-        "source": "/_next/**",
-        "destination": "/_next/**"
+        "source": "/_next/static/**",
+        "destination": "/_next/static/**"
+      },
+      {
+        "source": "/_next/image/**",
+        "destination": "/_next/image/**"
+      },
+      {
+        "source": "/_next/data/**",
+        "destination": "/_next/data/**"
       },
       {
         "source": "/static/**",
@@ -23,8 +31,12 @@
         "destination": "/public/**"
       },
       {
+        "source": "/favicon.ico",
+        "destination": "/favicon.ico"
+      },
+      {
         "source": "**",
-        "destination": "/index.html"
+        "function": "nextjsServer"
       }
     ],
     "headers": [
@@ -87,6 +99,12 @@
   },
   "functions": {
     "source": ".",
-    "runtime": "nodejs18"
+    "runtime": "nodejs18",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log"
+    ]
   }
 }
