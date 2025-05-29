@@ -91,13 +91,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      console.log('Attempting to sign in with email:', email);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Sign in successful:', userCredential.user.uid);
+      
+      // Get user data from Firestore
+      const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+      if (!userDoc.exists()) {
+        console.warn('User document not found in Firestore');
+      }
     } catch (error) {
+      console.error('Sign in error:', error);
       const authError = error as AuthError;
       if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
         throw new Error('Invalid email or password.');
+      } else if (authError.code === 'auth/too-many-requests') {
+        throw new Error('Too many failed login attempts. Please try again later.');
+      } else if (authError.code === 'auth/network-request-failed') {
+        throw new Error('Network error. Please check your internet connection.');
+      } else {
+        throw new Error('An error occurred during sign in. Please try again.');
       }
-      throw error;
     }
   };
 

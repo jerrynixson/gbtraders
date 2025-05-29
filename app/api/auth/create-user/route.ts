@@ -4,7 +4,8 @@ import * as admin from 'firebase-admin';
 
 export async function POST(request: Request) {
   try {
-    const { uid, firstName, lastName, email, country, role } = await request.json();
+    const body = await request.json();
+    const { uid, firstName, lastName, email, country, role } = body;
 
     // Validate required fields
     if (!uid || !firstName || !lastName || !email || !country || !role) {
@@ -39,10 +40,13 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error creating user document:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     
+    // Ensure we always return a valid JSON response
     return NextResponse.json(
-      { error: errorMessage },
+      { 
+        error: error instanceof Error ? error.message : 'Internal server error',
+        success: false
+      },
       { status: 500 }
     );
   }

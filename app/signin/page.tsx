@@ -24,6 +24,25 @@ const SignInPage: React.FC = () => {
     e.preventDefault();
     setError('');
     
+    // Basic validation
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    // Password length validation
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+    
     try {
       await signIn(email, password);
       toast({
@@ -33,7 +52,8 @@ const SignInPage: React.FC = () => {
       });
       router.push(redirectTo);
     } catch (error: any) {
-      setError(error.message);
+      console.error('Sign in error:', error);
+      setError(error.message || 'An error occurred during sign in');
     }
   };
 

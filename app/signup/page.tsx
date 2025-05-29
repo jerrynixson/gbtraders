@@ -61,9 +61,10 @@ const SignUpPage: React.FC = () => {
           }),
         });
 
+        const createUserData = await createUserResponse.json();
+
         if (!createUserResponse.ok) {
-          const errorData = await createUserResponse.json();
-          throw new Error(errorData.error || 'Failed to create user document');
+          throw new Error(createUserData.error || 'Failed to create user document');
         }
 
         // Set user role through the API
@@ -78,9 +79,10 @@ const SignUpPage: React.FC = () => {
           }),
         });
 
+        const setRoleData = await setRoleResponse.json();
+
         if (!setRoleResponse.ok) {
-          const errorData = await setRoleResponse.json();
-          throw new Error(errorData.error || 'Failed to set user role');
+          throw new Error(setRoleData.error || 'Failed to set user role');
         }
 
         // Wait for a short delay to ensure auth state is updated
