@@ -1,29 +1,57 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence, User } from 'firebase/auth';
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, collection, query, where, getDocs, deleteDoc, Firestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+
+// Sanitize environment variables
+const sanitizeEnvVar = (value: string | undefined): string => {
+  if (!value) return '';
+  // Remove any newlines, carriage returns, and trim whitespace
+  return value.replace(/[\r\n]+/g, '').trim();
+};
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim(),
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+  apiKey: sanitizeEnvVar(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
+  authDomain: sanitizeEnvVar(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN),
+  projectId: sanitizeEnvVar(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
+  storageBucket: sanitizeEnvVar(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET),
+  messagingSenderId: sanitizeEnvVar(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
+  appId: sanitizeEnvVar(process.env.NEXT_PUBLIC_FIREBASE_APP_ID)
 };
 
-// Initialize Firebase
-export const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-export const auth = getAuth(firebaseApp);
-
-// Initialize Firestore with the new persistence configuration
-export const db = initializeFirestore(firebaseApp, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
+// Validate Firebase config
+Object.entries(firebaseConfig).forEach(([key, value]) => {
+  if (!value) {
+    console.error(`Missing or invalid Firebase config: ${key}`);
+  }
 });
 
+// Initialize Firebase with error handling
+let firebaseApp;
+try {
+  firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+} catch (error) {
+  console.error('Error initializing Firebase:', error);
+  throw error;
+}
+
+export const auth = getAuth(firebaseApp);
+
+// Initialize Firestore with the new persistence configuration and error handling
+let db: Firestore;
+try {
+  db = initializeFirestore(firebaseApp, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch (error) {
+  console.error('Error initializing Firestore:', error);
+  throw error;
+}
+
+export { db };
 export const storage = getStorage(firebaseApp);
 
 // Role-based authentication helpers
