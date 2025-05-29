@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence, User } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence, doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
@@ -16,7 +16,14 @@ const firebaseConfig = {
 // Initialize Firebase
 export const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(firebaseApp);
-export const db = getFirestore(firebaseApp);
+
+// Initialize Firestore with the new persistence configuration
+export const db = initializeFirestore(firebaseApp, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
+
 export const storage = getStorage(firebaseApp);
 
 // Role-based authentication helpers
@@ -45,46 +52,12 @@ export const isUser = async (user: User | null): Promise<boolean> => {
   return role === 'user';
 };
 
-// Enable persistence with error handling
+// Set auth persistence
 if (typeof window !== 'undefined') {
-  // Set auth persistence
   setPersistence(auth, browserLocalPersistence)
     .catch((error) => {
       console.error("Auth persistence error:", error);
     });
-
-  // Enable offline persistence for Firestore with error handling and retry
-  const enablePersistence = async () => {
-    try {
-      await enableIndexedDbPersistence(db, {
-        synchronizeTabs: true // Enable multi-tab support
-      });
-    } catch (err: any) {
-      if (err.code === 'failed-precondition') {
-        // Multiple tabs open, persistence can only be enabled in one tab at a time
-        console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
-      } else if (err.code === 'unimplemented') {
-        // The current browser doesn't support persistence
-        console.warn('The current browser does not support persistence.');
-      } else if (err.code === 'indexeddb-corrupted') {
-        // IndexedDB is corrupted, try to clear it
-        console.warn('IndexedDB is corrupted. Clearing data...');
-        if (window.indexedDB) {
-          try {
-            await window.indexedDB.deleteDatabase('firebaseLocalStorageDb');
-            await window.indexedDB.deleteDatabase('firestore');
-            console.log('IndexedDB databases cleared. Please refresh the page.');
-            // Retry enabling persistence after clearing
-            setTimeout(enablePersistence, 1000);
-          } catch (e) {
-            console.error('Error clearing IndexedDB:', e);
-          }
-        }
-      }
-    }
-  };
-
-  enablePersistence();
 }
 
 // Dealer listing functions
