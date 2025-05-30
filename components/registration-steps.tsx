@@ -26,15 +26,17 @@ function Step({ number, icon: Icon, title, description }: { number: number } & S
   return (
     <div className="relative group overflow-hidden rounded-xl bg-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105">
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-600 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-      <div className="p-6 flex flex-col items-center text-center space-y-4">
-        <div className="bg-blue-50 p-4 rounded-full mb-2 transition-colors group-hover:bg-blue-100">
-          <Icon className="w-8 h-8 text-blue-600 group-hover:text-blue-800 transition-colors" />
-        </div>
-        <div className="space-y-2">
-          <div className="text-lg font-semibold text-gray-800 group-hover:text-blue-700 transition-colors">
-            <span className="text-gray-400 mr-2">0{number}.</span> {title}
+      <div className="p-6 flex flex-col md:flex-col items-center text-center space-y-4 md:space-y-4">
+        <div className="flex md:flex-col items-center md:items-center w-full md:w-auto space-x-4 md:space-x-0">
+          <div className="bg-blue-50 p-4 rounded-full transition-colors group-hover:bg-blue-100">
+            <Icon className="w-8 h-8 text-blue-600 group-hover:text-blue-800 transition-colors" />
           </div>
-          <p className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">{description}</p>
+          <div className="space-y-2 text-left md:text-center">
+            <div className="text-lg font-semibold text-gray-800 group-hover:text-blue-700 transition-colors">
+              <span className="text-gray-400 mr-2">0{number}.</span> {title}
+            </div>
+            <p className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">{description}</p>
+          </div>
         </div>
       </div>
     </div>
