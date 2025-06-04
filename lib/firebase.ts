@@ -134,10 +134,7 @@ export const deleteListing = async (listingId: string) => {
 };
 
 // Print Firebase project info (for debugging; avoid in production)
-if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-  // Print projectId, appId, storageBucket
-  console.log('[Firebase Config]');
-  console.log('Project ID:', firebaseConfig.projectId);
-  console.log('App ID:', firebaseConfig.appId);
-  console.log('Storage Bucket:', firebaseConfig.storageBucket);
-} 
+console.log('[Firebase Config]');
+console.log('Project ID:', firebaseConfig.projectId || 'data not found');
+console.log('App ID:', firebaseConfig.appId || 'data not found');
+console.log('Storage Bucket:', firebaseConfig.storageBucket || 'data not found');
