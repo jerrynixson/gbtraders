@@ -131,4 +131,13 @@ export const deleteListing = async (listingId: string) => {
     console.error('Error deleting listing:', error);
     throw error;
   }
-}; 
+};
+
+// Print Firebase project info (for debugging; avoid in production)
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  // Print projectId, appId, storageBucket
+  console.log('[Firebase Config]');
+  console.log('Project ID:', firebaseConfig.projectId);
+  console.log('App ID:', firebaseConfig.appId);
+  console.log('Storage Bucket:', firebaseConfig.storageBucket);
+} 
