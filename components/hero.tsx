@@ -24,6 +24,8 @@ export function Hero({
   const [keywords, setKeywords] = useState<string>('');
   const [postcode, setPostcode] = useState<string>('');
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
   const categories = [
     "Vehicles",
@@ -31,6 +33,15 @@ export function Hero({
     "Car Parts",
     "Garages",
     "Dealers"
+  ];
+
+  const bannerImages = [
+    '/banner/IMG-20250607-WA0004.jpg',
+    '/banner/IMG-20250607-WA0005.jpg',
+    '/banner/IMG-20250607-WA0006.jpg',
+    '/banner/IMG-20250607-WA0007.jpg',
+    '/banner/IMG-20250607-WA0008.jpg',
+    '/banner/IMG-20250608-WA0001.jpg',
   ];
 
   useEffect(() => {
@@ -47,6 +58,18 @@ export function Hero({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isHovered) {
+        setCurrentImageIndex((prevIndex) => 
+          prevIndex === bannerImages.length - 1 ? 0 : prevIndex + 1
+        );
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isHovered]);
+
   const handleSearch = () => {
     if (onSearch) {
       onSearch(selectedCategory, keywords, postcode);
@@ -59,6 +82,22 @@ export function Hero({
     setPostcode('');
   };
 
+  const goToSlide = (index: number) => {
+    setCurrentImageIndex(index);
+  };
+
+  const nextSlide = () => {
+    setCurrentImageIndex((prevIndex) => 
+      prevIndex === bannerImages.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+
+  const prevSlide = () => {
+    setCurrentImageIndex((prevIndex) => 
+      prevIndex === 0 ? bannerImages.length - 1 : prevIndex - 1
+    );
+  };
+
   return (
     <div 
       className="relative w-full min-h-screen overflow-hidden"
@@ -68,15 +107,58 @@ export function Hero({
         filter: `blur(${scrollProgress * 5}px)`
       }}
     >
-      {/* Background Image */}
+      {/* Background Image Slideshow */}
       <div 
-        className="absolute inset-0 bg-cover bg-center filter brightness-50"
+        className="absolute inset-0 bg-cover bg-center filter brightness-50 transition-opacity duration-1000"
         style={{ 
-          backgroundImage: `url('${backgroundImage}')`,
+          backgroundImage: `url('${bannerImages[currentImageIndex]}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       />
+
+      {/* Navigation Controls */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex items-center space-x-4">
+        {/* Previous Button */}
+        <button
+          onClick={prevSlide}
+          className="p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-all duration-300"
+          aria-label="Previous slide"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Dots Navigation */}
+        <div className="flex space-x-2">
+          {bannerImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                currentImageIndex === index 
+                  ? 'bg-white scale-125' 
+                  : 'bg-white/50 hover:bg-white/75'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+
+        {/* Next Button */}
+        <button
+          onClick={nextSlide}
+          className="p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-all duration-300"
+          aria-label="Next slide"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
 
       {/* Content Container */}
       <div className="relative container mx-auto px-4 py-20 md:py-32 flex flex-col md:flex-row items-center">
