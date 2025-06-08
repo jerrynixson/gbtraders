@@ -143,13 +143,21 @@ const VehicleContent = ({ vehicle, userLocation }: { vehicle: Vehicle; userLocat
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* Left Column */}
-      <div className="lg:col-span-7">
+    <>
+      {/* CarImageSection for mobile - appears first */}
+      <div className="lg:hidden mb-6">
         <Suspense fallback={<div>Loading images...</div>}>
           <CarImageSection images={vehicle.images} />
         </Suspense>
-        
+      </div>
+
+      {/* CarDetailsPayment for mobile - appears second */}
+      <div className="lg:hidden mb-6">
+        <CarDetailsPayment {...carDetails} />
+      </div>
+
+      {/* Other details for mobile - appears third */}
+      <div className="lg:hidden">
         <CommonVehicleDetails vehicle={vehicle} />
         <VehicleDocumentation vehicle={vehicle} />
         <VehicleSpecificDetails vehicle={vehicle} />
@@ -166,12 +174,9 @@ const VehicleContent = ({ vehicle, userLocation }: { vehicle: Vehicle; userLocat
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Right Column */}
-      <div className="lg:col-span-5">
         {/* Add to Favorites and Report Listing Buttons */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 mt-6">
           <button 
             className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             onClick={() => {/* TODO: Implement save functionality */}}
@@ -188,7 +193,6 @@ const VehicleContent = ({ vehicle, userLocation }: { vehicle: Vehicle; userLocat
           </button>
         </div>
 
-        <CarDetailsPayment {...carDetails} />
         <DealerInformation {...dealerInfo} />
         
         {/* Vehicle Location Map */}
@@ -220,13 +224,96 @@ const VehicleContent = ({ vehicle, userLocation }: { vehicle: Vehicle; userLocat
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Main content grid for desktop - hidden on mobile */}
+      <div className="hidden lg:grid grid-cols-12 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-7">
+          <Suspense fallback={<div>Loading images...</div>}>
+            <CarImageSection images={vehicle.images} />
+          </Suspense>
+          
+          <CommonVehicleDetails vehicle={vehicle} />
+          <VehicleDocumentation vehicle={vehicle} />
+          <VehicleSpecificDetails vehicle={vehicle} />
+
+          {/* Features Section */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4 shadow-sm">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Features</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {vehicle.features.map((feature, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
+                  <span className="text-gray-700">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="lg:col-span-5">
+          {/* Add to Favorites and Report Listing Buttons */}
+          <div className="flex justify-between items-center mb-4">
+            <button 
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              onClick={() => {/* TODO: Implement save functionality */}}
+            >
+              <Heart className="h-4 w-4" />
+              <span>Save</span>
+            </button>
+
+            <button 
+              className="inline-flex items-center justify-center rounded-md bg-muted p-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              onClick={() => {/* TODO: Implement report functionality */}}
+            >
+              <Flag className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* CarDetailsPayment for desktop - remains in right column */}
+          <div className="hidden lg:block">
+             <CarDetailsPayment {...carDetails} />
+          </div>
+
+          <DealerInformation {...dealerInfo} />
+          
+          {/* Vehicle Location Map */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Vehicle Location</h3>
+            <div className="w-full h-[300px] rounded-lg overflow-hidden">
+              <GoogleMapComponent 
+                center={vehicle.location.coordinates ? 
+                  { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
+                  { lat: 51.4543, lng: -2.5879 }
+                }
+                zoom={13}
+                markers={[
+                  {
+                    position: vehicle.location.coordinates ? 
+                      { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
+                      { lat: 51.4543, lng: -2.5879 },
+                    title: `${vehicle.make} ${vehicle.model}`
+                  },
+                  ...(userLocation ? [{
+                    position: userLocation,
+                    title: "Your Location"
+                  }] : [])
+                ]}
+              />
+            </div>
+            <div className="mt-4 text-sm text-gray-600">
+              <p>This vehicle is currently located at {vehicle.location.address}, {vehicle.location.city}.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
 
 export default function VehicleDetails() {
   const params = useParams();
-  const vehicleId = params.id as string;
   const [state, setState] = useState<VehiclePageState>({
     vehicle: null,
     loading: true,
@@ -234,30 +321,43 @@ export default function VehicleDetails() {
     userLocation: null
   });
 
-  const fetchVehicle = useCallback(async () => {
-    try {
-      const repository = new VehicleRepository();
-      const vehicle = await repository.getVehicle(vehicleId);
-      setState(prev => ({
-        ...prev,
-        vehicle,
-        loading: false,
-        error: vehicle ? null : "Vehicle not found"
-      }));
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        vehicle: null,
-        loading: false,
-        error: "Failed to load vehicle details"
-      }));
-      console.error("Error fetching vehicle:", error);
-    }
-  }, [vehicleId]);
-
   useEffect(() => {
+    const fetchVehicle = async () => {
+      try {
+        const vehicleId = params.id as string;
+        console.log('Fetching vehicle with ID:', vehicleId);
+        
+        const vehicleRepo = new VehicleRepository();
+        const vehicle = await vehicleRepo.getVehicle(vehicleId);
+        
+        console.log('Vehicle fetch result:', vehicle);
+        
+        if (!vehicle) {
+          setState(prev => ({
+            ...prev,
+            loading: false,
+            error: 'Vehicle not found'
+          }));
+          return;
+        }
+
+        setState(prev => ({
+          ...prev,
+          vehicle,
+          loading: false
+        }));
+      } catch (error) {
+        console.error('Error fetching vehicle:', error);
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Failed to load vehicle details'
+        }));
+      }
+    };
+
     fetchVehicle();
-  }, [fetchVehicle]);
+  }, [params.id]);
 
   useEffect(() => {
     if ("geolocation" in navigator) {

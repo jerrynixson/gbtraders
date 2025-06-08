@@ -38,17 +38,33 @@ try {
 
 export const auth = getAuth(firebaseApp);
 
-// Initialize Firestore with the new persistence configuration and error handling
+// Initialize Firestore with conditional persistence for App Hosting compatibility
 let db: Firestore;
 try {
-  db = initializeFirestore(firebaseApp, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager()
-    })
-  });
+  // Check if we're in a browser environment and not in Firebase App Hosting SSR
+  const isClientSide = typeof window !== 'undefined';
+  const isAppHosting = typeof process !== 'undefined' && process.env.NODE_ENV === 'production';
+  
+  if (isClientSide && !isAppHosting) {
+    // Use persistent cache only in client-side browser environments
+    db = initializeFirestore(firebaseApp, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });
+  } else {
+    // Use default Firestore initialization for server-side or App Hosting
+    db = getFirestore(firebaseApp);
+  }
 } catch (error) {
-  console.error('Error initializing Firestore:', error);
-  throw error;
+  console.error('Error initializing Firestore with persistence, falling back to default:', error);
+  // Fallback to default Firestore if persistent cache fails
+  try {
+    db = getFirestore(firebaseApp);
+  } catch (fallbackError) {
+    console.error('Error initializing Firestore with fallback:', fallbackError);
+    throw fallbackError;
+  }
 }
 
 export { db };
@@ -80,7 +96,7 @@ export const isUser = async (user: User | null): Promise<boolean> => {
   return role === 'user';
 };
 
-// Set auth persistence
+// Set auth persistence only in browser environment
 if (typeof window !== 'undefined') {
   setPersistence(auth, browserLocalPersistence)
     .catch((error) => {
@@ -131,4 +147,12 @@ export const deleteListing = async (listingId: string) => {
     console.error('Error deleting listing:', error);
     throw error;
   }
-}; 
+};
+
+// Debug logging - remove quotes around values to see clean output
+if (typeof window !== 'undefined') {
+  console.log('[Firebase Config - Client Side]');
+  console.log('Project ID:', firebaseConfig.projectId);
+  console.log('App ID:', firebaseConfig.appId);
+  console.log('Storage Bucket:', firebaseConfig.storageBucket);
+}

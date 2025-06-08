@@ -67,25 +67,25 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
   posts = defaultBlogPosts 
 }) => {
   return (
-    <section className="relative py-20 overflow-hidden">
+    <section className="relative py-10 sm:py-20 overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 to-white" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,0,0,0.03),transparent_50%)]" />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
-        <div className="flex justify-between items-center mb-12">
-          <div className="text-left">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 sm:gap-0 mb-10 sm:mb-12">
+          <div className="text-left space-y-2 sm:space-y-3">
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
               News & Blogs
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl">
+            <p className="text-sm sm:text-lg text-gray-600 max-w-2xl leading-relaxed">
               Stay updated with the latest news, reviews, and stories from the automotive world
             </p>
           </div>
           <Link
             href="/news"
-            className="inline-flex items-center px-6 py-3 rounded-full text-sm font-medium text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl"
+            className="w-full sm:w-auto inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-sm font-medium text-white bg-primary hover:bg-primary/90 transition-colors shadow-sm hover:shadow-md"
           >
             View All Articles
             <svg
@@ -105,12 +105,12 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
         </div>
 
         {/* Blog Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
           {posts.map((post) => (
             <Link 
               key={post.id}
               href={`/news/${post.slug}`}
-              className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer"
+              className="group relative bg-white rounded-lg sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
             >
               {/* Image Container */}
               <div className="relative aspect-[4/3] overflow-hidden">
@@ -118,36 +118,36 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
                   src={post.imageUrl}
                   alt={post.altText}
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
                 {/* Category Badge */}
-                <div className="absolute top-4 left-4">
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-white/90 text-gray-900 backdrop-blur-sm">
+                <div className="absolute top-3 sm:top-4 left-3 sm:left-4">
+                  <span className="inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium bg-white/95 text-gray-900 backdrop-blur-sm shadow-sm">
                     {post.category}
                   </span>
                 </div>
               </div>
 
               {/* Content */}
-              <div className="p-6">
-                <div className="flex items-center gap-3 mb-4 text-sm text-gray-500">
+              <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500">
                   <span className="font-medium text-gray-900">{post.author}</span>
-                  <span className="w-1 h-1 rounded-full bg-gray-300" />
+                  <span className="w-1 h-1 rounded-full bg-gray-200" />
                   <time dateTime={post.date.replace(/\s/g, '-').toLowerCase()}>
                     {post.date}
                   </time>
                 </div>
                 
-                <h3 className="text-xl font-semibold text-gray-900 mb-4 line-clamp-2 group-hover:text-primary transition-colors duration-300">
+                <h3 className="text-base sm:text-xl font-semibold text-gray-900 line-clamp-2 group-hover:text-primary transition-colors duration-300">
                   {post.title}
                 </h3>
 
-                <div className="inline-flex items-center text-sm font-medium text-primary group-hover:translate-x-2 transition-transform">
+                <div className="inline-flex items-center text-xs sm:text-sm font-medium text-primary group-hover:translate-x-1 transition-transform">
                   Read More
                   <svg
-                    className="w-4 h-4 ml-2"
+                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1.5 sm:ml-2"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
