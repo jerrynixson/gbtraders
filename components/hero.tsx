@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Link from 'next/link'
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -256,9 +257,11 @@ export function Hero({
                 >
                   Reset filters
                 </Button>
-                <Button variant="link" className="text-primary p-0">
-                  More options
-                </Button>
+                <Link href="/search">
+                  <Button variant="link" className="text-primary p-0">
+                    More options
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

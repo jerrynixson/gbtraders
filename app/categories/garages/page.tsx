@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Search, MapPin, Filter, Grid, List, Star, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp } from "lucide-react"
 import { useState } from "react"
 import { Header } from "@/components/header"
+import { GoogleMapComponent } from "@/components/ui/google-map"
 
 interface Garage {
   id: string;
@@ -269,10 +270,10 @@ export default function SearchGaragesPage() {
               {/* Map Preview - Glassmorphic Card */}
               <div className="relative flex flex-col items-center mb-2">
                 <div className="w-full h-40 rounded-2xl bg-white/30 backdrop-blur-md shadow-md overflow-hidden flex items-center justify-center border border-blue-100">
-                  <img src="/map-preview.png" alt="Map preview" className="object-cover w-full h-full" />
-                  <button className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/60 backdrop-blur-md border border-yellow-400 text-black font-bold px-6 py-2 rounded-xl shadow-md text-base hover:bg-yellow-100 transition-all">
-                    View map
-                  </button>
+                  <GoogleMapComponent 
+                    center={{ lat: 52.4862, lng: -1.8904 }}
+                    zoom={13}
+                  />
                 </div>
               </div>
 
