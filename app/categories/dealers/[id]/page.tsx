@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { VehicleCard } from "@/components/vehicle-card";
 
 // Mock data for demonstration
 const dealer = {
@@ -52,6 +53,62 @@ const relatedDealers = [
     address: "4 Dealer Street, City 4, United Kingdom",
     phone: "0123 444 444",
     openingHours: "Mon-Fri: 9am-6pm",
+  },
+];
+
+// Mock data for dealer's vehicles
+const dealerVehicles = [
+  {
+    id: 1,
+    title: "BMW 3 Series 320d M Sport",
+    price: 299,
+    monthlyPrice: 299,
+    image: "/cars/car1.jpg",
+    distance: "0 miles away",
+    location: "Best Cars Ltd",
+    year: "2023",
+    mileage: "0",
+    fuel: "Diesel",
+    transmission: "Automatic",
+  },
+  {
+    id: 2,
+    title: "Mercedes-Benz C-Class C220d AMG Line",
+    price: 349,
+    monthlyPrice: 349,
+    image: "/cars/car2.jpg",
+    distance: "0 miles away",
+    location: "Best Cars Ltd",
+    year: "2023",
+    mileage: "0",
+    fuel: "Diesel",
+    transmission: "Automatic",
+  },
+  {
+    id: 3,
+    title: "Audi A4 40 TDI S line",
+    price: 329,
+    monthlyPrice: 329,
+    image: "/cars/car3.jpg",
+    distance: "0 miles away",
+    location: "Best Cars Ltd",
+    year: "2023",
+    mileage: "0",
+    fuel: "Diesel",
+    transmission: "Automatic",
+  },
+  {
+    id: 4,
+    title: "Volkswagen Golf 2.0 TDI R-Line",
+    price: 279,
+    monthlyPrice: 279,
+    image: "/cars/car4.jpg",
+    distance: "0 miles away",
+    location: "Best Cars Ltd",
+    year: "2023",
+    mileage: "0",
+    fuel: "Diesel",
+    transmission: "Automatic",
   },
 ];
 
@@ -116,9 +173,34 @@ export default function DealerInfoPage() {
           </div>
         </div>
       </div>
+
+      {/* More from this Dealer */}
+      <div className="container mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold text-blue-900 mb-6">More from {dealer.name}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {dealerVehicles.map((vehicle) => (
+            <VehicleCard
+              key={vehicle.id}
+              id={vehicle.id}
+              image={vehicle.image}
+              title={vehicle.title}
+              price={vehicle.price}
+              monthlyPrice={vehicle.monthlyPrice}
+              year={vehicle.year}
+              mileage={vehicle.mileage}
+              fuel={vehicle.fuel}
+              transmission={vehicle.transmission}
+              distance={vehicle.distance}
+              location={vehicle.location}
+              view="grid"
+            />
+          ))}
+        </div>
+      </div>
+
       {/* Related Dealers */}
       <div className="container mx-auto px-4 py-8">
-        <h2 className="text-xl font-bold text-blue-900 mb-4">Related Dealers</h2>
+        <h2 className="text-xl font-bold text-blue-900 mb-4">Discover More Trusted Dealers</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {relatedDealers.map((dealer) => (
             <div key={dealer.id} className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">

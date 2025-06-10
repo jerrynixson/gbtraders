@@ -5,58 +5,18 @@ import { ChevronRight, Heart, Share2 } from "lucide-react";
 import { useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { VehicleSummary } from "@/types/vehicles";
 
 export interface VehicleCardProps {
-  id: number;
-  image: string;
-  title: string;
-  price: number;
-  monthlyPrice: number;
-  year: string;
-  mileage: string;
-  fuel?: string;
-  transmission?: string;
-  distance: string;
-  location: string;
+  vehicle: VehicleSummary;
   isFavoriteKey?: string;
   isHighlighted?: boolean;
   onShare?: () => void;
   view?: "grid" | "list";
 }
 
-export interface Vehicle {
-  id: number;
-  image: string;
-  title: string;
-  price: number;
-  monthlyPrice: number;
-  year: string;
-  mileage: string;
-  distance: string;
-  location: string;
-  tag: string;
-  make: string;
-  model: string;
-  description: string;
-  initialPayment: string;
-  contractLength: string;
-  milesPerYear: string;
-  fuel?: string;
-  transmission?: string;
-}
-
 export const VehicleCard = memo(function VehicleCard({
-  id,
-  image,
-  title,
-  price,
-  monthlyPrice,
-  year,
-  mileage,
-  fuel,
-  transmission,
-  distance,
-  location,
+  vehicle,
   isFavoriteKey = "vehicle_favorites",
   isHighlighted,
   onShare,
@@ -64,10 +24,27 @@ export const VehicleCard = memo(function VehicleCard({
 }: VehicleCardProps) {
   const router = useRouter();
   const isGrid = view === "grid";
+
+  // Early return if vehicle is undefined or missing required properties
+  if (!vehicle || !vehicle.id || !vehicle.make || !vehicle.model || !vehicle.year) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+        <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
+        <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="h-8 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-gray-200 rounded"></div>
+        </div>
+        <div className="h-10 bg-gray-200 rounded"></div>
+      </div>
+    );
+  }
+
   const [isFavorite, setIsFavorite] = useState(() => {
     if (typeof window === 'undefined') return false;
     const favorites = JSON.parse(localStorage.getItem(isFavoriteKey) || '[]');
-    return favorites.some((fav: { id: number }) => fav.id === id);
+    return favorites.some((fav: { id: string }) => fav.id === vehicle.id);
   });
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -75,10 +52,10 @@ export const VehicleCard = memo(function VehicleCard({
     if (typeof window === 'undefined') return;
     const favorites = JSON.parse(localStorage.getItem(isFavoriteKey) || '[]');
     if (isFavorite) {
-      const updatedFavorites = favorites.filter((fav: { id: number }) => fav.id !== id);
+      const updatedFavorites = favorites.filter((fav: { id: string }) => fav.id !== vehicle.id);
       localStorage.setItem(isFavoriteKey, JSON.stringify(updatedFavorites));
     } else {
-      favorites.push({ id, image, title, price, monthlyPrice, year, mileage, fuel, transmission, distance, location });
+      favorites.push(vehicle);
       localStorage.setItem(isFavoriteKey, JSON.stringify(favorites));
     }
     setIsFavorite(!isFavorite);
@@ -90,13 +67,16 @@ export const VehicleCard = memo(function VehicleCard({
     if (onShare) onShare();
   };
 
+  const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+  const location = vehicle.location ? `${vehicle.location.city}, ${vehicle.location.country}` : 'Location not available';
+
   return (
-    <Link href={`/vehicle-info/${id}`} className="block">
+    <Link href={`/vehicle-info/${vehicle.id}`} className="block">
       <div className={`group bg-white rounded-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-blue-100 ${isGrid ? 'flex flex-col h-full' : 'flex'} ${isHighlighted ? 'ring-2 ring-blue-100' : ''} cursor-pointer`}>
         <div className={`relative ${isGrid ? 'w-full' : 'w-1/3'}`}>
           <div className="relative overflow-hidden">
             <Image
-              src={image || "/placeholder.svg"}
+              src={vehicle.mainImage || "/placeholder.svg"}
               alt={title}
               width={400}
               height={240}
@@ -133,10 +113,8 @@ export const VehicleCard = memo(function VehicleCard({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    {distance}
+                    {location}
                   </span>
-                  <span className="mx-1">•</span>
-                  <span>{location}</span>
                 </div>
               </div>
             </div>
@@ -152,30 +130,32 @@ export const VehicleCard = memo(function VehicleCard({
           <div className="grid grid-cols-2 gap-2 mb-3">
             <div className="flex items-center text-xs bg-gray-50 p-1.5 rounded-lg">
               <span className="font-medium text-gray-700 mr-1">Year:</span>
-              <span className="text-gray-600">{year}</span>
+              <span className="text-gray-600">{vehicle.year}</span>
             </div>
             <div className="flex items-center text-xs bg-gray-50 p-1.5 rounded-lg">
               <span className="font-medium text-gray-700 mr-1">Mileage:</span>
-              <span className="text-gray-600">{mileage} mi</span>
+              <span className="text-gray-600">{vehicle.mileage?.toLocaleString() || 'N/A'} mi</span>
             </div>
-            {fuel && (
+            {vehicle.fuel && (
               <div className="flex items-center text-xs bg-gray-50 p-1.5 rounded-lg">
                 <span className="font-medium text-gray-700 mr-1">Fuel:</span>
-                <span className="text-gray-600">{fuel}</span>
+                <span className="text-gray-600">{vehicle.fuel}</span>
               </div>
             )}
-            {transmission && (
+            {vehicle.transmission && (
               <div className="flex items-center text-xs bg-gray-50 p-1.5 rounded-lg">
                 <span className="font-medium text-gray-700 mr-1">Trans:</span>
-                <span className="text-gray-600">{transmission}</span>
+                <span className="text-gray-600">{vehicle.transmission}</span>
               </div>
             )}
           </div>
           
           <div className={`${isGrid ? 'mt-auto' : 'flex items-center justify-between gap-4 mt-4'}`}>
             <div className={`${isGrid ? '' : 'flex-1'}`}>
-              <div className="text-xl font-bold text-blue-800">£{price.toLocaleString()}</div>
-              <div className="text-xs text-gray-600">£{monthlyPrice.toLocaleString()}/month</div>
+              <div className="text-xl font-bold text-blue-800">£{vehicle.price?.toLocaleString() || 'N/A'}</div>
+              {vehicle.monthlyPrice && (
+                <div className="text-xs text-gray-600">£{vehicle.monthlyPrice.toLocaleString()}/month</div>
+              )}
             </div>
             
             <Button 

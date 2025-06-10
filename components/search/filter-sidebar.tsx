@@ -5,6 +5,10 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { MapPin, Car, PoundSterling, Clock, Gauge, Tag, Shield, Star, ChevronRight, RotateCcw } from "lucide-react"
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { VehicleType, VehicleFilters, FuelType, TransmissionType, CarBodyStyle } from '@/types/vehicles'
+import { debounce } from '@/lib/utils'
 
 // Types
 interface FilterState {
@@ -29,6 +33,7 @@ interface FilterState {
   vehicleHistory: string
   vehicleUsage: string
   dealerRating: string
+  type: VehicleType
 }
 
 type ToggleButtonProps = {
@@ -94,33 +99,44 @@ function FilterItem({ label, count, onClick }: FilterItemProps) {
   )
 }
 
-export function FilterSidebar({ onFilterChange }: { onFilterChange: (filters: FilterState) => void }) {
+interface FilterSidebarProps {
+  initialFilters: VehicleFilters
+  onFilterChange: (filters: VehicleFilters) => void
+  availableMakes: string[]
+  availableModels: string[]
+  selectedVehicleType: VehicleType
+}
+
+export function FilterSidebar({
+  initialFilters,
+  onFilterChange,
+  availableMakes,
+  availableModels,
+  selectedVehicleType,
+}: FilterSidebarProps) {
+  const [filters, setFilters] = useState<VehicleFilters>(initialFilters)
   const [priceToggle, setPriceToggle] = useState(0)
   const [yearToggle, setYearToggle] = useState(0)
-  const [keyword, setKeyword] = useState("")
-  const [filters, setFilters] = useState<FilterState>({
-    searchRadius: "",
-    make: "",
-    model: "",
-    trim: "",
-    bodyStyle: "",
-    minPrice: "",
-    maxPrice: "",
-    minYear: "",
-    maxYear: "",
-    minMileage: "",
-    maxMileage: "",
-    fuelType: [],
-    transmission: [],
-    doors: [],
-    seats: [],
-    color: [],
-    features: [],
-    safetyRating: "",
-    vehicleHistory: "",
-    vehicleUsage: "",
-    dealerRating: ""
-  })
+
+  useEffect(() => {
+    setFilters(initialFilters)
+  }, [initialFilters])
+
+  const debouncedFilterChange = debounce((newFilters: VehicleFilters) => {
+    onFilterChange(newFilters)
+  }, 500)
+
+  const updateFilters = (updates: Partial<VehicleFilters>) => {
+    const newFilters = { ...filters, ...updates }
+    setFilters(newFilters)
+    debouncedFilterChange(newFilters)
+  }
+
+  const handleReset = () => {
+    setFilters(initialFilters)
+    setPriceToggle(0)
+    setYearToggle(0)
+  }
 
   const commonFeatures = ["Wheelchair Access", "Left Hand Drive", "Sat Nav", "Bluetooth", "Leather Seats"]
   const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid", "LPG"]
@@ -130,91 +146,6 @@ export function FilterSidebar({ onFilterChange }: { onFilterChange: (filters: Fi
   const vehicleHistories = ["Full Service History", "Part Service History", "No Service History"]
   const vehicleUsages = ["Private", "Business", "Taxi", "Other"]
   const dealerRatings = ["5 Star", "4 Star", "3 Star", "2 Star", "1 Star"]
-
-  // Add predefined options for makes, models, trims, and body types
-  const makes = [
-    "Audi", "BMW", "Ford", "Honda", "Hyundai", "Kia", "Land Rover", "Lexus",
-    "Mercedes-Benz", "Nissan", "Porsche", "Renault", "Skoda", "Tesla", "Toyota",
-    "Volkswagen", "Volvo"
-  ]
-
-  const models = {
-    "Audi": ["A1", "A3", "A4", "A5", "A6", "A7", "A8", "Q2", "Q3", "Q5", "Q7", "Q8", "e-tron"],
-    "BMW": ["1 Series", "2 Series", "3 Series", "4 Series", "5 Series", "7 Series", "X1", "X3", "X5", "X7", "i3", "i4", "iX"],
-    "Ford": ["Fiesta", "Focus", "Mondeo", "Kuga", "Puma", "Mustang", "Ranger", "Transit"],
-    "Honda": ["Civic", "CR-V", "HR-V", "Jazz", "Accord"],
-    "Hyundai": ["i10", "i20", "i30", "Tucson", "Santa Fe", "Kona", "IONIQ"],
-    "Kia": ["Picanto", "Rio", "Ceed", "Sportage", "Sorento", "Niro", "EV6"],
-    "Land Rover": ["Defender", "Discovery", "Discovery Sport", "Range Rover", "Range Rover Sport", "Range Rover Evoque"],
-    "Lexus": ["UX", "NX", "RX", "ES", "LS"],
-    "Mercedes-Benz": ["A-Class", "C-Class", "E-Class", "S-Class", "GLA", "GLC", "GLE", "GLS", "EQC"],
-    "Nissan": ["Micra", "Juke", "Qashqai", "X-Trail", "Leaf", "Ariya"],
-    "Porsche": ["911", "Taycan", "Macan", "Cayenne", "Panamera"],
-    "Renault": ["Clio", "Captur", "Megane", "Kadjar", "Zoe"],
-    "Skoda": ["Fabia", "Scala", "Octavia", "Karoq", "Kodiaq", "Enyaq"],
-    "Tesla": ["Model 3", "Model S", "Model X", "Model Y"],
-    "Toyota": ["Yaris", "Corolla", "RAV4", "C-HR", "Prius", "bZ4X"],
-    "Volkswagen": ["Polo", "Golf", "Passat", "Tiguan", "T-Roc", "ID.3", "ID.4", "ID.5"],
-    "Volvo": ["XC40", "XC60", "XC90", "S60", "S90", "V60", "V90", "C40"]
-  }
-
-  const trims = [
-    "Standard", "SE", "SEL", "Sport", "GT", "R-Line", "M Sport", "AMG Line",
-    "S Line", "RS", "M", "AMG", "Vorsprung", "Exclusive", "Luxury", "Premium"
-  ]
-
-  const bodyTypes = [
-    "Hatchback", "Saloon", "Estate", "SUV", "MPV", "Coupe", "Convertible",
-    "Pickup", "Van", "Sports Car", "Supercar", "Electric"
-  ]
-
-  const handleReset = () => {
-    setFilters({
-      searchRadius: "",
-      make: "",
-      model: "",
-      trim: "",
-      bodyStyle: "",
-      minPrice: "",
-      maxPrice: "",
-      minYear: "",
-      maxYear: "",
-      minMileage: "",
-      maxMileage: "",
-      fuelType: [],
-      transmission: [],
-      doors: [],
-      seats: [],
-      color: [],
-      features: [],
-      safetyRating: "",
-      vehicleHistory: "",
-      vehicleUsage: "",
-      dealerRating: ""
-    })
-    setKeyword("")
-    setPriceToggle(0)
-    setYearToggle(0)
-  }
-
-  const handleFilterChange = (key: keyof FilterState, value: any) => {
-    setFilters(prev => {
-      const newFilters = { ...prev, [key]: value }
-      onFilterChange(newFilters)
-      return newFilters
-    })
-  }
-
-  const handleFeatureToggle = (feature: string) => {
-    setFilters(prev => {
-      const newFeatures = prev.features.includes(feature)
-        ? prev.features.filter(f => f !== feature)
-        : [...prev.features, feature]
-      const newFilters = { ...prev, features: newFeatures }
-      onFilterChange(newFilters)
-      return newFilters
-    })
-  }
 
   return (
     <aside 
@@ -238,469 +169,240 @@ export function FilterSidebar({ onFilterChange }: { onFilterChange: (filters: Fi
           Reset All Filters
         </Button>
 
-        {/* Search Radius */}
-        <section 
-          className="border-t border-gray-100 py-3"
-          aria-labelledby="search-radius-heading"
-        >
-          <div className="flex items-center mb-2">
-            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
-              <MapPin className="h-4 w-4 text-blue-600" />
-            </div>
-            <h3 id="search-radius-heading" className="font-medium text-sm text-gray-900">Search Radius</h3>
-          </div>
-          <Input 
-            placeholder="Enter postcode (e.g. CR26EW)" 
-            className="w-full bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
-            value={filters.searchRadius}
-            onChange={(e) => handleFilterChange("searchRadius", e.target.value)}
-            aria-label="Search radius postcode"
-          />
-        </section>
-
-        {/* Make, Model & Trim */}
-        <section 
-          className="border-t border-gray-100 py-3"
-          aria-labelledby="make-model-heading"
-        >
+        {/* Vehicle Type */}
+        <section className="border-t border-gray-100 py-3">
           <div className="flex items-center mb-2">
             <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
               <Car className="h-4 w-4 text-blue-600" />
             </div>
-            <h3 id="make-model-heading" className="font-medium text-sm text-gray-900">Make, Model & Trim</h3>
+            <h3 className="font-medium text-sm text-gray-900">Vehicle Type</h3>
           </div>
+          <Select
+            value={filters.type}
+            onValueChange={(value: VehicleType) => updateFilters({ type: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select vehicle type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="car">Car</SelectItem>
+              <SelectItem value="used-car">Used Car</SelectItem>
+              <SelectItem value="truck">Truck</SelectItem>
+              <SelectItem value="van">Van</SelectItem>
+            </SelectContent>
+          </Select>
+        </section>
 
+        {/* Make & Model */}
+        <section className="border-t border-gray-100 py-3">
+          <div className="flex items-center mb-2">
+            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
+              <Car className="h-4 w-4 text-blue-600" />
+            </div>
+            <h3 className="font-medium text-sm text-gray-900">Make & Model</h3>
+          </div>
           <div className="space-y-2">
-            <div>
-              <label htmlFor="make-select" className="block text-xs font-medium text-gray-700 mb-0.5">Make</label>
-              <select 
-                id="make-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                value={filters.make}
-                onChange={(e) => {
-                  handleFilterChange("make", e.target.value)
-                  handleFilterChange("model", "")
-                }}
-                aria-label="Select vehicle make"
-              >
-                <option value="">Select Make</option>
-                {makes.map((make) => (
-                  <option key={make} value={make}>{make}</option>
+            <Select
+              value={filters.make?.[0] || ''}
+              onValueChange={(value) => updateFilters({ make: value ? [value] : undefined })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select make" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableMakes.map((make) => (
+                  <SelectItem key={make} value={make}>
+                    {make}
+                  </SelectItem>
                 ))}
-              </select>
-            </div>
+              </SelectContent>
+            </Select>
 
-            <div>
-              <label htmlFor="model-select" className="block text-xs font-medium text-gray-700 mb-0.5">Model</label>
-              <select 
-                id="model-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                value={filters.model}
-                onChange={(e) => handleFilterChange("model", e.target.value)}
-                disabled={!filters.make}
-                aria-label="Select vehicle model"
-                aria-disabled={!filters.make}
-              >
-                <option value="">Select Model</option>
-                {filters.make && models[filters.make as keyof typeof models]?.map((model) => (
-                  <option key={model} value={model}>{model}</option>
+            <Select
+              value={filters.model?.[0] || ''}
+              onValueChange={(value) => updateFilters({ model: value ? [value] : undefined })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableModels.map((model) => (
+                  <SelectItem key={model} value={model}>
+                    {model}
+                  </SelectItem>
                 ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="trim-select" className="block text-xs font-medium text-gray-700 mb-0.5">Trim</label>
-              <select 
-                id="trim-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                value={filters.trim}
-                onChange={(e) => handleFilterChange("trim", e.target.value)}
-                aria-label="Select vehicle trim"
-              >
-                <option value="">Select Trim</option>
-                {trims.map((trim) => (
-                  <option key={trim} value={trim}>{trim}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="body-type-select" className="block text-xs font-medium text-gray-700 mb-0.5">Body Type</label>
-              <select 
-                id="body-type-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                value={filters.bodyStyle}
-                onChange={(e) => handleFilterChange("bodyStyle", e.target.value)}
-                aria-label="Select vehicle body type"
-              >
-                <option value="">Select Body Type</option>
-                {bodyTypes.map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
+              </SelectContent>
+            </Select>
           </div>
         </section>
 
-        {/* Budget */}
-        <section 
-          className="border-t border-gray-100 py-3"
-          aria-labelledby="budget-heading"
-        >
+        {/* Price Range */}
+        <section className="border-t border-gray-100 py-3">
           <div className="flex items-center mb-2">
             <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
               <PoundSterling className="h-4 w-4 text-blue-600" />
             </div>
-            <h3 id="budget-heading" className="font-medium text-sm text-gray-900">Budget</h3>
+            <h3 className="font-medium text-sm text-gray-900">Price Range</h3>
           </div>
 
           <div className="mb-2" role="radiogroup" aria-label="Price type">
             <ToggleButton options={["Price", "Monthly cost"]} activeIndex={priceToggle} onChange={setPriceToggle} />
           </div>
 
-          <div className="space-y-2">
-            <div>
-              <label htmlFor="min-price-select" className="block text-xs font-medium text-gray-700 mb-0.5">Min Price</label>
-              <select 
-                id="min-price-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                value={filters.minPrice}
-                onChange={(e) => handleFilterChange("minPrice", e.target.value)}
-                aria-label="Select minimum price"
-              >
-                <option value="">No minimum</option>
-                <option value="1000">£1,000</option>
-                <option value="2000">£2,000</option>
-                <option value="5000">£5,000</option>
-                <option value="10000">£10,000</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="max-price-select" className="block text-xs font-medium text-gray-700 mb-0.5">Max Price</label>
-              <select 
-                id="max-price-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                value={filters.maxPrice}
-                onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
-                aria-label="Select maximum price"
-              >
-                <option value="">No maximum</option>
-                <option value="5000">£5,000</option>
-                <option value="10000">£10,000</option>
-                <option value="20000">£20,000</option>
-                <option value="50000">£50,000</option>
-              </select>
-            </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="number"
+              placeholder="Min"
+              value={filters.minPrice || ''}
+              onChange={(e) => updateFilters({ minPrice: e.target.value ? parseInt(e.target.value) : undefined })}
+              className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
+            />
+            <Input
+              type="number"
+              placeholder="Max"
+              value={filters.maxPrice || ''}
+              onChange={(e) => updateFilters({ maxPrice: e.target.value ? parseInt(e.target.value) : undefined })}
+              className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
+            />
           </div>
         </section>
 
-        {/* Year Or Age */}
-        <section 
-          className="border-t border-gray-100 py-3"
-          aria-labelledby="year-age-heading"
-        >
+        {/* Year Range */}
+        <section className="border-t border-gray-100 py-3">
           <div className="flex items-center mb-2">
             <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
               <Clock className="h-4 w-4 text-blue-600" />
             </div>
-            <h3 id="year-age-heading" className="font-medium text-sm text-gray-900">Year Or Age</h3>
+            <h3 className="font-medium text-sm text-gray-900">Year Range</h3>
           </div>
 
           <div className="mb-2" role="radiogroup" aria-label="Year or age selection">
             <ToggleButton options={["Year", "Age"]} activeIndex={yearToggle} onChange={setYearToggle} />
           </div>
 
-          <div className="space-y-2">
-            <div>
-              <label htmlFor="min-year-select" className="block text-xs font-medium text-gray-700 mb-0.5">Min Year</label>
-              <select 
-                id="min-year-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                value={filters.minYear}
-                onChange={(e) => handleFilterChange("minYear", e.target.value)}
-                aria-label="Select minimum year"
-              >
-                <option value="">No minimum</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-                <option value="2023">2023</option>
-                <option value="2022">2022</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="max-year-select" className="block text-xs font-medium text-gray-700 mb-0.5">Max Year</label>
-              <select 
-                id="max-year-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                value={filters.maxYear}
-                onChange={(e) => handleFilterChange("maxYear", e.target.value)}
-                aria-label="Select maximum year"
-              >
-                <option value="">No maximum</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-                <option value="2023">2023</option>
-                <option value="2022">2022</option>
-              </select>
-            </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="number"
+              placeholder="Min"
+              value={filters.minYear || ''}
+              onChange={(e) => updateFilters({ minYear: e.target.value ? parseInt(e.target.value) : undefined })}
+              className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
+            />
+            <Input
+              type="number"
+              placeholder="Max"
+              value={filters.maxYear || ''}
+              onChange={(e) => updateFilters({ maxYear: e.target.value ? parseInt(e.target.value) : undefined })}
+              className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
+            />
           </div>
         </section>
 
         {/* Vehicle Attributes */}
-        <section 
-          className="border-t border-gray-100 py-3"
-          aria-labelledby="attributes-heading"
-        >
+        <section className="border-t border-gray-100 py-3">
           <div className="flex items-center mb-2">
             <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
               <Gauge className="h-4 w-4 text-blue-600" />
             </div>
-            <h3 id="attributes-heading" className="font-medium text-sm text-gray-900">Vehicle Attributes</h3>
+            <h3 className="font-medium text-sm text-gray-900">Vehicle Attributes</h3>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-4">
             <div>
-              <label htmlFor="min-mileage" className="block text-xs font-medium text-gray-700 mb-0.5">Mileage</label>
+              <Label className="text-xs font-medium text-gray-700 mb-1">Mileage</Label>
               <div className="grid grid-cols-2 gap-2">
-                <Input 
-                  id="min-mileage"
-                  placeholder="Min" 
-                  className="w-full bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                  value={filters.minMileage}
-                  onChange={(e) => handleFilterChange("minMileage", e.target.value)}
-                  aria-label="Minimum mileage"
+                <Input
+                  type="number"
+                  placeholder="Min"
+                  value={filters.minMileage || ''}
+                  onChange={(e) => updateFilters({ minMileage: e.target.value ? parseInt(e.target.value) : undefined })}
+                  className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
                 />
-                <Input 
-                  id="max-mileage"
-                  placeholder="Max" 
-                  className="w-full bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                  value={filters.maxMileage}
-                  onChange={(e) => handleFilterChange("maxMileage", e.target.value)}
-                  aria-label="Maximum mileage"
+                <Input
+                  type="number"
+                  placeholder="Max"
+                  value={filters.maxMileage || ''}
+                  onChange={(e) => updateFilters({ maxMileage: e.target.value ? parseInt(e.target.value) : undefined })}
+                  className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
                 />
               </div>
             </div>
 
-            <fieldset>
-              <legend className="block text-xs font-medium text-gray-700 mb-1">Fuel Type</legend>
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-1">Fuel Type</Label>
               <div className="grid grid-cols-2 gap-1">
                 {fuelTypes.map((type) => (
                   <div key={type} className="flex items-center">
-                    <Checkbox 
+                    <Checkbox
                       id={`fuel-${type}`}
-                      checked={filters.fuelType.includes(type)}
-                      onCheckedChange={() => {
-                        const newFuelTypes = filters.fuelType.includes(type)
-                          ? filters.fuelType.filter(f => f !== type)
-                          : [...filters.fuelType, type]
-                        handleFilterChange("fuelType", newFuelTypes)
+                      checked={filters.fuelType?.includes(type.toLowerCase() as FuelType)}
+                      onCheckedChange={(checked) => {
+                        const newFuelTypes = checked
+                          ? [...(filters.fuelType || []), type.toLowerCase() as FuelType]
+                          : (filters.fuelType || []).filter(f => f !== type.toLowerCase())
+                        updateFilters({ fuelType: newFuelTypes })
                       }}
                       className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4"
-                      aria-label={`Select ${type} fuel type`}
                     />
                     <label htmlFor={`fuel-${type}`} className="text-xs ml-1.5 text-gray-700">{type}</label>
                   </div>
                 ))}
               </div>
-            </fieldset>
+            </div>
 
-            <fieldset>
-              <legend className="block text-xs font-medium text-gray-700 mb-1">Transmission</legend>
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-1">Transmission</Label>
               <div className="grid grid-cols-2 gap-1">
                 {transmissions.map((type) => (
                   <div key={type} className="flex items-center">
-                    <Checkbox 
+                    <Checkbox
                       id={`transmission-${type}`}
-                      checked={filters.transmission.includes(type)}
-                      onCheckedChange={() => {
-                        const newTransmissions = filters.transmission.includes(type)
-                          ? filters.transmission.filter(t => t !== type)
-                          : [...filters.transmission, type]
-                        handleFilterChange("transmission", newTransmissions)
+                      checked={filters.transmission?.includes(type.toLowerCase() as TransmissionType)}
+                      onCheckedChange={(checked) => {
+                        const newTransmissions = checked
+                          ? [...(filters.transmission || []), type.toLowerCase() as TransmissionType]
+                          : (filters.transmission || []).filter(t => t !== type.toLowerCase())
+                        updateFilters({ transmission: newTransmissions })
                       }}
                       className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4"
-                      aria-label={`Select ${type} transmission`}
                     />
                     <label htmlFor={`transmission-${type}`} className="text-xs ml-1.5 text-gray-700">{type}</label>
                   </div>
                 ))}
               </div>
-            </fieldset>
+            </div>
+          </div>
+        </section>
 
-            <fieldset>
-              <legend className="block text-xs font-medium text-gray-700 mb-1">Color</legend>
-              <div className="grid grid-cols-2 gap-1">
-                {colors.map((color) => (
-                  <div key={color} className="flex items-center">
-                    <Checkbox 
-                      id={`color-${color}`}
-                      checked={filters.color.includes(color)}
-                      onCheckedChange={() => {
-                        const newColors = filters.color.includes(color)
-                          ? filters.color.filter(c => c !== color)
-                          : [...filters.color, color]
-                        handleFilterChange("color", newColors)
-                      }}
-                      className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4"
-                      aria-label={`Select ${color} color`}
-                    />
-                    <label htmlFor={`color-${color}`} className="text-xs ml-1.5 text-gray-700">{color}</label>
-                  </div>
-                ))}
+        {/* Body Style (only for cars) */}
+        {selectedVehicleType === 'car' && (
+          <section className="border-t border-gray-100 py-3">
+            <div className="flex items-center mb-2">
+              <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
+                <Car className="h-4 w-4 text-blue-600" />
               </div>
-            </fieldset>
-          </div>
-        </section>
-
-        {/* Vehicle Features */}
-        <section 
-          className="border-t border-gray-100 py-3"
-          aria-labelledby="features-heading"
-        >
-          <div className="flex items-center mb-2">
-            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
-              <Tag className="h-4 w-4 text-blue-600" />
+              <h3 className="font-medium text-sm text-gray-900">Body Style</h3>
             </div>
-            <h3 id="features-heading" className="font-medium text-sm text-gray-900">Vehicle Features</h3>
-          </div>
-
-          <div className="flex mb-2">
-            <Input
-              id="feature-keyword"
-              placeholder="Enter keywords here..."
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              className="flex-1 mr-2 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
-              aria-label="Enter feature keyword"
-            />
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200 text-sm px-2"
-              onClick={() => {
-                if (keyword && !filters.features.includes(keyword)) {
-                  handleFilterChange("features", [...filters.features, keyword])
-                  setKeyword("")
-                }
-              }}
-              aria-label="Add feature keyword"
+            <Select
+              value={filters.bodyStyle?.[0] || ''}
+              onValueChange={(value: CarBodyStyle) => updateFilters({ bodyStyle: value ? [value] : undefined })}
             >
-              Add
-            </Button>
-          </div>
-
-          <p className="text-xs text-gray-500 mb-1">Common Keywords:</p>
-
-          <fieldset>
-            <legend className="sr-only">Common features</legend>
-            <div className="grid grid-cols-2 gap-1">
-              {commonFeatures.map((feature) => (
-                <div key={feature} className="flex items-center">
-                  <Checkbox 
-                    id={`feature-${feature}`}
-                    checked={filters.features.includes(feature)}
-                    onCheckedChange={() => handleFeatureToggle(feature)}
-                    className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4"
-                    aria-label={`Select ${feature} feature`}
-                  />
-                  <label htmlFor={`feature-${feature}`} className="text-xs ml-1.5 text-gray-700">{feature}</label>
-                </div>
-              ))}
-            </div>
-          </fieldset>
-        </section>
-
-        {/* Safety & History */}
-        <section 
-          className="border-t border-gray-100 py-3"
-          aria-labelledby="safety-heading"
-        >
-          <div className="flex items-center mb-2">
-            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
-              <Shield className="h-4 w-4 text-blue-600" />
-            </div>
-            <h3 id="safety-heading" className="font-medium text-sm text-gray-900">Safety & History</h3>
-          </div>
-
-          <div className="space-y-2">
-            <div>
-              <label htmlFor="safety-rating-select" className="block text-xs font-medium text-gray-700 mb-0.5">Safety Rating</label>
-              <select 
-                id="safety-rating-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                value={filters.safetyRating}
-                onChange={(e) => handleFilterChange("safetyRating", e.target.value)}
-                aria-label="Select safety rating"
-              >
-                <option value="">Any Rating</option>
-                {safetyRatings.map((rating) => (
-                  <option key={rating} value={rating}>{rating}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="vehicle-history-select" className="block text-xs font-medium text-gray-700 mb-0.5">Vehicle History</label>
-              <select 
-                id="vehicle-history-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                value={filters.vehicleHistory}
-                onChange={(e) => handleFilterChange("vehicleHistory", e.target.value)}
-                aria-label="Select vehicle history"
-              >
-                <option value="">Any History</option>
-                {vehicleHistories.map((history) => (
-                  <option key={history} value={history}>{history}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="vehicle-usage-select" className="block text-xs font-medium text-gray-700 mb-0.5">Vehicle Usage</label>
-              <select 
-                id="vehicle-usage-select"
-                className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                value={filters.vehicleUsage}
-                onChange={(e) => handleFilterChange("vehicleUsage", e.target.value)}
-                aria-label="Select vehicle usage"
-              >
-                <option value="">Any Usage</option>
-                {vehicleUsages.map((usage) => (
-                  <option key={usage} value={usage}>{usage}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </section>
-
-        {/* Advert Options */}
-        <section 
-          className="border-t border-gray-100 py-3"
-          aria-labelledby="advert-heading"
-        >
-          <div className="flex items-center mb-2">
-            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
-              <Star className="h-4 w-4 text-blue-600" />
-            </div>
-            <h3 id="advert-heading" className="font-medium text-sm text-gray-900">Advert Options</h3>
-          </div>
-
-          <div>
-            <label htmlFor="dealer-rating-select" className="block text-xs font-medium text-gray-700 mb-0.5">Dealer Rating</label>
-            <select 
-              id="dealer-rating-select"
-              className="w-full border border-gray-200 rounded p-1.5 bg-gray-50 focus:border-blue-500 focus:ring-blue-500 text-sm"
-              value={filters.dealerRating}
-              onChange={(e) => handleFilterChange("dealerRating", e.target.value)}
-              aria-label="Select dealer rating"
-            >
-              <option value="">Any Rating</option>
-              {dealerRatings.map((rating) => (
-                <option key={rating} value={rating}>{rating}</option>
-              ))}
-            </select>
-          </div>
-        </section>
+              <SelectTrigger>
+                <SelectValue placeholder="Select body style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sedan">Sedan</SelectItem>
+                <SelectItem value="suv">SUV</SelectItem>
+                <SelectItem value="hatchback">Hatchback</SelectItem>
+                <SelectItem value="coupe">Coupe</SelectItem>
+                <SelectItem value="convertible">Convertible</SelectItem>
+                <SelectItem value="wagon">Wagon</SelectItem>
+                <SelectItem value="van">Van</SelectItem>
+                <SelectItem value="truck">Truck</SelectItem>
+              </SelectContent>
+            </Select>
+          </section>
+        )}
       </div>
     </aside>
   )

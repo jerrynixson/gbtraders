@@ -1,10 +1,17 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
+import { Header } from "../../components/header";
+import { Footer } from "../../components/footer";
 import { Eye, EyeOff, ArrowRight, Mail, Lock, User, Globe } from "lucide-react";
-import { PrivacyPolicyModal } from "@/components/privacy-policy-modal";
+import { PrivacyPolicyModal } from "../../components/privacy-policy-modal";
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import Link from 'next/link';
+import { useToast } from "@/hooks/use-toast";
+import { FirebaseError } from 'firebase/app';
 
 const SignUpPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
@@ -15,10 +22,92 @@ const SignUpPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isDealerAccount, setIsDealerAccount] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [error, setError] = useState('');
+  const { signUp, logout } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') || '/';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Sign up attempt with:', { firstName, lastName, email, password, country, isDealerAccount });
+    setError('');
+    
+    if (!firstName || !lastName || !email || !password || !country) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      // Create the user account
+      const userCredential = await signUp(email, password);
+      const user = userCredential.user;
+      const role = isDealerAccount ? 'dealer' : 'user';
+
+      try {
+        // Create user document through the API
+        const createUserResponse = await fetch('/api/auth/create-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            firstName,
+            lastName,
+            email,
+            country,
+            role,
+          }),
+        });
+
+        if (!createUserResponse.ok) {
+          const errorData = await createUserResponse.json();
+          throw new Error(errorData.error || 'Failed to create user document');
+        }
+
+        // Set user role through the API
+        const setRoleResponse = await fetch('/api/auth/set-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            role,
+          }),
+        });
+
+        if (!setRoleResponse.ok) {
+          const errorData = await setRoleResponse.json();
+          throw new Error(errorData.error || 'Failed to set user role');
+        }
+
+        // Wait for a short delay to ensure auth state is updated
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        toast({
+          title: "Success!",
+          description: "Your account has been created successfully.",
+          variant: "default",
+        });
+        
+        // Use replace instead of push to prevent back navigation to signup
+        router.replace(redirectTo);
+      } catch (setupError: any) {
+        console.error("Error setting up user:", setupError);
+        // If setup fails, sign out the user
+        await logout();
+        setError(setupError.message || 'Failed to create your account. Please try again later.');
+      }
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      if (error.message.includes('already registered')) {
+        setError('This email is already registered. Please sign in instead.');
+      } else {
+        setError(error.message || 'An error occurred during signup. Please try again.');
+      }
+    }
   };
 
   return (
@@ -48,6 +137,21 @@ const SignUpPage: React.FC = () => {
               <p className="mt-2 text-gray-600">Fill in your details to get started</p>
             </div>
             
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">
+                  {error}
+                  {error.includes('already registered') && (
+                    <span className="ml-2">
+                      <Link href="/signin" className="text-indigo-600 hover:text-indigo-500 underline">
+                        Sign in here
+                      </Link>
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+            
             <form className="space-y-5" onSubmit={handleSubmit}>
               {/* Dealer Account Toggle */}
               <div className="flex items-center">
@@ -62,7 +166,9 @@ const SignUpPage: React.FC = () => {
                     <div className={`block w-10 h-6 rounded-full transition-colors ${isDealerAccount ? 'bg-indigo-600' : 'bg-gray-300'}`}></div>
                     <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${isDealerAccount ? 'transform translate-x-4' : ''}`}></div>
                   </div>
-                  <div className="ml-3 text-gray-700 text-sm font-medium">Account for Dealers</div>
+                  <div className="ml-3 text-gray-700 text-sm font-medium">
+                    {isDealerAccount ? 'Dealer Account' : 'User Account'}
+                  </div>
                 </label>
               </div>
 
@@ -263,9 +369,9 @@ const SignUpPage: React.FC = () => {
                 </p>
                 <p className="text-sm text-gray-600 mt-4">
                   Already have an account?{" "}
-                  <a href="/signin" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                  <Link href={`/signin?redirectTo=${encodeURIComponent(redirectTo)}`} className="font-semibold text-indigo-600 hover:text-indigo-500">
                     Sign in
-                  </a>
+                  </Link>
                 </p>
               </div>
             </form>

@@ -19,7 +19,7 @@ export function BrowseByBrand() {
     return (
       <section className="py-10 bg-white-100">
         <h2 className="text-2xl font-bold text-center mb-6">Browse by Brand</h2>
-        <div className="grid grid-cols-6 gap-6 justify-center">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-6 justify-center">
           {brands.map((brand) => (
             <div key={brand.name} className="flex items-center justify-center bg-white shadow-md rounded-lg p-2">
               <Image src={brand.logo} alt={brand.name} width={80} height={80} />

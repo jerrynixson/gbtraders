@@ -1,84 +1,62 @@
+"use client";
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
-import { VehicleCard, Vehicle } from "./vehicle-card"
-
-const cars: Vehicle[] = [
-  {
-    id: 1,
-    image: "/cars/car1.jpg",
-    title: "Peugeot 208",
-    price: 166,
-    monthlyPrice: 166,
-    year: "2023",
-    mileage: "8,000",
-    distance: "5 miles",
-    location: "London",
-    tag: "PCP",
-    make: "Peugeot",
-    model: "208",
-    description: "1.2 PureTech Allure E-go 6 (s/s) 5dr",
-    initialPayment: "£1,987",
-    contractLength: "48",
-    milesPerYear: "8,000",
-  },
-  {
-    id: 2,
-    image: "/cars/car2.jpg",
-    title: "Renault Scenic E-Tech",
-    price: 235,
-    monthlyPrice: 235,
-    year: "2023",
-    mileage: "5,000",
-    distance: "5 miles",
-    location: "London",
-    tag: "PCP",
-    make: "Renault",
-    model: "Scenic E-Tech",
-    description: "long range 87kWh techno Auto 5dr (220kW Charger)",
-    initialPayment: "£2,851",
-    contractLength: "24",
-    milesPerYear: "5,000",
-  },
-  {
-    id: 3,
-    image: "/cars/car3.jpg",
-    title: "Volkswagen ID.7",
-    price: 293,
-    monthlyPrice: 293,
-    year: "2023",
-    mileage: "5,000",
-    distance: "5 miles",
-    location: "London",
-    tag: "PCP",
-    make: "Volkswagen",
-    model: "ID.7",
-    description: "Pro S 86kWh Match Fastback Auto 5dr",
-    initialPayment: "£3,516",
-    contractLength: "24",
-    milesPerYear: "5,000",
-  },
-  {
-    id: 4,
-    image: "/cars/car4.jpg",
-    title: "CUPRA Born",
-    price: 243,
-    monthlyPrice: 243,
-    year: "2023",
-    mileage: "5,000",
-    distance: "5 miles",
-    location: "London",
-    tag: "PCP",
-    make: "CUPRA",
-    model: "Born",
-    description: "e-Boost 59kWh V1 Auto 5dr",
-    initialPayment: "£2,909",
-    contractLength: "24",
-    milesPerYear: "5,000",
-  },
-]
+import { VehicleCard } from "./vehicle-card"
+import { useEffect, useState } from "react"
+import { VehicleSummary } from "@/types/vehicles"
+import { VehicleRepository } from "@/lib/db/repositories/vehicleRepository"
 
 export function CarListings() {
+  const [featuredCars, setFeaturedCars] = useState<VehicleSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedCars = async () => {
+      try {
+        const vehicleRepo = new VehicleRepository();
+        const result = await vehicleRepo.searchVehicles(
+          { type: 'car' },
+          { page: 1, limit: 4 }
+        );
+        setFeaturedCars(result.items);
+      } catch (error) {
+        console.error('Error fetching featured cars:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedCars();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-12" aria-labelledby="featured-cars-heading">
+        <div className="container mx-auto px-4">
+          <h2 id="featured-cars-heading" className="text-2xl font-bold mb-6 text-center">
+            Featured Cars
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
+                <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-12" aria-labelledby="featured-cars-heading">
       <div className="container mx-auto px-4">
@@ -87,18 +65,11 @@ export function CarListings() {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-          {cars.map((car) => (
+          {featuredCars.map((car) => (
             <VehicleCard
               key={car.id}
-              id={car.id}
-              image={car.image}
-              title={car.title}
-              price={car.price}
-              monthlyPrice={car.monthlyPrice}
-              year={car.year}
-              mileage={car.mileage}
-              distance={car.distance}
-              location={car.location}
+              vehicle={car}
+              isHighlighted={true}
               view="grid"
             />
           ))}
@@ -115,7 +86,7 @@ export function CarListings() {
 
         <div className="flex justify-center mt-8">
           <Link 
-            href="#" 
+            href="/search?type=car" 
             className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
             aria-label="View more car deals"
           >

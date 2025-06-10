@@ -1,84 +1,62 @@
+"use client";
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
-import { VehicleCard, Vehicle } from "./vehicle-card"
-
-const leaseCars: Vehicle[] = [
-  {
-    id: 5,
-    image: "/cars/lease1.jpg",
-    title: "Audi A3",
-    price: 199,
-    monthlyPrice: 199,
-    year: "2023",
-    mileage: "8,000",
-    distance: "5 miles",
-    location: "London",
-    tag: "Lease",
-    make: "Audi",
-    model: "A3",
-    description: "35 TFSI Sport 5dr S Tronic",
-    initialPayment: "£1,194",
-    contractLength: "36",
-    milesPerYear: "8,000",
-  },
-  {
-    id: 6,
-    image: "/cars/lease2.jpg",
-    title: "BMW 1 Series",
-    price: 249,
-    monthlyPrice: 249,
-    year: "2023",
-    mileage: "8,000",
-    distance: "5 miles",
-    location: "London",
-    tag: "Lease",
-    make: "BMW",
-    model: "1 Series",
-    description: "118i M Sport 5dr Step Auto",
-    initialPayment: "£1,494",
-    contractLength: "36",
-    milesPerYear: "8,000",
-  },
-  {
-    id: 7,
-    image: "/cars/lease3.jpg",
-    title: "Mercedes A-Class",
-    price: 299,
-    monthlyPrice: 299,
-    year: "2023",
-    mileage: "8,000",
-    distance: "5 miles",
-    location: "London",
-    tag: "Lease",
-    make: "Mercedes",
-    model: "A-Class",
-    description: "A180 AMG Line 5dr Auto",
-    initialPayment: "£1,794",
-    contractLength: "36",
-    milesPerYear: "8,000",
-  },
-  {
-    id: 8,
-    image: "/cars/lease4.jpg",
-    title: "Volkswagen Golf",
-    price: 279,
-    monthlyPrice: 279,
-    year: "2023",
-    mileage: "8,000",
-    distance: "5 miles",
-    location: "London",
-    tag: "Lease",
-    make: "Volkswagen",
-    model: "Golf",
-    description: "1.5 TSI Life 5dr DSG",
-    initialPayment: "£1,674",
-    contractLength: "36",
-    milesPerYear: "8,000",
-  },
-]
+import { VehicleCard } from "./vehicle-card"
+import { useEffect, useState } from "react"
+import { VehicleSummary } from "@/types/vehicles"
+import { VehicleRepository } from "@/lib/db/repositories/vehicleRepository"
 
 export function LeaseCarListings() {
+  const [leaseCars, setLeaseCars] = useState<VehicleSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaseCars = async () => {
+      try {
+        const vehicleRepo = new VehicleRepository();
+        const result = await vehicleRepo.searchVehicles(
+          { type: 'used-car' },
+          { page: 1, limit: 4 }
+        );
+        setLeaseCars(result.items);
+      } catch (error) {
+        console.error('Error fetching lease cars:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaseCars();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-12 bg-gray-50" aria-labelledby="lease-cars-heading">
+        <div className="container mx-auto px-4">
+          <h2 id="lease-cars-heading" className="text-2xl font-bold mb-6 text-center">
+            Lease Deals
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
+                <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-12 bg-gray-50" aria-labelledby="lease-cars-heading">
       <div className="container mx-auto px-4">
@@ -90,15 +68,7 @@ export function LeaseCarListings() {
           {leaseCars.map((car) => (
             <VehicleCard
               key={car.id}
-              id={car.id}
-              image={car.image}
-              title={car.title}
-              price={car.price}
-              monthlyPrice={car.monthlyPrice}
-              year={car.year}
-              mileage={car.mileage}
-              distance={car.distance}
-              location={car.location}
+              vehicle={car}
               view="grid"
             />
           ))}
@@ -115,7 +85,7 @@ export function LeaseCarListings() {
 
         <div className="flex justify-center mt-8">
           <Link 
-            href="#" 
+            href="/search?type=used-car" 
             className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
             aria-label="View more lease deals"
           >

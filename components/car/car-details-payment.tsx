@@ -5,8 +5,6 @@ interface CarDetailsPaymentProps {
   carName: string
   carDescription: string
   price: string
-  initialPayment: string
-  monthlyPayments: number
   dealerName: string
   dealerLocation: string
 }
@@ -15,8 +13,6 @@ export function CarDetailsPayment({
   carName,
   carDescription,
   price,
-  initialPayment,
-  monthlyPayments,
   dealerName,
   dealerLocation,
 }: CarDetailsPaymentProps) {
@@ -37,21 +33,13 @@ export function CarDetailsPayment({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 gap-4 mb-4">
           <div>
             <div className="text-xs text-muted-foreground">PRICE</div>
             <div className="text-xl font-bold">{price}</div>
           </div>
-          <div>
-            <div className="text-xs text-muted-foreground">INITIAL PAYMENT</div>
-            <div className="text-sm">{initialPayment} (inc VAT)</div>
-            <div className="text-xs text-muted-foreground">{monthlyPayments}x monthly payments</div>
-          </div>
         </div>
-
-        
-        </div>
-      
+      </div>
     </div>
   )
 }

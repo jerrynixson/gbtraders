@@ -12,14 +12,32 @@ import {
   Newspaper, 
   Search, 
   Store, 
-  ChevronDown 
+  ChevronDown,
+  LogOut,
+  Megaphone,
+  Settings,
+  PlusCircle
 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
+import { usePathname } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
+import { useToast } from "@/hooks/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface NavItem {
   href?: string;
@@ -37,6 +55,30 @@ type TopNavItem = NavItem | DropdownNavItem;
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false)
+  const pathname = usePathname()
+  const { user, logout } = useAuth()
+  const { toast } = useToast()
+
+  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(email => email.trim());
+
+  const handleSignOut = async () => {
+    try {
+      await logout()
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully.",
+        variant: "default",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      })
+    }
+    setShowSignOutDialog(false)
+  }
 
   const vehicleNavItems: NavItem[] = [
     { href: "/categories/cars", label: "Cars" },
@@ -46,6 +88,14 @@ export function Header() {
     { href: "/categories/electric-vehicles", label: "Electric Vehicles" },
     { href: "/categories/caravans", label: "Caravans" },
     { href: "/categories/e-bikes", label: "E-Bikes" }
+  ]
+
+  const dealerNavItems: NavItem[] = [
+    { href: "/advertise", label: "Post Listing", icon: <PlusCircle className="h-4 w-4" /> }
+  ]
+
+  const adminNavItems: NavItem[] = [
+    { href: "/admin", label: "Admin Panel", icon: <Settings className="h-4 w-4" /> },
   ]
 
   const topNavItems: TopNavItem[] = [
@@ -84,6 +134,8 @@ export function Header() {
                 height={1080}
                 className="w-auto max-h-16 object-contain"
                 priority
+                loading="eager"
+                quality={75}
               />
             </div>
           </Link>
@@ -150,11 +202,53 @@ export function Header() {
                 <Heart className="h-6 w-6" />
               </Button>
             </Link>
-            <Link href="/signin" className="hidden lg:block">
-              <Button variant="ghost" size="icon">
-                <User className="h-6 w-6" />
-              </Button>
-            </Link>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="hidden lg:flex">
+                    <User className="h-6 w-6" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {user && (user.accountType === "dealer" || (user.email && adminEmails.includes(user.email))) && (
+                    <>
+                      {dealerNavItems.map((item) => (
+                        <DropdownMenuItem key={item.href} asChild>
+                          <Link href={item.href || '#'} className="flex items-center gap-2">
+                            {item.icon}
+                            <span>{item.label}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {user.email && adminEmails.includes(user.email) && (
+                    <>
+                      {adminNavItems.map((item) => (
+                        <DropdownMenuItem key={item.href} asChild>
+                          <Link href={item.href || '#'} className="flex items-center gap-2">
+                            {item.icon}
+                            <span>{item.label}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem className="flex items-center gap-2" onClick={() => setShowSignOutDialog(true)}>
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link href={`/signin?redirectTo=${encodeURIComponent(pathname)}`} className="hidden lg:block">
+                <Button variant="ghost" size="icon">
+                  <User className="h-6 w-6" />
+                </Button>
+              </Link>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -236,17 +330,58 @@ export function Header() {
                     <span className="sr-only">Favorites</span>
                   </Button>
                 </Link>
-                <Link href="/signin" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
-                    <User className="h-4 w-4" />
-                    <span className="sr-only">Sign In</span>
-                  </Button>
-                </Link>
+                {user ? (
+                  <>
+                    {user.accountType === "dealer" && (
+                      <Link href="/advertise" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
+                          <Megaphone className="h-4 w-4" />
+                          <span className="sr-only">Advertise</span>
+                        </Button>
+                      </Link>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full flex items-center justify-center"
+                      onClick={() => {
+                        setMobileMenuOpen(false)
+                        setShowSignOutDialog(true)
+                      }}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span className="sr-only">Sign Out</span>
+                    </Button>
+                  </>
+                ) : (
+                  <Link href={`/signin?redirectTo=${encodeURIComponent(pathname)}`} onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
+                      <User className="h-4 w-4" />
+                      <span className="sr-only">Sign In</span>
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Sign Out Confirmation Dialog */}
+      <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will need to sign in again to access your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOut}>Sign out</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   )
 }
