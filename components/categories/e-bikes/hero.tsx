@@ -9,7 +9,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
-import { Search, Bike, CircleDollarSign, Battery } from "lucide-react"
+import { Search, Bike, Euro, Battery } from "lucide-react"
 
 interface HeroProps {
   backgroundImage?: string;
@@ -213,7 +213,7 @@ export function Hero({
                 {/* Min Price Input */}
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <CircleDollarSign className="text-primary h-5 w-5" />
+                    <Euro className="text-primary h-5 w-5" />
                   </div>
                   <Input 
                     placeholder="Min Price" 
@@ -227,7 +227,7 @@ export function Hero({
                 {/* Max Price Input */}
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <CircleDollarSign className="text-primary h-5 w-5" />
+                    <Euro className="text-primary h-5 w-5" />
                   </div>
                   <Input 
                     placeholder="Max Price" 
