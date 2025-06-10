@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ChevronRight, MapPin, Star, Phone, Clock } from "lucide-react"
+import { ChevronRight, MapPin, Star, Phone, Clock, Globe, Mail, CreditCard, Share2 } from "lucide-react"
 
 type GarageCardProps = {
   id: string
@@ -9,10 +9,22 @@ type GarageCardProps = {
   location: string
   image: string
   rating: number
-  specialties: string[]
+  services: string[]
   address: string
   phone: string
-  openingHours: string
+  openingHours: {
+    weekdays: { start: string; end: string }
+    saturday: { start: string; end: string }
+    sunday: { start: string; end: string }
+  }
+  website: string
+  email: string
+  paymentMethods: string[]
+  socialMedia: {
+    facebook?: string
+    twitter?: string
+    instagram?: string
+  }
 }
 
 export function GarageCard({
@@ -21,10 +33,14 @@ export function GarageCard({
   location,
   image,
   rating,
-  specialties,
+  services,
   address,
   phone,
   openingHours,
+  website,
+  email,
+  paymentMethods,
+  socialMedia,
 }: GarageCardProps) {
   return (
     <Link href={`/categories/garages/${id}`} className="block group cursor-pointer">
@@ -53,19 +69,33 @@ export function GarageCard({
             <span className="text-sm text-gray-500 ml-2">{rating}/5</span>
           </div>
           <div className="flex flex-wrap gap-1.5 mb-3">
-            {specialties.map((specialty, index) => (
+            {services.slice(0, 5).map((service, index) => (
               <span key={index} className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
-                {specialty}
+                {service}
               </span>
             ))}
+            {services.length > 5 && (
+              <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
+                +{services.length - 5} more
+              </span>
+            )}
           </div>
-          <div className="text-sm text-gray-600 space-y-1 mb-4">
+          <div className="space-y-2 text-sm text-gray-600 mb-4">
             <p className="truncate">{address}</p>
             <p className="flex items-center">
               <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {phone}
             </p>
             <p className="flex items-center">
-              <Clock className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {openingHours}
+              <Clock className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> Mon-Fri: {openingHours.weekdays.start}-{openingHours.weekdays.end}
+            </p>
+            <p className="flex items-center">
+              <Globe className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {website}
+            </p>
+            <p className="flex items-center">
+              <Mail className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {email}
+            </p>
+            <p className="flex items-center">
+              <CreditCard className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {paymentMethods.join(", ")}
             </p>
           </div>
           <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white pointer-events-none">
@@ -85,10 +115,22 @@ export function CarListings() {
       location: "Birmingham",
       image: "/garages/garage1.jpg",
       rating: 4.8,
-      specialties: ["Van Repairs", "MOT", "Servicing"],
+      services: ["Van Repairs", "MOT", "Servicing"],
       address: "123 Coventry Road, Birmingham B12 0JX",
       phone: "0121 123 4567",
-      openingHours: "Mon-Fri: 8am-6pm, Sat: 9am-1pm"
+      openingHours: {
+        weekdays: { start: "8am", end: "6pm" },
+        saturday: { start: "9am", end: "1pm" },
+        sunday: { start: "", end: "" }
+      },
+      website: "www.amgmotors.com",
+      email: "info@amgmotors.com",
+      paymentMethods: ["Cash", "Credit Card"],
+      socialMedia: {
+        facebook: "AMGMotors",
+        twitter: "@AMGMotors",
+        instagram: "AMGMotors"
+      }
     },
     {
       id: "s-motors",
@@ -96,10 +138,22 @@ export function CarListings() {
       location: "London",
       image: "/garages/garage2.jpg",
       rating: 4.6,
-      specialties: ["Commercial Vehicles", "Electrical Repairs"],
+      services: ["Commercial Vehicles", "Electrical Repairs"],
       address: "45 East London Way, London E14 9PP",
       phone: "020 7890 1234",
-      openingHours: "Mon-Fri: 7:30am-6:30pm"
+      openingHours: {
+        weekdays: { start: "7:30am", end: "6:30pm" },
+        saturday: { start: "", end: "" },
+        sunday: { start: "", end: "" }
+      },
+      website: "www.smotors.co.uk",
+      email: "info@smotors.co.uk",
+      paymentMethods: ["Cash", "Credit Card"],
+      socialMedia: {
+        facebook: "SMotors",
+        twitter: "@SMotors",
+        instagram: "SMotors"
+      }
     },
     {
       id: "city-auto-services",
@@ -107,10 +161,22 @@ export function CarListings() {
       location: "Manchester",
       image: "/garages/garage3.jpg",
       rating: 4.7,
-      specialties: ["General Repairs", "Tire Service"],
+      services: ["General Repairs", "Tire Service"],
       address: "78 Manchester Road, Manchester M1 2AB",
       phone: "0161 456 7890",
-      openingHours: "Mon-Fri: 8am-5:30pm"
+      openingHours: {
+        weekdays: { start: "8am", end: "5:30pm" },
+        saturday: { start: "", end: "" },
+        sunday: { start: "", end: "" }
+      },
+      website: "www.cityautoservices.co.uk",
+      email: "info@cityautoservices.co.uk",
+      paymentMethods: ["Cash", "Credit Card"],
+      socialMedia: {
+        facebook: "CityAutoServices",
+        twitter: "@CityAutoServices",
+        instagram: "CityAutoServices"
+      }
     },
     {
       id: "elite-motors",
@@ -118,10 +184,22 @@ export function CarListings() {
       location: "Leeds",
       image: "/garages/garage4.jpg",
       rating: 4.9,
-      specialties: ["Luxury Cars", "Performance Tuning"],
+      services: ["Luxury Cars", "Performance Tuning"],
       address: "15 Leeds Business Park, Leeds LS1 2AB",
       phone: "0113 789 0123",
-      openingHours: "Mon-Fri: 8:30am-6pm"
+      openingHours: {
+        weekdays: { start: "8:30am", end: "6pm" },
+        saturday: { start: "", end: "" },
+        sunday: { start: "", end: "" }
+      },
+      website: "www.elitemotors.co.uk",
+      email: "info@elitemotors.co.uk",
+      paymentMethods: ["Cash", "Credit Card"],
+      socialMedia: {
+        facebook: "EliteMotors",
+        twitter: "@EliteMotors",
+        instagram: "EliteMotors"
+      }
     }
   ]
 

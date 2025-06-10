@@ -50,14 +50,13 @@ export default function Home() {
       <main className="space-y-5">
         <Hero />
         <CategoryGrid categories={categories} />
+        <ValueYourCarBanner />
         <RegistrationSteps />
-        <CarListings />
         <CarRentalBanner />
         <AdvertiseWithUs />
-        <LeaseCarListings />
         <BrowseByBrand />
         <GBTraderFeatures />
-        <ValueYourCarBanner />
+
         <BlogPostsSection />
       </main>
       <BackToTop />
