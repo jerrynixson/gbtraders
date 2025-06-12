@@ -1,28 +1,27 @@
 import * as admin from 'firebase-admin';
-import { getApps } from 'firebase-admin/app';
 
-// Initialize Firebase Admin SDK if not already initialized
-if (!getApps().length) {
-  // Ensure private key is properly formatted
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY 
-    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-    : undefined;
-
-  if (!privateKey) {
-    throw new Error('FIREBASE_PRIVATE_KEY is not defined in environment variables');
+// Initialize admin if not already initialized
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      }),
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    });
+    console.log('Firebase Admin initialized successfully');
+  } catch (error) {
+    console.error('Firebase admin initialization error:', error);
   }
-
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: "gbweb-208de",
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: privateKey,
-    }),
-  });
 }
 
-export const adminAuth = admin.auth();
 export const adminDb = admin.firestore();
+export const adminStorage = admin.storage();
+export const adminAuth = admin.auth();
+
+export default admin;
 
 interface UserRoleData {
   role: 'user' | 'dealer';

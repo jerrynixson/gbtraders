@@ -21,6 +21,19 @@ service cloud.firestore {
         && request.resource.data.type in ['car', 'van', 'truck'];
     }
 
+    // Function to validate dealer profile data
+    function isValidDealerProfile() {
+      let requiredFields = ['businessName', 'contact', 'description', 'location', 'businessHours', 'socialMedia', 'updatedAt'];
+      let data = request.resource.data;
+      
+      return data.keys().hasAll(requiredFields)
+        && data.contact.keys().hasAll(['email', 'phone', 'website'])
+        && data.location.keys().hasAll(['lat', 'long', 'addressLines'])
+        && data.businessHours.keys().hasAll(['mondayToFriday', 'saturday', 'sunday'])
+        && data.description.size() <= 2000 // Approx. 100 words
+        && data.socialMedia is list;
+    }
+
     // Function to check if dealer owns the vehicle listing
     function ownsVehicle() {
       return resource.data.dealerUid == request.auth.uid;
@@ -63,13 +76,21 @@ service cloud.firestore {
         && ownsVehicle();
     }
 
-    // Users collection rules
-    match /users/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+    // Dealer profile assets rules
+    match /dealer-assets/{userId}/{imageType} {
+      // Allow read for everyone (public dealer profiles)
+      allow read: if true;
+      
+      // Allow write only for the dealer's own profile images
+      allow write: if isAuthenticated() 
+        && request.auth.uid == userId
+        && isDealerUser()
+        && isValidImage()
+        // Ensure imageType is either 'logo' or 'banner'
+        && (imageType == 'logo' || imageType == 'banner');
     }
 
-    // Deny access to all other collections by default
+    // Deny access to all other paths by default
     match /{document=**} {
       allow read, write: if false;
     }
