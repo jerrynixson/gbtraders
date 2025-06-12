@@ -19,7 +19,7 @@ import { AnimatedSection } from "@/components/animated-section"
 const categories = [
   {
     title: "Vehicles",
-    href: "/cars",
+    href: "/categories/vehicles",
     image: "/car.jpg",
   },
   {

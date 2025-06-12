@@ -15,7 +15,7 @@ export function Hero() {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
-  const categories = ["Vehicles", "Breakdown Services", "Car Parts", "Garages", "Dealers"]
+  const categories = ["Vehicles", "Breakdown Services", "Shop", "Garages", "Dealers"]
 
   const images = [
     '/banner_prop/ChatGPT Image Jun 9, 2025, 03_47_41 PM.png',
