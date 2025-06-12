@@ -14,6 +14,7 @@ import { BackToTop } from "@/components/back-to-top"
 import CarRentalBanner from "@/components/dealer-advert-banner"
 import BlogPostsSection from "@/components/blog-post-section"
 import { GBTraderFeatures } from "@/components/gbtrader-features"
+import { AnimatedSection } from "@/components/animated-section"
 
 const categories = [
   {
@@ -49,15 +50,37 @@ export default function Home() {
       <Header />
       <main className="space-y-5">
         <Hero />
-        <CategoryGrid categories={categories} />
-        <ValueYourCarBanner />
-        <RegistrationSteps />
-        <CarRentalBanner />
-        <AdvertiseWithUs />
-        <BrowseByBrand />
-        <GBTraderFeatures />
+        <AnimatedSection>
+          <CategoryGrid categories={categories} />
+        </AnimatedSection>
+        
+        <AnimatedSection>
+          <ValueYourCarBanner className="mt-5" />
+        </AnimatedSection>
 
-        <BlogPostsSection />
+        <AnimatedSection>
+          <RegistrationSteps />
+        </AnimatedSection>
+
+        <AnimatedSection>
+          <CarRentalBanner />
+        </AnimatedSection>
+
+        <AnimatedSection>
+          <AdvertiseWithUs />
+        </AnimatedSection>
+
+        <AnimatedSection>
+          <BrowseByBrand />
+        </AnimatedSection>
+
+        <AnimatedSection>
+          <GBTraderFeatures />
+        </AnimatedSection>
+
+        <AnimatedSection>
+          <BlogPostsSection />
+        </AnimatedSection>
       </main>
       <BackToTop />
       <Footer />

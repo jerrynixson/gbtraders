@@ -11,16 +11,14 @@ interface CategoryGridProps {
 
 export function CategoryGrid({ categories }: CategoryGridProps) {
   return (
-    <section className="container mx-auto px-4 mb-12">
-      <div className="w-full md:w-full lg:max-w-[95%] mx-auto">
+    <section className="w-full mb-0">
+      <div className="container mx-auto px-4 w-full">
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {categories.map((category) => (
             <Link
               key={category.title}
               href={category.href}
-              className={`relative group overflow-hidden rounded-lg aspect-[4/3] ${
-                category.title.toLowerCase() === "vehicles" ? "col-span-2 md:col-span-1 lg:col-span-1" : "col-span-1"
-              }`}
+              className="relative group overflow-hidden rounded-lg aspect-[4/3] col-span-1"
             >
               {category.image ? (
                 <Image
