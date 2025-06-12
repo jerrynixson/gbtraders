@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { VehicleType, VehicleFilters, FuelType, TransmissionType, CarBodyStyle } from '@/types/vehicles'
 import { debounce } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
 
 // Types
 interface FilterState {
@@ -114,6 +115,7 @@ export function FilterSidebar({
   availableModels,
   selectedVehicleType,
 }: FilterSidebarProps) {
+  const router = useRouter()
   const [filters, setFilters] = useState<VehicleFilters>(initialFilters)
   const [priceToggle, setPriceToggle] = useState(0)
   const [yearToggle, setYearToggle] = useState(0)
@@ -133,9 +135,7 @@ export function FilterSidebar({
   }
 
   const handleReset = () => {
-    setFilters(initialFilters)
-    setPriceToggle(0)
-    setYearToggle(0)
+    router.push('/search')
   }
 
   const commonFeatures = ["Wheelchair Access", "Left Hand Drive", "Sat Nav", "Bluetooth", "Leather Seats"]

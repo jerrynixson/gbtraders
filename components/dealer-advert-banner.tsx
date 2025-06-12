@@ -92,7 +92,7 @@ const CarRentalBannerMinimal: React.FC<CarRentalBannerProps> = ({
   }, [currentBanner, autoScrollInterval])
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto">
+    <div className="relative w-full max-w-[85rem] mx-auto">
       {/* Banner Container */}
       <div className="relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
         {/* Current Banner */}
