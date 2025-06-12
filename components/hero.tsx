@@ -51,31 +51,32 @@ export function Hero() {
   return (
     <div className="relative mx-auto w-full max-w-[85rem] overflow-hidden rounded-2xl bg-gradient-to-br from-red-500 via-blue-600 to-red-700 shadow-xl">
       <div className="flex min-h-[400px] flex-col lg:flex-row rounded-2xl border border-white/20 bg-white/10 shadow-lg backdrop-filter backdrop-blur-xl">
-        <div className="flex w-full flex-col justify-between p-6 lg:w-1/3 bg-white/10 backdrop-blur-xl rounded-2xl lg:rounded-r-none">
+        {/* Search Section - Full width on mobile */}
+        <div className="flex w-full flex-col justify-between p-4 sm:p-6 lg:w-1/3 bg-white/10 backdrop-blur-xl rounded-2xl lg:rounded-r-none order-2 lg:order-1">
           <div>
-            <h2 className="mb-6 text-center text-xl font-semibold text-white">Discover Your Perfect Drive</h2>
+            <h2 className="mb-4 sm:mb-6 text-center text-lg sm:text-xl font-semibold text-white">Discover Your Perfect Drive</h2>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Tag className="h-5 w-5 text-blue-200" />
+                  <Tag className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200" />
                 </div>
                 <Input
                   placeholder="Keywords"
-                  className="h-12 w-full rounded-2xl border-none bg-white/10 pl-10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/60"
+                  className="h-10 sm:h-12 w-full rounded-xl sm:rounded-2xl border-none bg-white/10 pl-10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/60"
                   value={keywords}
                   onChange={(e) => setKeywords(e.target.value)}
                 />
               </div>
 
-              <div className="flex space-x-3">
+              <div className="flex space-x-2 sm:space-x-3">
                 <div className="relative flex-grow">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <MapPin className="h-5 w-5 text-blue-200" />
+                    <MapPin className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200" />
                   </div>
                   <Input
                     placeholder="Postcode"
-                    className="h-12 w-full rounded-2xl border-none bg-white/10 pl-10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/60"
+                    className="h-10 sm:h-12 w-full rounded-xl sm:rounded-2xl border-none bg-white/10 pl-10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/60"
                     value={postcode}
                     onChange={(e) => setPostcode(e.target.value)}
                   />
@@ -86,13 +87,13 @@ export function Hero() {
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="outline"
-                        className="h-12 w-[150px] justify-start rounded-2xl border-none bg-white/10 text-left text-sm text-white ring-1 ring-inset ring-white/20"
+                        className="h-10 sm:h-12 w-[120px] sm:w-[150px] justify-start rounded-xl sm:rounded-2xl border-none bg-white/10 text-left text-sm text-white ring-1 ring-inset ring-white/20"
                       >
-                        <Sliders className="mr-2 h-5 w-5 text-blue-200" />
+                        <Sliders className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200 mr-2" />
                         {selectedCategory || "Category"}
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[150px] rounded-2xl">
+                    <DropdownMenuContent className="w-[120px] sm:w-[150px] rounded-xl sm:rounded-2xl">
                       {categories.map((category) => (
                         <DropdownMenuItem
                           key={category}
@@ -110,26 +111,26 @@ export function Hero() {
               </div>
 
               <Button
-                className="h-12 w-full rounded-2xl bg-white/20 text-base text-white hover:bg-white/30"
+                className="h-10 sm:h-12 w-full rounded-xl sm:rounded-2xl bg-white/20 text-sm sm:text-base text-white hover:bg-white/30"
                 onClick={handleSearch}
               >
-                <Search className="mr-2 h-5 w-5" /> Search
+                <Search className="h-4 sm:h-5 w-4 sm:w-5" /> Search
               </Button>
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <div className="flex justify-between text-sm">
               <Button 
                 variant="outline" 
-                className="rounded-full bg-white/5 backdrop-blur-sm px-4 py-2 text-white/70 hover:bg-white/10 hover:text-white border-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+                className="rounded-full bg-white/5 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white/70 hover:bg-white/10 hover:text-white border-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
                 onClick={resetFilters}
               >
                 Reset filters
               </Button>
               <Button 
                 variant="outline" 
-                className="rounded-full bg-white/5 backdrop-blur-sm px-4 py-2 text-white/70 hover:bg-white/10 hover:text-white border-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+                className="rounded-full bg-white/5 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white/70 hover:bg-white/10 hover:text-white border-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
                 onClick={() => setShowFilters(!showFilters)}
               >
                 More options
@@ -138,8 +139,9 @@ export function Hero() {
           </div>
         </div>
 
+        {/* Image Section - Reduced height on mobile */}
         <div
-          className="relative flex w-full items-center justify-center rounded-2xl p-6 lg:w-2/3 lg:rounded-l-none overflow-hidden"
+          className="relative flex w-full items-center justify-center h-[250px] sm:h-[300px] lg:h-auto rounded-2xl p-4 sm:p-6 lg:w-2/3 lg:rounded-l-none overflow-hidden order-1 lg:order-2"
         >
           {showFilters ? (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-3xl shadow-2xl shadow-inner rounded-2xl border border-white/30">
@@ -294,22 +296,22 @@ export function Hero() {
                   opacity: isTransitioning ? 1 : 0,
                 }}
               />
-              <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-black/5 p-6 text-white lg:rounded-l-none">
+              <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-black/5 p-4 sm:p-6 text-white lg:rounded-l-none">
                 <div className="flex flex-col items-center">
-                  <div className="mb-6 grid grid-cols-3 gap-2">
-                    <div className="h-2 w-8 bg-red-400 rounded-full"></div>
-                    <div className="h-2 w-8 bg-blue-500 rounded-full"></div>
-                    <div className="h-2 w-8 bg-red-400 rounded-full"></div>
+                  <div className="mb-4 sm:mb-6 grid grid-cols-3 gap-1 sm:gap-2">
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-red-400 rounded-full"></div>
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-blue-500 rounded-full"></div>
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-red-400 rounded-full"></div>
                   </div>
-                  <h1 className="mb-4 text-center text-5xl font-bold uppercase leading-tight md:text-6xl drop-shadow-lg">
+                  <h1 className="mb-3 sm:mb-4 text-center text-3xl sm:text-4xl md:text-5xl font-bold uppercase leading-tight drop-shadow-lg">
                     WELCOME TO GB TRADER
                   </h1>
-                  <div className="mb-8 grid grid-cols-3 gap-2">
-                    <div className="h-2 w-8 bg-blue-500 rounded-full"></div>
-                    <div className="h-2 w-8 bg-red-400 rounded-full"></div>
-                    <div className="h-2 w-8 bg-blue-500 rounded-full"></div>
+                  <div className="mb-6 sm:mb-8 grid grid-cols-3 gap-1 sm:gap-2">
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-blue-500 rounded-full"></div>
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-red-400 rounded-full"></div>
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-blue-500 rounded-full"></div>
                   </div>
-                  <Button className="rounded-2xl bg-white/20 backdrop-blur-md px-8 py-3 text-lg font-semibold text-white shadow-md hover:bg-white/30 border border-white/30">
+                  <Button className="rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-md px-6 sm:px-8 py-2 sm:py-3 text-base sm:text-lg font-semibold text-white shadow-md hover:bg-white/30 border border-white/30">
                     Find yours
                   </Button>
                 </div>

@@ -18,7 +18,9 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
             <Link
               key={category.title}
               href={category.href}
-              className="relative group overflow-hidden rounded-lg aspect-[4/3] col-span-1"
+              className={`relative group overflow-hidden rounded-lg aspect-[4/3] ${
+                category.title === "Vehicles" ? "col-span-2 md:col-span-1" : "col-span-1"
+              }`}
             >
               {category.image ? (
                 <Image
