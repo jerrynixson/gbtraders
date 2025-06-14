@@ -9,7 +9,7 @@ service cloud.firestore {
 
     // Function to check if user is a dealer
     function isDealer() {
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      let userDoc = get(/databases/(default)/documents/users/$(request.auth.uid));
       return userDoc != null && userDoc.data != null && userDoc.data.role == 'dealer';
     }
 

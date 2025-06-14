@@ -149,10 +149,10 @@ export const deleteListing = async (listingId: string) => {
   }
 };
 
-// Debug logging - remove quotes around values to see clean output
-if (typeof window !== 'undefined') {
-  console.log('[Firebase Config - Client Side]');
-  console.log('Project ID:', firebaseConfig.projectId);
-  console.log('App ID:', firebaseConfig.appId);
-  console.log('Storage Bucket:', firebaseConfig.storageBucket);
-}
+// // Debug logging - remove quotes around values to see clean output
+// if (typeof window !== 'undefined') { gh
+//   console.log('[Firebase Config - Client Side]');
+//   console.log('Project ID:', firebaseConfig.projectId);
+//   console.log('App ID:', firebaseConfig.appId);
+//   console.log('Storage Bucket:', firebaseConfig.storageBucket);
+// }
