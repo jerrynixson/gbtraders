@@ -1,21 +1,79 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Search, Tag, MapPin, Sliders, X } from "lucide-react"
 
+// Custom hook for drag-to-scroll
+function useDragScroll() {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let isDown = false
+    let startX = 0
+    let scrollLeft = 0
+    const onMouseDown = (e: MouseEvent) => {
+      isDown = true
+      el.classList.add('dragging')
+      startX = e.pageX - el.offsetLeft
+      scrollLeft = el.scrollLeft
+    }
+    const onMouseLeave = () => {
+      isDown = false
+      el.classList.remove('dragging')
+    }
+    const onMouseUp = () => {
+      isDown = false
+      el.classList.remove('dragging')
+    }
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDown) return
+      e.preventDefault()
+      const x = e.pageX - el.offsetLeft
+      const walk = (x - startX) * 1.5 // scroll-fast
+      el.scrollLeft = scrollLeft - walk
+    }
+    el.addEventListener('mousedown', onMouseDown)
+    el.addEventListener('mouseleave', onMouseLeave)
+    el.addEventListener('mouseup', onMouseUp)
+    el.addEventListener('mousemove', onMouseMove)
+    return () => {
+      el.removeEventListener('mousedown', onMouseDown)
+      el.removeEventListener('mouseleave', onMouseLeave)
+      el.removeEventListener('mouseup', onMouseUp)
+      el.removeEventListener('mousemove', onMouseMove)
+    }
+  }, [])
+  return ref
+}
+
 export function Hero() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedDropdownCategory, setSelectedDropdownCategory] = useState<string | null>(null)
   const [keywords, setKeywords] = useState<string>("")
   const [postcode, setPostcode] = useState<string>("")
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [nextImageIndex, setNextImageIndex] = useState(1)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [carouselIndex, setCarouselIndex] = useState(0)
+  const [dragOffset, setDragOffset] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const autoAdvanceRef = useRef<NodeJS.Timeout | null>(null)
+  const dragData = useRef({ startX: 0, lastX: 0, dragging: false, moved: false })
 
   const categories = ["Vehicles", "Breakdown Services", "Shop", "Garages", "Dealers"]
+  const vehicleTypes = [
+    "Cars",
+    "Vans",
+    "Motorcycles",
+    "Trucks",
+    "Electric Vehicles",
+    "Caravans",
+    "E-Bikes"
+  ]
 
   const images = [
     '/banner_prop/ChatGPT Image Jun 9, 2025, 03_47_41 PM.png',
@@ -38,12 +96,68 @@ export function Hero() {
     return () => clearInterval(interval)
   }, [currentImageIndex, nextImageIndex, images.length])
 
+  // Carousel auto-advance
+  useEffect(() => {
+    if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current)
+    autoAdvanceRef.current = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % vehicleTypes.length)
+    }, 3000)
+    return () => {
+      if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current)
+    }
+  }, [vehicleTypes.length])
+
+  // Drag/swipe handlers for carousel
+  const carouselRef = useRef<HTMLDivElement>(null)
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current)
+    setIsDragging(true)
+    dragData.current.dragging = true
+    dragData.current.moved = false
+    dragData.current.startX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX
+    dragData.current.lastX = dragData.current.startX
+  }
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!dragData.current.dragging) return
+    const x = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX
+    dragData.current.lastX = x
+    const offset = x - dragData.current.startX
+    setDragOffset(offset)
+    if (Math.abs(offset) > 5) dragData.current.moved = true
+  }
+  const handleDragEnd = () => {
+    if (!dragData.current.dragging) return
+    const delta = dragData.current.lastX - dragData.current.startX
+    let newIndex = carouselIndex
+    if (Math.abs(delta) > 50) {
+      if (delta < 0) {
+        newIndex = (carouselIndex + 1) % vehicleTypes.length
+      } else {
+        newIndex = (carouselIndex - 1 + vehicleTypes.length) % vehicleTypes.length
+      }
+    }
+    setCarouselIndex(newIndex)
+    setDragOffset(0)
+    setIsDragging(false)
+    dragData.current.dragging = false
+    // Restart auto-advance
+    if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current)
+    autoAdvanceRef.current = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % vehicleTypes.length)
+    }, 3000)
+  }
+  // Prevent click if drag happened
+  const handleButtonClick = (idx: number) => {
+    if (dragData.current.moved) return
+    setCarouselIndex(idx)
+  }
+
   const handleSearch = () => {
-    console.log({ selectedCategory, keywords, postcode })
+    console.log({ selectedDropdownCategory, keywords, postcode })
   }
 
   const resetFilters = () => {
-    setSelectedCategory(null)
+    setSelectedDropdownCategory(null)
     setKeywords("")
     setPostcode("")
   }
@@ -90,16 +204,16 @@ export function Hero() {
                         className="h-10 sm:h-12 w-[120px] sm:w-[150px] justify-start rounded-xl sm:rounded-2xl border-none bg-white/10 text-left text-sm text-white ring-1 ring-inset ring-white/20"
                       >
                         <Sliders className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200 mr-2" />
-                        {selectedCategory || "Category"}
+                        {selectedDropdownCategory || "Categories"}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[120px] sm:w-[150px] rounded-xl sm:rounded-2xl">
                       {categories.map((category) => (
                         <DropdownMenuItem
                           key={category}
-                          onSelect={() => setSelectedCategory(selectedCategory === category ? null : category)}
+                          onSelect={() => setSelectedDropdownCategory(selectedDropdownCategory === category ? null : category)}
                           className={`cursor-pointer text-sm ${
-                            selectedCategory === category ? "bg-blue-100 font-semibold text-blue-800" : ""
+                            selectedDropdownCategory === category ? "bg-blue-100 font-semibold text-blue-800" : ""
                           }`}
                         >
                           {category}
@@ -311,9 +425,56 @@ export function Hero() {
                     <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-red-400 rounded-full"></div>
                     <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-blue-500 rounded-full"></div>
                   </div>
-                  <Button className="rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-md px-6 sm:px-8 py-2 sm:py-3 text-base sm:text-lg font-semibold text-white shadow-md hover:bg-white/30 border border-white/30">
-                    Find yours
-                  </Button>
+                  <div className="w-full flex justify-center select-none">
+                    <div
+                      ref={carouselRef}
+                      className={`relative w-[220px] h-[48px] overflow-visible ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                      style={{ touchAction: 'pan-y', userSelect: isDragging ? 'none' : 'auto' }}
+                      onMouseDown={handleDragStart}
+                      onMouseMove={handleDragMove}
+                      onMouseUp={handleDragEnd}
+                      onMouseLeave={handleDragEnd}
+                      onTouchStart={handleDragStart}
+                      onTouchMove={handleDragMove}
+                      onTouchEnd={handleDragEnd}
+                    >
+                      {/* Carousel foreshadow: prev, current, next */}
+                      <div
+                        className={`flex w-[660px] ${!isDragging ? 'transition-transform duration-500' : ''}`}
+                        style={{
+                          transform: `translateX(calc(-220px + ${dragOffset}px))`,
+                        }}
+                      >
+                        {/* Previous bubble */}
+                        <div className={`w-[220px] flex-shrink-0 items-center transition-all duration-300 ${isDragging ? 'opacity-90 scale-100 blur-0 z-0' : 'opacity-40 scale-90 blur-sm z-0'}`} style={{display: 'flex'}}>
+                          <Button
+                            className={`w-[220px] text-center whitespace-nowrap rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md px-6 sm:px-8 py-2 sm:py-3 text-base sm:text-lg font-semibold text-white border border-white/30 transition-all duration-200`}
+                            disabled
+                          >
+                            {vehicleTypes[(carouselIndex - 1 + vehicleTypes.length) % vehicleTypes.length]}
+                          </Button>
+                        </div>
+                        {/* Current bubble */}
+                        <div className="w-[220px] flex-shrink-0 items-center z-10" style={{display: 'flex', justifyContent: 'center'}}>
+                          <Button
+                            className={`w-[220px] text-center whitespace-nowrap rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-md px-6 sm:px-8 py-2 sm:py-3 text-base sm:text-lg font-semibold text-white shadow-md hover:bg-white/30 border border-white/30 transition-all duration-200`}
+                            onClick={() => handleButtonClick(carouselIndex)}
+                          >
+                            {vehicleTypes[carouselIndex]}
+                          </Button>
+                        </div>
+                        {/* Next bubble */}
+                        <div className={`w-[220px] flex-shrink-0 items-center transition-all duration-300 ${isDragging ? 'opacity-90 scale-100 blur-0 z-0' : 'opacity-40 scale-90 blur-sm z-0'}`} style={{display: 'flex'}}>
+                          <Button
+                            className={`w-[220px] text-center whitespace-nowrap rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md px-6 sm:px-8 py-2 sm:py-3 text-base sm:text-lg font-semibold text-white border border-white/30 transition-all duration-200`}
+                            disabled
+                          >
+                            {vehicleTypes[(carouselIndex + 1) % vehicleTypes.length]}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </>
@@ -323,3 +484,9 @@ export function Hero() {
     </div>
   )
 }
+
+/* Add this to the bottom of the file or in your global CSS for scrollbar hiding */
+/*
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+*/
