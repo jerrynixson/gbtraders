@@ -2,34 +2,36 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Filter, Grid, List, Star, Phone, Clock } from "lucide-react";
+import { Search, MapPin, Filter, Grid, List, Phone } from "lucide-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { GoogleMapComponent } from "@/components/ui/google-map"
+import { GoogleMapComponent } from "@/components/ui/google-map";
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
-type DealerCardProps = {
+type DealerData = {
   id: string;
-  name: string;
-  location: string;
-  image: string;
-  rating: number;
-  specialties: string[];
-  address: string;
-  phone: string;
-  openingHours: string;
+  businessName: string;
+  dealerBannerUrl: string;
+  contact: {
+    phone: string;
+  };
+  location: {
+    addressLines: string[];
+  };
 };
 
-function DealerCard({ id, name, location, image, rating, specialties, address, phone, openingHours }: DealerCardProps) {
+function DealerCard({ id, businessName, dealerBannerUrl, contact, location }: DealerData) {
   return (
     <Link href={`/categories/dealers/${id}`} className="block group cursor-pointer">
       <div className="bg-white rounded-lg overflow-hidden border border-gray-100 hover:border-gray-200 transition-all hover:shadow-lg">
         <div className="relative">
           <Image
-            src={image || "/placeholder.svg"}
-            alt={name}
+            src={dealerBannerUrl || "/placeholder.svg"}
+            alt={businessName}
             width={400}
             height={250}
             className="w-full h-48 object-contain bg-white"
@@ -38,31 +40,15 @@ function DealerCard({ id, name, location, image, rating, specialties, address, p
         </div>
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-lg">{name}</h3>
+            <h3 className="font-semibold text-lg">{businessName}</h3>
             <span className="text-sm text-gray-500 flex items-center">
-              <MapPin className="h-4 w-4 mr-1" /> {location}
+              <MapPin className="h-4 w-4 mr-1" /> {location.addressLines[0]}
             </span>
           </div>
-          <div className="flex items-center mb-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} className={`h-4 w-4 ${i < Math.round(rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-200"}`} />
-            ))}
-            <span className="text-sm text-gray-500 ml-2">{rating}/5</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {specialties.map((specialty: string, index: number) => (
-              <span key={index} className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
-                {specialty}
-              </span>
-            ))}
-          </div>
           <div className="text-sm text-gray-600 space-y-1 mb-4">
-            <p className="truncate">{address}</p>
+            <p className="truncate">{location.addressLines.join(", ")}</p>
             <p className="flex items-center">
-              <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {phone}
-            </p>
-            <p className="flex items-center">
-              <Clock className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {openingHours}
+              <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {contact.phone}
             </p>
           </div>
           <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white pointer-events-none">
@@ -77,19 +63,28 @@ function DealerCard({ id, name, location, image, rating, specialties, address, p
 export default function SearchDealerPage() {
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("rating");
+  const [dealers, setDealers] = useState<DealerData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample dealer data
-  const dealers = Array.from({ length: 8 }).map((_, index) => ({
-    id: `dealer-${index + 1}`,
-    name: `Dealer ${index + 1}`,
-    location: `City ${index + 1}`,
-    image: `/dealers/dealer${(index % 4) + 1}.jpg`,
-    rating: 4.2 + (index * 0.2),
-    specialties: ["Used Cars", "Financing", "Warranty"],
-    address: `${index + 1} Dealer Street, City ${index + 1}`,
-    phone: `0123 ${index}${index}${index} ${index}${index}${index}`,
-    openingHours: "Mon-Fri: 9am-6pm"
-  }));
+  useEffect(() => {
+    const fetchDealers = async () => {
+      try {
+        const dealersRef = collection(db, 'dealers');
+        const snapshot = await getDocs(dealersRef);
+        const dealersData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as DealerData[];
+        setDealers(dealersData);
+      } catch (error) {
+        console.error('Error fetching dealers:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDealers();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -171,7 +166,9 @@ export default function SearchDealerPage() {
           <div className="lg:w-2/3">
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
               <div className="flex items-center gap-4">
-                <p className="text-gray-600">Showing {dealers.length} dealers</p>
+                <p className="text-gray-600">
+                  {loading ? 'Loading dealers...' : `Showing ${dealers.length} dealers`}
+                </p>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant={viewMode === "grid" ? "default" : "outline"}
@@ -206,7 +203,9 @@ export default function SearchDealerPage() {
                 </select>
               </div>
             </div>
-            {viewMode === "grid" ? (
+            {loading ? (
+              <div className="text-center py-8">Loading dealers...</div>
+            ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {dealers.map((dealer) => (
                   <DealerCard key={dealer.id} {...dealer} />
@@ -217,38 +216,33 @@ export default function SearchDealerPage() {
                 {dealers.map((dealer) => (
                   <div key={dealer.id} className="flex bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="w-64 h-48 flex-shrink-0 relative">
-                      <img src={dealer.image} alt={dealer.name} className="w-full h-full object-contain bg-white rounded-l-xl" />
+                      <Image 
+                        src={dealer.dealerBannerUrl || "/placeholder.svg"} 
+                        alt={dealer.businessName} 
+                        fill 
+                        className="object-contain bg-white rounded-l-xl" 
+                      />
                     </div>
                     <div className="flex-1 flex flex-col p-6">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <h3 className="font-bold text-xl text-gray-900 mb-1">{dealer.name}</h3>
+                          <h3 className="font-bold text-xl text-gray-900 mb-1">{dealer.businessName}</h3>
                           <div className="flex items-center text-sm text-gray-500 mb-2">
                             <MapPin className="h-4 w-4 mr-1" />
-                            {dealer.location}
+                            {dealer.location.addressLines[0]}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" className="hover:bg-gray-100">
-                            <span className="w-5 h-5 text-gray-400">★</span>
-                          </Button>
-                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {dealer.specialties.map((spec, i) => (
-                          <span key={i} className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">{spec}</span>
-                        ))}
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700 mb-2">
-                        <div><span className="font-medium">Address:</span> {dealer.address}</div>
-                        <div><span className="font-medium">Phone:</span> {dealer.phone}</div>
-                        <div><span className="font-medium">Hours:</span> {dealer.openingHours}</div>
-                        <div><span className="font-medium">Rating:</span> {dealer.rating.toFixed(1)} / 5</div>
+                      <div className="text-sm text-gray-700 mb-2">
+                        <div><span className="font-medium">Address:</span> {dealer.location.addressLines.join(", ")}</div>
+                        <div><span className="font-medium">Phone:</span> {dealer.contact.phone}</div>
                       </div>
                       <div className="flex justify-end mt-auto">
-                        <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-6 py-2 rounded-lg shadow">
-                          View Details
-                        </Button>
+                        <Link href={`/categories/dealers/${dealer.id}`}>
+                          <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-6 py-2 rounded-lg shadow">
+                            View Details
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   </div>
