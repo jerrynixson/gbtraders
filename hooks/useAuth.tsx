@@ -23,6 +23,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<UserCredential>;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  getUserProfile: () => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -111,6 +112,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     logout,
+    getUserProfile: async () => {
+      if (!user) {
+        throw new Error('No user logged in');
+      }
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (!userDoc.exists()) {
+        throw new Error('User profile not found');
+      }
+      return userDoc.data();
+    }
   };
 
   return (

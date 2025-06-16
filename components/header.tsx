@@ -16,7 +16,8 @@ import {
   LogOut,
   Megaphone,
   Settings,
-  PlusCircle
+  PlusCircle,
+  UserCircle
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -91,11 +92,15 @@ export function Header() {
   ]
 
   const dealerNavItems: NavItem[] = [
-    { href: "/advertise", label: "Post Listing", icon: <PlusCircle className="h-4 w-4" /> }
+    { href: "/dashboard/add-listing", label: "Post Listing", icon: <PlusCircle className="h-4 w-4" /> }
   ]
 
   const adminNavItems: NavItem[] = [
     { href: "/admin", label: "Admin Panel", icon: <Settings className="h-4 w-4" /> },
+  ]
+
+  const userNavItems: NavItem[] = [
+    { href: "/profile", label: "Profile", icon: <UserCircle className="h-4 w-4" /> }
   ]
 
   const topNavItems: TopNavItem[] = [
@@ -210,7 +215,20 @@ export function Header() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {user && (user.accountType === "dealer" || (user.email && adminEmails.includes(user.email))) && (
+                  {user && (
+                    <>
+                      {userNavItems.map((item) => (
+                        <DropdownMenuItem key={item.href} asChild>
+                          <Link href={item.href || '#'} className="flex items-center gap-2">
+                            {item.icon}
+                            <span>{item.label}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {user && (user.role === "dealer" || (user.email && adminEmails.includes(user.email))) && (
                     <>
                       {dealerNavItems.map((item) => (
                         <DropdownMenuItem key={item.href} asChild>
@@ -332,11 +350,17 @@ export function Header() {
                 </Link>
                 {user ? (
                   <>
-                    {user.accountType === "dealer" && (
-                      <Link href="/advertise" onClick={() => setMobileMenuOpen(false)}>
+                    <Link href="/profile" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
+                        <UserCircle className="h-4 w-4" />
+                        <span className="sr-only">Profile</span>
+                      </Button>
+                    </Link>
+                    {user.role === "dealer" && (
+                      <Link href="/dashboard/add-listing" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
-                          <Megaphone className="h-4 w-4" />
-                          <span className="sr-only">Advertise</span>
+                          <PlusCircle className="h-4 w-4" />
+                          <span className="sr-only">Add Listing</span>
                         </Button>
                       </Link>
                     )}
