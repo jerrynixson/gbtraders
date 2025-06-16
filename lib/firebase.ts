@@ -86,6 +86,35 @@ export const getUserRole = async (user: User | null): Promise<string | null> => 
   }
 };
 
+// Additional roles helpers
+export const getAdditionalRoles = async (user: User | null): Promise<string[]> => {
+  if (!user) return [];
+
+  try {
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (userDoc.exists()) {
+      return userDoc.data().additionalRoles || [];
+    }
+    return [];
+  } catch (error) {
+    console.error('Error getting additional roles:', error);
+    return [];
+  }
+};
+
+export const hasAdditionalRole = async (user: User | null, role: string): Promise<boolean> => {
+  const roles = await getAdditionalRoles(user);
+  return roles.includes(role);
+};
+
+export const isShop = async (user: User | null): Promise<boolean> => {
+  return hasAdditionalRole(user, 'shop');
+};
+
+export const isGarage = async (user: User | null): Promise<boolean> => {
+  return hasAdditionalRole(user, 'garage');
+};
+
 export const isDealer = async (user: User | null): Promise<boolean> => {
   const role = await getUserRole(user);
   return role === 'dealer';

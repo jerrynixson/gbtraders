@@ -15,6 +15,7 @@ interface UserProfile {
   firstName: string;
   lastName: string;
   role: "user" | "dealer";
+  additionalRoles?: string[];
 }
 
 const ProfilePage: React.FC = () => {
@@ -130,6 +131,18 @@ const ProfilePage: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-500">Account Type</p>
                   <p className="font-medium capitalize">{userProfile.role}</p>
+                  {userProfile.additionalRoles && userProfile.additionalRoles.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {userProfile.additionalRoles.map((role) => (
+                        <span
+                          key={role}
+                          className="px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full"
+                        >
+                          {role.charAt(0).toUpperCase() + role.slice(1)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

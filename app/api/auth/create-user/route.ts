@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import * as admin from 'firebase-admin';
 
+const VALID_ADDITIONAL_ROLES = ['shop', 'garage'];
+
 export async function POST(request: Request) {
   try {
-    const { uid, firstName, lastName, email, country, role } = await request.json();
+    const { uid, firstName, lastName, email, country, role, additionalRoles = [] } = await request.json();
 
     // Validate required fields
     if (!uid || !firstName || !lastName || !email || !country || !role) {
@@ -22,6 +24,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate additional roles if provided
+    if (additionalRoles.length > 0) {
+      const invalidRoles = additionalRoles.filter(r => !VALID_ADDITIONAL_ROLES.includes(r));
+      if (invalidRoles.length > 0) {
+        return NextResponse.json(
+          { error: `Invalid additional roles: ${invalidRoles.join(', ')}` },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create user document using Admin SDK
     await adminDb.collection('users').doc(uid).set({
       firstName,
@@ -29,6 +42,7 @@ export async function POST(request: Request) {
       email,
       country,
       role,
+      additionalRoles,
       createdAt: admin.firestore.Timestamp.now(),
       updatedAt: admin.firestore.Timestamp.now()
     });

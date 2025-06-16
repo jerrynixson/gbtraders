@@ -21,6 +21,7 @@ const SignUpPage: React.FC = () => {
   const [country, setCountry] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isDealerAccount, setIsDealerAccount] = useState(false);
+  const [additionalRoles, setAdditionalRoles] = useState<string[]>([]);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [error, setError] = useState('');
   const { signUp, logout } = useAuth();
@@ -28,6 +29,14 @@ const SignUpPage: React.FC = () => {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
+
+  const toggleAdditionalRole = (role: string) => {
+    setAdditionalRoles(prev => 
+      prev.includes(role) 
+        ? prev.filter(r => r !== role)
+        : [...prev, role]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +67,7 @@ const SignUpPage: React.FC = () => {
             email,
             country,
             role,
+            additionalRoles,
           }),
         });
 
@@ -81,6 +91,31 @@ const SignUpPage: React.FC = () => {
         if (!setRoleResponse.ok) {
           const errorData = await setRoleResponse.json();
           throw new Error(errorData.error || 'Failed to set user role');
+        }
+
+        // Add additional roles if any are selected
+        if (additionalRoles.length > 0) {
+          // Get the ID token for the newly created user
+          const idToken = await user.getIdToken();
+          
+          for (const additionalRole of additionalRoles) {
+            const addRoleResponse = await fetch('/api/auth/manage-additional-roles', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+              },
+              body: JSON.stringify({
+                uid: user.uid,
+                role: additionalRole,
+                action: 'add',
+              }),
+            });
+
+            if (!addRoleResponse.ok) {
+              console.error(`Failed to add additional role: ${additionalRole}`);
+            }
+          }
         }
 
         // Wait for a short delay to ensure auth state is updated
@@ -304,6 +339,40 @@ const SignUpPage: React.FC = () => {
                     </svg>
                   </div>
                 </div>
+              </div>
+
+              {/* Additional Roles Selection */}
+              <div className="mt-4 space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Additional Services (Optional)
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleAdditionalRole('shop')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      additionalRoles.includes('shop')
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Shop
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleAdditionalRole('garage')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      additionalRoles.includes('garage')
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Garage
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Select additional services if you provide them
+                </p>
               </div>
 
               {/* Sign Up Button */}
