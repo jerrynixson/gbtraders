@@ -7,24 +7,41 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    // Function to check if user is a dealer
+    function isDealer() {
+      let userId = request.auth.uid;
+      let userDoc = firestore.get(/databases/(default)/documents/users/$(userId));
+      return userDoc != null && userDoc.data.role == 'dealer';
+    }
+
     // Function to validate image upload
     function isValidImage() {
       return request.resource.contentType.matches('image/.*')
         && request.resource.size <= 5 * 1024 * 1024; // 5MB max
     }
 
-    // Function to check if user is a dealer - simplified version
-    function isDealerUser() {
-      let userDoc = get(/databases/(default)/documents/users/$(request.auth.uid));
-      return userDoc != null;  // Temporarily remove role check
+    // Function to check if dealer owns the vehicle
+    function ownsVehicle(vehicleId) {
+      return true; // Allow initial upload since Firestore document doesn't exist yet
     }
 
-    // Dealer profile assets rules - simplified for debugging
+    // Vehicles collection rules
+    match /vehicles/{vehicleId}/{imageFile} {
+      // Allow read for everyone (public listings)
+      allow read: if true;
+      
+      // Allow write for authenticated dealers
+      allow write: if isAuthenticated() 
+        && isDealer()
+        && isValidImage();
+    }
+
+    // Dealer profile assets rules
     match /dealer-assets/{userId}/{imageType} {
       // Allow read for everyone (public dealer profiles)
       allow read: if true;
       
-      // Allow write with simplified checks
+      // Allow write with checks
       allow write: if isAuthenticated() 
         && request.auth.uid == userId  // User can only modify their own files
         && isValidImage()  // Must be a valid image

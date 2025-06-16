@@ -20,7 +20,7 @@ export default function AddListing() {
         <Button
           variant="ghost"
           className="mb-6"
-          onClick={() => router.push("/dealer/dashboard")}
+          onClick={() => router.push("/dashboard")}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Dashboard
