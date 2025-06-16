@@ -28,7 +28,7 @@ const categories = [
     image: "/breakdown.png",
   },
   {
-    title: "Car Parts",
+    title: "Shop",
     href: "/car-parts",
     image: "/car-parts.jpg",
   },

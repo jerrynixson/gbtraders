@@ -76,6 +76,18 @@ service cloud.firestore {
         && ownsVehicle();
     }
 
+    // Dealers collection rules
+    match /dealers/{userId} {
+      // Allow read for everyone (public dealer profiles)
+      allow read: if true;
+      
+      // Allow write only for the dealer's own profile
+      allow write: if isAuthenticated() 
+        && isDealer()
+        && request.auth.uid == userId
+        && isValidDealerProfile();
+    }
+
     // Dealer profile assets rules
     match /dealer-assets/{userId}/{imageType} {
       // Allow read for everyone (public dealer profiles)
@@ -94,5 +106,12 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
-  }
-} 
+  
+
+		// Favorites collection rules
+    match /favorites/{userId} {
+      // Users can only read and write their own favorites
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    }
+    }

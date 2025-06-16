@@ -2,14 +2,17 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Heart, Share2 } from "lucide-react";
-import { useState, memo } from "react";
+import { useState, memo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { VehicleSummary } from "@/types/vehicles";
+import { useAuth } from '@/hooks/useAuth';
+import { FavoritesRepository } from '@/lib/db/repositories/favoritesRepository';
+
+const favoritesRepo = new FavoritesRepository();
 
 export interface VehicleCardProps {
   vehicle: VehicleSummary;
-  isFavoriteKey?: string;
   isHighlighted?: boolean;
   onShare?: () => void;
   view?: "grid" | "list";
@@ -17,13 +20,24 @@ export interface VehicleCardProps {
 
 export const VehicleCard = memo(function VehicleCard({
   vehicle,
-  isFavoriteKey = "vehicle_favorites",
   isHighlighted,
   onShare,
   view = "grid"
 }: VehicleCardProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const isGrid = view === "grid";
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (user) {
+        const isFav = await favoritesRepo.isFavorite(user.uid, vehicle.id);
+        setIsFavorite(isFav);
+      }
+    };
+    checkFavoriteStatus();
+  }, [user, vehicle.id]);
 
   // Early return if vehicle is undefined or missing required properties
   if (!vehicle || !vehicle.id || !vehicle.make || !vehicle.model || !vehicle.year) {
@@ -41,25 +55,24 @@ export const VehicleCard = memo(function VehicleCard({
     );
   }
 
-  const [isFavorite, setIsFavorite] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const favorites = JSON.parse(localStorage.getItem(isFavoriteKey) || '[]');
-    return favorites.some((fav: { id: string }) => fav.id === vehicle.id);
-  });
-
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent navigation when clicking the favorite button
-    if (typeof window === 'undefined') return;
-    const favorites = JSON.parse(localStorage.getItem(isFavoriteKey) || '[]');
-    if (isFavorite) {
-      const updatedFavorites = favorites.filter((fav: { id: string }) => fav.id !== vehicle.id);
-      localStorage.setItem(isFavoriteKey, JSON.stringify(updatedFavorites));
-    } else {
-      favorites.push(vehicle);
-      localStorage.setItem(isFavoriteKey, JSON.stringify(favorites));
+    if (!user) {
+      router.push('/signin');
+      return;
     }
-    setIsFavorite(!isFavorite);
-    window.dispatchEvent(new Event('favoritesUpdated'));
+
+    try {
+      if (isFavorite) {
+        await favoritesRepo.removeFromFavorites(user.uid, vehicle.id);
+      } else {
+        await favoritesRepo.addToFavorites(user.uid, vehicle.id);
+      }
+      setIsFavorite(!isFavorite);
+      window.dispatchEvent(new Event('favoritesUpdated'));
+    } catch (error) {
+      console.error('Error updating favorites:', error);
+    }
   };
 
   const handleShareClick = (e: React.MouseEvent) => {
@@ -76,7 +89,7 @@ export const VehicleCard = memo(function VehicleCard({
         <div className={`relative ${isGrid ? 'w-full' : 'w-1/3'}`}>
           <div className="relative overflow-hidden">
             <Image
-              src={vehicle.mainImage || "/placeholder.svg"}
+              src={vehicle.mainImage || vehicle.images?.[0] || "/placeholder.svg"}
               alt={title}
               width={400}
               height={240}

@@ -30,7 +30,7 @@ export class VehicleRepository {
    * Convert Vehicle to VehicleSummary
    */
   private convertToSummary(vehicle: Vehicle): VehicleSummary {
-    const { id, type, make, model, year, price, monthlyPrice, mileage, fuel, transmission, color, location, images } = vehicle;
+    const { id, type, make, model, year, price, monthlyPrice, mileage, fuel, transmission, color, location, images, mainImage } = vehicle;
     return {
       id,
       type,
@@ -44,7 +44,8 @@ export class VehicleRepository {
       transmission,
       color,
       location,
-      mainImage: images[0],
+      mainImage: mainImage || images?.[0] || "/placeholder.svg",
+      images: images || [],
     };
   }
 
@@ -220,6 +221,22 @@ export class VehicleRepository {
     }
 
     return this.convertToVehicle(docSnap);
+  }
+
+  /**
+   * Get a single vehicle by ID
+   */
+  async getVehicleById(id: string): Promise<Vehicle | null> {
+    try {
+      const vehicleDoc = await getDoc(doc(this.collection, id));
+      if (vehicleDoc.exists()) {
+        return this.convertToVehicle(vehicleDoc as QueryDocumentSnapshot<DocumentData>);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting vehicle by ID:', error);
+      return null;
+    }
   }
 
   /**

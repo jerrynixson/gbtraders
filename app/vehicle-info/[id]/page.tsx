@@ -12,7 +12,10 @@ import { useEffect, useState, useCallback, Suspense } from "react"
 import { GoogleMapComponent } from "@/components/ui/google-map"
 import { Vehicle, Car as CarType, UsedCar, Van as VanType, Truck as TruckType, VehicleStatus, VehicleType } from "@/types/vehicles"
 import { VehicleRepository } from "@/lib/db/repositories/vehicleRepository"
+import { FavoritesRepository } from "@/lib/db/repositories/favoritesRepository"
+import { useAuth } from "@/hooks/useAuth"
 import { CommonVehicleDetails, VehicleDocumentation, VehicleSpecificDetails } from "./components"
+import { useRouter } from "next/navigation"
 
 interface VehicleSpecifications {
   fuelType: string;
@@ -80,6 +83,7 @@ interface VehiclePageState {
   loading: boolean;
   error: string | null;
   userLocation: { lat: number; lng: number } | null;
+  isFavorite: boolean;
 }
 
 // Helper function to render vehicle type icon
@@ -125,7 +129,12 @@ const ErrorState = ({ message }: { message: string }) => (
 );
 
 // Vehicle content component
-const VehicleContent = ({ vehicle, userLocation }: { vehicle: Vehicle; userLocation: { lat: number; lng: number } | null }) => {
+const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick }: { 
+  vehicle: Vehicle; 
+  userLocation: { lat: number; lng: number } | null;
+  isFavorite: boolean;
+  onFavoriteClick: () => void;
+}) => {
   const dealerInfo = {
     name: "Dealer information not available",
     location: vehicle.location.city,
@@ -179,10 +188,10 @@ const VehicleContent = ({ vehicle, userLocation }: { vehicle: Vehicle; userLocat
         <div className="flex justify-between items-center mb-4 mt-6">
           <button 
             className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            onClick={() => {/* TODO: Implement save functionality */}}
+            onClick={onFavoriteClick}
           >
-            <Heart className="h-4 w-4" />
-            <span>Save</span>
+            <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : ''}`} />
+            <span>{isFavorite ? 'Saved' : 'Save'}</span>
           </button>
 
           <button 
@@ -257,10 +266,10 @@ const VehicleContent = ({ vehicle, userLocation }: { vehicle: Vehicle; userLocat
           <div className="flex justify-between items-center mb-4">
             <button 
               className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              onClick={() => {/* TODO: Implement save functionality */}}
+              onClick={onFavoriteClick}
             >
-              <Heart className="h-4 w-4" />
-              <span>Save</span>
+              <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : ''}`} />
+              <span>{isFavorite ? 'Saved' : 'Save'}</span>
             </button>
 
             <button 
@@ -314,11 +323,14 @@ const VehicleContent = ({ vehicle, userLocation }: { vehicle: Vehicle; userLocat
 
 export default function VehicleDetails() {
   const params = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
   const [state, setState] = useState<VehiclePageState>({
     vehicle: null,
     loading: true,
     error: null,
-    userLocation: null
+    userLocation: null,
+    isFavorite: false
   });
 
   useEffect(() => {
@@ -328,7 +340,7 @@ export default function VehicleDetails() {
         console.log('Fetching vehicle with ID:', vehicleId);
         
         const vehicleRepo = new VehicleRepository();
-        const vehicle = await vehicleRepo.getVehicle(vehicleId);
+        const vehicle = await vehicleRepo.getVehicleById(vehicleId);
         
         console.log('Vehicle fetch result:', vehicle);
         
@@ -341,10 +353,18 @@ export default function VehicleDetails() {
           return;
         }
 
+        // Check if vehicle is in favorites
+        let isFavorite = false;
+        if (user) {
+          const favoritesRepo = new FavoritesRepository();
+          isFavorite = await favoritesRepo.isFavorite(user.uid, vehicleId);
+        }
+
         setState(prev => ({
           ...prev,
           vehicle,
-          loading: false
+          loading: false,
+          isFavorite
         }));
       } catch (error) {
         console.error('Error fetching vehicle:', error);
@@ -357,7 +377,7 @@ export default function VehicleDetails() {
     };
 
     fetchVehicle();
-  }, [params.id]);
+  }, [params.id, user]);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -399,6 +419,31 @@ export default function VehicleDetails() {
     }
   }, []);
 
+  const handleFavoriteClick = async () => {
+    if (!user) {
+      router.push('/signin');
+      return;
+    }
+
+    if (!state.vehicle) return;
+
+    try {
+      const favoritesRepo = new FavoritesRepository();
+      if (state.isFavorite) {
+        await favoritesRepo.removeFromFavorites(user.uid, state.vehicle.id);
+      } else {
+        await favoritesRepo.addToFavorites(user.uid, state.vehicle.id);
+      }
+      setState(prev => ({
+        ...prev,
+        isFavorite: !prev.isFavorite
+      }));
+      window.dispatchEvent(new Event('favoritesUpdated'));
+    } catch (error) {
+      console.error('Error updating favorites:', error);
+    }
+  };
+
   if (state.loading) {
     return <LoadingState />;
   }
@@ -412,7 +457,12 @@ export default function VehicleDetails() {
       <Header />
       <main className="container mx-auto px-4 py-6">
         <Suspense fallback={<LoadingState />}>
-          <VehicleContent vehicle={state.vehicle} userLocation={state.userLocation} />
+          <VehicleContent 
+            vehicle={state.vehicle} 
+            userLocation={state.userLocation}
+            isFavorite={state.isFavorite}
+            onFavoriteClick={handleFavoriteClick}
+          />
         </Suspense>
       </main>
       <Footer />
