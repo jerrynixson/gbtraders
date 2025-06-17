@@ -1,128 +1,102 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ChevronRight } from "lucide-react"
-import { VehicleCard, Vehicle } from "@/components/vehicle-card"
+"use client";
+
+import { VehicleCard } from "@/components/vehicle-card"
+import { Carousel } from "@/components/ui/carousel"
+import { VehicleSummary } from "@/types/vehicles"
+
+const leaseMotorcycles: VehicleSummary[] = [
+  {
+    id: "1",
+    type: "car",
+    make: "BMW",
+    model: "R 1250 GS",
+    year: 2023,
+    price: 299,
+    monthlyPrice: 299,
+    mileage: 0,
+    fuel: "petrol",
+    transmission: "manual",
+    color: "Rallye Style",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/motorcycles/lease-moto1.jpg"
+  },
+  {
+    id: "2",
+    type: "car",
+    make: "Ducati",
+    model: "Panigale V4",
+    year: 2023,
+    price: 399,
+    monthlyPrice: 399,
+    mileage: 0,
+    fuel: "petrol",
+    transmission: "manual",
+    color: "Ducati Red",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/motorcycles/lease-moto2.jpg"
+  },
+  {
+    id: "3",
+    type: "car",
+    make: "Honda",
+    model: "CBR 1000RR-R",
+    year: 2023,
+    price: 349,
+    monthlyPrice: 349,
+    mileage: 0,
+    fuel: "petrol",
+    transmission: "manual",
+    color: "Grand Prix Red",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/motorcycles/lease-moto3.jpg"
+  },
+  {
+    id: "4",
+    type: "car",
+    make: "Kawasaki",
+    model: "Ninja H2",
+    year: 2023,
+    price: 449,
+    monthlyPrice: 449,
+    mileage: 0,
+    fuel: "petrol",
+    transmission: "manual",
+    color: "Metallic Phantom Silver",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/motorcycles/lease-moto4.jpg"
+  }
+];
 
 export function LeaseMotorcycleListings() {
-  const motorcycles: Vehicle[] = [
-    {
-      id: 1,
-      title: "Honda CBR650R",
-      price: 166,
-      monthlyPrice: 166,
-      image: "/motorcycles/bike1.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: "2023",
-      mileage: "0",
-      fuel: "Petrol",
-      transmission: "Manual",
-      tag: "Lease",
-      make: "Honda",
-      model: "CBR650R",
-      description: "Sport motorcycle with powerful engine and agile handling",
-      initialPayment: "£1,992",
-      contractLength: "48",
-      milesPerYear: "0",
-    },
-    {
-      id: 2,
-      title: "Yamaha MT-07",
-      price: 235,
-      monthlyPrice: 235,
-      image: "/motorcycles/bike2.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: "2023",
-      mileage: "0",
-      fuel: "Petrol",
-      transmission: "Manual",
-      tag: "Lease",
-      make: "Yamaha",
-      model: "MT-07",
-      description: "Naked bike with torquey engine and comfortable riding position",
-      initialPayment: "£2,820",
-      contractLength: "48",
-      milesPerYear: "0",
-    },
-    {
-      id: 3,
-      title: "Kawasaki Ninja 650",
-      price: 293,
-      monthlyPrice: 293,
-      image: "/motorcycles/bike3.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: "2023",
-      mileage: "0",
-      fuel: "Petrol",
-      transmission: "Manual",
-      tag: "Lease",
-      make: "Kawasaki",
-      model: "Ninja 650",
-      description: "Sport-touring motorcycle with balanced performance",
-      initialPayment: "£3,516",
-      contractLength: "48",
-      milesPerYear: "0",
-    },
-    {
-      id: 4,
-      title: "Suzuki GSX-S750",
-      price: 243,
-      monthlyPrice: 243,
-      image: "/motorcycles/bike4.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: "2023",
-      mileage: "0",
-      fuel: "Petrol",
-      transmission: "Manual",
-      tag: "Lease",
-      make: "Suzuki",
-      model: "GSX-S750",
-      description: "Streetfighter with powerful inline-four engine",
-      initialPayment: "£2,916",
-      contractLength: "48",
-      milesPerYear: "0",
-    },
-  ]
-
   return (
-    <section className="py-12 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6 text-center">Lease a Brand New Motorcycle</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-          {motorcycles.map((vehicle) => (
-            <VehicleCard
-              key={vehicle.id}
-              id={vehicle.id}
-              image={vehicle.image}
-              title={vehicle.title}
-              price={vehicle.price}
-              monthlyPrice={vehicle.monthlyPrice}
-              year={vehicle.year}
-              mileage={vehicle.mileage}
-              fuel={vehicle.fuel}
-              transmission={vehicle.transmission}
-              distance={vehicle.distance}
-              location={vehicle.location}
-              view="grid"
-            />
-          ))}
-
-          {/* Next button */}
-          <Button variant="ghost" size="icon" className="absolute -right-12 top-1/2 transform -translate-y-1/2">
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-        </div>
-
-        <div className="flex justify-center mt-4">
-          <Link href="#" className="flex items-center text-sm text-primary">
-            View more lease deals <ChevronRight className="h-4 w-4 ml-1" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  )
+    <Carousel
+      items={leaseMotorcycles}
+      renderItem={(vehicle) => (
+        <VehicleCard
+          key={vehicle.id}
+          vehicle={vehicle}
+          view="grid"
+        />
+      )}
+      title="Lease Motorcycles"
+      viewMoreLink="/motorcycles/lease"
+      autoScroll={true}
+    />
+  );
 }
