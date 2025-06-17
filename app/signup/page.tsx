@@ -24,7 +24,8 @@ const SignUpPage: React.FC = () => {
   const [additionalRoles, setAdditionalRoles] = useState<string[]>([]);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [error, setError] = useState('');
-  const { signUp, logout } = useAuth();
+  const [verificationSent, setVerificationSent] = useState(false);
+  const { signUp, logout, sendVerificationEmail } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -36,6 +37,23 @@ const SignUpPage: React.FC = () => {
         ? prev.filter(r => r !== role)
         : [...prev, role]
     );
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      await sendVerificationEmail();
+      toast({
+        title: "Verification Email Sent",
+        description: "Please check your inbox for the verification link.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send verification email.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,6 +86,7 @@ const SignUpPage: React.FC = () => {
             country,
             role,
             additionalRoles,
+            emailVerified: false,
           }),
         });
 
@@ -118,17 +137,17 @@ const SignUpPage: React.FC = () => {
           }
         }
 
-        // Wait for a short delay to ensure auth state is updated
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Set verification sent state
+        setVerificationSent(true);
 
         toast({
-          title: "Success!",
-          description: "Your account has been created successfully.",
+          title: "Account Created!",
+          description: "Please check your email to verify your account.",
           variant: "default",
         });
         
-        // Use replace instead of push to prevent back navigation to signup
-        router.replace(redirectTo);
+        // Sign out the user until they verify their email
+        await logout();
       } catch (setupError: any) {
         console.error("Error setting up user:", setupError);
         // If setup fails, sign out the user
@@ -144,6 +163,38 @@ const SignUpPage: React.FC = () => {
       }
     }
   };
+
+  // If verification email is sent, show verification message
+  if (verificationSent) {
+    return (
+      <div className="flex flex-col min-h-screen bg-white">
+        <Header />
+        <main className="flex-grow flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Verify Your Email</h2>
+              <p className="text-gray-600 mb-6">
+                We've sent a verification link to <strong>{email}</strong>. Please check your inbox and click the link to verify your account.
+              </p>
+              <button
+                onClick={handleResendVerification}
+                className="w-full p-3 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium shadow-sm mb-4"
+              >
+                Resend Verification Email
+              </button>
+              <p className="text-sm text-gray-500">
+                Already verified?{" "}
+                <Link href="/signin" className="text-indigo-600 hover:text-indigo-500 font-semibold">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-white">

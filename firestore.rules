@@ -2,7 +2,19 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Function to check if user is authenticated
+    // Helper function to check if user is an admin
+    function isAdmin() {
+      let adminEmails = request.auth.token.email in ['abelsajuchazhoor@gmail.com'];
+      let isInAdminsCollection = exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return adminEmails || isInAdminsCollection;
+    }
+
+    // Function to check if user is authenticated and email verified
+    function isAuthenticatedAndVerified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    // Function to check if user is authenticated (without email verification)
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -11,6 +23,23 @@ service cloud.firestore {
     function isDealer() {
       let userDoc = get(/databases/(default)/documents/users/$(request.auth.uid));
       return userDoc != null && userDoc.data != null && userDoc.data.role == 'dealer';
+    }
+
+    // Users collection rules
+    match /users/{userId} {
+      // Allow read if user is authenticated
+      allow read: if request.auth != null;
+      // Allow write if user is admin or the document belongs to the user
+      // For user's own document, allow write even if email is not verified (needed for initial signup)
+      allow write: if isAdmin() || (request.auth.uid == userId && isAuthenticated());
+    }
+
+    // Admins collection rules
+    match /admins/{adminId} {
+      // Allow read if user is authenticated and verified
+      allow read: if isAuthenticatedAndVerified();
+      // Allow write only if user is an admin
+      allow write: if isAdmin();
     }
 
     // Function to validate vehicle data
@@ -44,8 +73,8 @@ service cloud.firestore {
       // Allow read for everyone (public listings)
       allow read: if true;
       
-      // Allow list operation for dealers querying their own listings
-      allow list: if isAuthenticated() 
+      // Allow list operation for verified dealers querying their own listings
+      allow list: if isAuthenticatedAndVerified() 
         && isDealer()
         && request.query.limit <= 100  // Limit query size for security
         && (
@@ -60,18 +89,18 @@ service cloud.firestore {
           )
         );
       
-      // Allow create for authenticated dealers with valid data
-      allow create: if isAuthenticated() 
+      // Allow create for authenticated and verified dealers with valid data
+      allow create: if isAuthenticatedAndVerified() 
         && isDealer()
         && isValidVehicleData();
       
-      // Allow update/delete only for the dealer who owns the listing
-      allow update: if isAuthenticated() 
+      // Allow update/delete only for verified dealers who own the listing
+      allow update: if isAuthenticatedAndVerified() 
         && isDealer()
         && ownsVehicle()
         && isValidVehicleData();
         
-      allow delete: if isAuthenticated() 
+      allow delete: if isAuthenticatedAndVerified() 
         && isDealer()
         && ownsVehicle();
     }
@@ -81,8 +110,8 @@ service cloud.firestore {
       // Allow read for everyone (public dealer profiles)
       allow read: if true;
       
-      // Allow write only for the dealer's own profile
-      allow write: if isAuthenticated() 
+      // Allow write only for verified dealers' own profile
+      allow write: if isAuthenticatedAndVerified() 
         && isDealer()
         && request.auth.uid == userId
         && isValidDealerProfile();
@@ -93,8 +122,8 @@ service cloud.firestore {
       // Allow read for everyone (public dealer profiles)
       allow read: if true;
       
-      // Allow write only for the dealer's own profile images
-      allow write: if isAuthenticated() 
+      // Allow write only for verified dealers' own profile images
+      allow write: if isAuthenticatedAndVerified() 
         && request.auth.uid == userId
         && isDealerUser()
         && isValidImage()
@@ -102,16 +131,15 @@ service cloud.firestore {
         && (imageType == 'logo' || imageType == 'banner');
     }
 
-    // Deny access to all other paths by default
+    // Keep existing rules for other collections
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
-  
 
-		// Favorites collection rules
+    // Favorites collection rules
     match /favorites/{userId} {
-      // Users can only read and write their own favorites
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      // Users can only read and write their own favorites if verified
+      allow read, write: if isAuthenticatedAndVerified() && request.auth.uid == userId;
     }
-    }
-    }
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from "../../components/header";
 import { Footer } from "../../components/footer";
 import { Eye, EyeOff, ArrowRight, Mail, Lock } from "lucide-react";
@@ -8,17 +8,67 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from "@/hooks/use-toast";
+import { signInWithEmailAndPassword, sendEmailVerification as sendFirebaseEmailVerification, signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 const SignInPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { signIn } = useAuth();
+  const [isEmailLink, setIsEmailLink] = useState(false);
+  const { signIn, sendVerificationEmail, completeEmailSignIn } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
+
+  useEffect(() => {
+    // Check if this is an email sign-in link
+    const storedEmail = window.localStorage.getItem('emailForSignIn');
+    if (storedEmail) {
+      setEmail(storedEmail);
+      setIsEmailLink(true);
+      handleEmailLinkSignIn(storedEmail);
+    }
+  }, []);
+
+  const handleEmailLinkSignIn = async (storedEmail: string) => {
+    try {
+      await completeEmailSignIn(storedEmail);
+      window.localStorage.removeItem('emailForSignIn');
+      toast({
+        title: "Success!",
+        description: "You have been signed in successfully.",
+        variant: "default",
+      });
+      router.push(redirectTo);
+    } catch (error: any) {
+      setError(error.message || 'Failed to complete sign in.');
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      // Sign in the user (even if not verified)
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Send verification email
+      await sendFirebaseEmailVerification(userCredential.user);
+      // Optionally sign out the user immediately
+      await signOut(auth);
+      toast({
+        title: "Verification Email Sent",
+        description: "Please check your inbox for the verification link.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error resending verification",
+        description: error.message || "Failed to resend verification email.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,8 +84,64 @@ const SignInPage: React.FC = () => {
       router.push(redirectTo);
     } catch (error: any) {
       setError(error.message);
+      // If the error is about email verification, show the resend button
+      if (error.message.includes('verify your email')) {
+        return (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800 mb-2">{error.message}</p>
+            <button
+              onClick={handleResendVerification}
+              className="text-sm text-yellow-800 underline hover:text-yellow-900"
+            >
+              Resend verification email
+            </button>
+          </div>
+        );
+      }
     }
   };
+
+  // If this is an email sign-in link but we don't have the email, show an input form
+  if (isEmailLink && !email) {
+    return (
+      <div className="flex flex-col min-h-screen bg-white">
+        <Header />
+        <main className="flex-grow flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Complete Sign In</h2>
+            <p className="text-gray-600 mb-4">
+              Please enter your email address to complete the sign in process.
+            </p>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleEmailLinkSignIn(email);
+            }}>
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full mt-4 p-3 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
+              >
+                Complete Sign In
+              </button>
+            </form>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -65,8 +171,18 @@ const SignInPage: React.FC = () => {
             </div>
             
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-                {error}
+              <div className={`mb-4 p-3 rounded-lg ${error.includes('verify your email') ? 'bg-yellow-50 border border-yellow-200' : 'bg-red-50 border border-red-200'}`}>
+                <p className={error.includes('verify your email') ? 'text-yellow-800' : 'text-red-600'}>
+                  {error}
+                </p>
+                {error.includes('verify your email') && (
+                  <button
+                    onClick={handleResendVerification}
+                    className="mt-2 text-sm text-yellow-800 underline hover:text-yellow-900"
+                  >
+                    Resend verification email
+                  </button>
+                )}
               </div>
             )}
             

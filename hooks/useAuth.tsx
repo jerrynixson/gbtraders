@@ -8,10 +8,14 @@ import {
   signOut,
   onAuthStateChanged,
   UserCredential,
-  AuthError
+  AuthError,
+  sendEmailVerification as sendFirebaseEmailVerification,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink as signInWithFirebaseEmailLink
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 interface User extends FirebaseUser {
   role?: 'user' | 'dealer';
@@ -24,9 +28,18 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   getUserProfile: () => Promise<any>;
+  sendVerificationEmail: () => Promise<void>;
+  signInWithEmail: (email: string) => Promise<void>;
+  completeEmailSignIn: (email: string) => Promise<UserCredential>;
+  isEmailVerified: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+const actionCodeSettings = {
+  url: process.env.NEXT_PUBLIC_VERIFICATION_URL || 'http://localhost:3000/verify-email',
+  handleCodeInApp: true,
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -80,7 +93,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
-      return await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Send verification email
+      await sendFirebaseEmailVerification(userCredential.user);
+      
+      // Create user document with verification status
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        email,
+        emailVerified: false,
+        createdAt: new Date().toISOString(),
+        role: 'user'
+      });
+
+      return userCredential;
     } catch (error) {
       const authError = error as AuthError;
       if (authError.code === 'auth/email-already-in-use') {
@@ -92,7 +118,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Check if email is verified
+      if (!userCredential.user.emailVerified) {
+        await signOut(auth);
+        throw new Error('Please verify your email before signing in. Check your inbox for the verification link.');
+      }
+
+      // Update verification status in Firestore if needed
+      const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+      if (userDoc.exists() && !userDoc.data().emailVerified) {
+        await updateDoc(doc(db, "users", userCredential.user.uid), {
+          emailVerified: true
+        });
+      }
     } catch (error) {
       const authError = error as AuthError;
       if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
@@ -100,6 +140,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       throw error;
     }
+  };
+
+  const sendVerificationEmail = async () => {
+    if (!user) {
+      throw new Error('No user logged in');
+    }
+    await sendFirebaseEmailVerification(user);
+  };
+
+  const signInWithEmail = async (email: string) => {
+    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+    // Store email for use in completeEmailSignIn
+    window.localStorage.setItem('emailForSignIn', email);
+  };
+
+  const completeEmailSignIn = async (email: string) => {
+    if (!isSignInWithEmailLink(auth, window.location.href)) {
+      throw new Error('Invalid sign in link');
+    }
+    return await signInWithFirebaseEmailLink(auth, email);
+  };
+
+  const isEmailVerified = () => {
+    return user?.emailVerified || false;
   };
 
   const logout = async () => {
@@ -121,7 +185,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('User profile not found');
       }
       return userDoc.data();
-    }
+    },
+    sendVerificationEmail,
+    signInWithEmail,
+    completeEmailSignIn,
+    isEmailVerified
   };
 
   return (
