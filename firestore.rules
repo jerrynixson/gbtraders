@@ -2,6 +2,29 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Helper function to check if user is an admin
+    function isAdmin() {
+      let adminEmails = request.auth.token.email in ['abelsajuchazhoor@gmail.com'];
+      let isInAdminsCollection = exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return adminEmails || isInAdminsCollection;
+    }
+
+    // Users collection rules
+    match /users/{userId} {
+      // Allow read if user is authenticated
+      allow read: if request.auth != null;
+      // Allow write if user is admin or the document belongs to the user
+      allow write: if isAdmin() || request.auth.uid == userId;
+    }
+
+    // Admins collection rules
+    match /admins/{adminId} {
+      // Allow read if user is authenticated
+      allow read: if request.auth != null;
+      // Allow write only if user is an admin
+      allow write: if isAdmin();
+    }
+
     // Function to check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
@@ -102,9 +125,9 @@ service cloud.firestore {
         && (imageType == 'logo' || imageType == 'banner');
     }
 
-    // Deny access to all other paths by default
+    // Keep existing rules for other collections
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
   
 
@@ -113,5 +136,5 @@ service cloud.firestore {
       // Users can only read and write their own favorites
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
-    }
-    }
+  }
+}
