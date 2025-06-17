@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 import { 
   Mail, 
   Phone, 
@@ -23,11 +26,73 @@ import {
   Trash2,
   Edit2,
   Camera,
-  User
+  User,
+  Globe,
+  UserCircle
 } from "lucide-react";
+
+interface UserProfile {
+  country: string;
+  createdAt: { seconds: number };
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: "user" | "dealer";
+  additionalRoles?: string[];
+}
 
 export function ProfilePage() {
   const [activeTab, setActiveTab] = useState("profile");
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { user, getUserProfile } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace('/signin');
+      return;
+    }
+
+    const fetchProfile = async () => {
+      try {
+        const profile = await getUserProfile();
+        setUserProfile(profile as UserProfile);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user, getUserProfile, router]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto py-8 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If no user or profile, the useEffect will handle the redirect
+  if (!user || !userProfile) {
+    return null;
+  }
+
+  const createdDate = userProfile.createdAt 
+    ? format(new Date(userProfile.createdAt.seconds * 1000), 'MMMM dd, yyyy')
+    : 'N/A';
+
+  const userInitials = `${userProfile.firstName.charAt(0)}${userProfile.lastName.charAt(0)}`.toUpperCase();
 
   return (
     <div className="min-h-screen bg-white">
@@ -39,15 +104,27 @@ export function ProfilePage() {
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <Avatar className="h-32 w-32 border-4 border-white shadow-lg">
                   <AvatarImage src="/placeholder-avatar.jpg" alt="User avatar" />
-                  <AvatarFallback className="text-4xl font-bold text-white bg-blue-600">JD</AvatarFallback>
+                  <AvatarFallback className="text-4xl font-bold text-white bg-blue-600">{userInitials}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 text-center md:text-left">
-                  <CardTitle className="text-4xl font-extrabold text-gray-900 tracking-tight">John Doe</CardTitle>
-                  <CardDescription className="text-xl font-semibold text-blue-600 mt-1">Premium Member</CardDescription>
+                  <CardTitle className="text-4xl font-extrabold text-gray-900 tracking-tight">
+                    {`${userProfile.firstName} ${userProfile.lastName}`}
+                  </CardTitle>
+                  <CardDescription className="text-xl font-semibold text-blue-600 mt-1">
+                    {userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)} Account
+                  </CardDescription>
                   <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
                     <Badge variant="secondary" className="text-sm font-semibold bg-blue-100 text-blue-700">Verified</Badge>
-                    <Badge variant="outline" className="text-sm font-semibold border-blue-200 text-blue-700">Member since 2024</Badge>
-                    <Badge variant="outline" className="text-sm font-semibold border-blue-200 text-blue-700">5 Listings</Badge>
+                    <Badge variant="outline" className="text-sm font-semibold border-blue-200 text-blue-700">
+                      Member since {createdDate}
+                    </Badge>
+                    {userProfile.additionalRoles && userProfile.additionalRoles.length > 0 && (
+                      userProfile.additionalRoles.map((role) => (
+                        <Badge key={role} variant="outline" className="text-sm font-semibold border-green-200 text-green-700">
+                          {role.charAt(0).toUpperCase() + role.slice(1)}
+                        </Badge>
+                      ))
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -90,7 +167,21 @@ export function ProfilePage() {
                     <Calendar className="h-5 w-5 text-blue-600" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">Member Since</p>
-                      <p className="text-lg font-bold text-gray-900">Jan 2024</p>
+                      <p className="text-lg font-bold text-gray-900">{createdDate}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <UserCircle className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Account Type</p>
+                      <p className="text-lg font-bold text-gray-900 capitalize">{userProfile.role}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Globe className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Country</p>
+                      <p className="text-lg font-bold text-gray-900">{userProfile.country}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -129,11 +220,11 @@ export function ProfilePage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <Label htmlFor="firstName" className="text-base font-medium text-gray-900">First Name</Label>
-                          <Input id="firstName" defaultValue="John" className="text-gray-900" />
+                          <Input id="firstName" defaultValue={userProfile.firstName} className="text-gray-900" />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="lastName" className="text-base font-medium text-gray-900">Last Name</Label>
-                          <Input id="lastName" defaultValue="Doe" className="text-gray-900" />
+                          <Input id="lastName" defaultValue={userProfile.lastName} className="text-gray-900" />
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -141,7 +232,7 @@ export function ProfilePage() {
                           <Mail className="h-4 w-4" />
                           Email
                         </Label>
-                        <Input id="email" type="email" defaultValue="john.doe@example.com" className="text-gray-900" />
+                        <Input id="email" type="email" defaultValue={userProfile.email} className="text-gray-900" />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="phone" className="flex items-center gap-2 text-base font-medium text-gray-900">
@@ -155,7 +246,25 @@ export function ProfilePage() {
                           <MapPin className="h-4 w-4" />
                           Location
                         </Label>
-                        <Input id="location" defaultValue="London, UK" className="text-gray-900" />
+                        <Input id="location" defaultValue={userProfile.country} className="text-gray-900" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="role" className="flex items-center gap-2 text-base font-medium text-gray-900">
+                          <UserCircle className="h-4 w-4" />
+                          Account Type
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Input id="role" defaultValue={userProfile.role} className="text-gray-900 capitalize" disabled />
+                          {userProfile.additionalRoles && userProfile.additionalRoles.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {userProfile.additionalRoles.map((role) => (
+                                <Badge key={role} variant="secondary" className="text-xs font-medium bg-green-100 text-green-700">
+                                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <Separator className="my-4" />
                       <div className="space-y-2">
