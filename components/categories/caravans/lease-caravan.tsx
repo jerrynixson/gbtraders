@@ -1,128 +1,102 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ChevronRight } from "lucide-react"
-import { VehicleCard, Vehicle } from "@/components/vehicle-card"
+"use client";
+
+import { VehicleCard } from "@/components/vehicle-card"
+import { Carousel } from "@/components/ui/carousel"
+import { VehicleSummary } from "@/types/vehicles"
+
+const leaseCaravans: VehicleSummary[] = [
+  {
+    id: "1",
+    type: "car",
+    make: "Swift",
+    model: "Challenger 580",
+    year: 2023,
+    price: 399,
+    monthlyPrice: 399,
+    mileage: 0,
+    fuel: "petrol",
+    transmission: "manual",
+    color: "White",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/caravans/lease-caravan1.jpg"
+  },
+  {
+    id: "2",
+    type: "car",
+    make: "Bailey",
+    model: "Unicorn Vigo",
+    year: 2023,
+    price: 449,
+    monthlyPrice: 449,
+    mileage: 0,
+    fuel: "petrol",
+    transmission: "manual",
+    color: "White",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/caravans/lease-caravan2.jpg"
+  },
+  {
+    id: "3",
+    type: "car",
+    make: "Lunar",
+    model: "Clubman ES",
+    year: 2023,
+    price: 429,
+    monthlyPrice: 429,
+    mileage: 0,
+    fuel: "petrol",
+    transmission: "manual",
+    color: "White",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/caravans/lease-caravan3.jpg"
+  },
+  {
+    id: "4",
+    type: "car",
+    make: "Elddis",
+    model: "Avante 840",
+    year: 2023,
+    price: 379,
+    monthlyPrice: 379,
+    mileage: 0,
+    fuel: "petrol",
+    transmission: "manual",
+    color: "White",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/caravans/lease-caravan4.jpg"
+  }
+];
 
 export function LeaseCaravanListings() {
-  const caravans: Vehicle[] = [
-    {
-      id: 1,
-      title: "Swift Challenger",
-      price: 166,
-      monthlyPrice: 166,
-      image: "/caravans/caravan1.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: "2023",
-      mileage: "0",
-      fuel: "N/A",
-      transmission: "N/A",
-      tag: "Lease",
-      make: "Swift",
-      model: "Challenger",
-      description: "Luxury touring caravan with modern amenities",
-      initialPayment: "£1,992",
-      contractLength: "48",
-      milesPerYear: "0",
-    },
-    {
-      id: 2,
-      title: "Bailey Unicorn",
-      price: 235,
-      monthlyPrice: 235,
-      image: "/caravans/caravan2.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: "2023",
-      mileage: "0",
-      fuel: "N/A",
-      transmission: "N/A",
-      tag: "Lease",
-      make: "Bailey",
-      model: "Unicorn",
-      description: "Premium touring caravan with spacious interior",
-      initialPayment: "£2,820",
-      contractLength: "48",
-      milesPerYear: "0",
-    },
-    {
-      id: 3,
-      title: "Elddis Avante",
-      price: 293,
-      monthlyPrice: 293,
-      image: "/caravans/caravan3.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: "2023",
-      mileage: "0",
-      fuel: "N/A",
-      transmission: "N/A",
-      tag: "Lease",
-      make: "Elddis",
-      model: "Avante",
-      description: "Modern touring caravan with innovative features",
-      initialPayment: "£3,516",
-      contractLength: "48",
-      milesPerYear: "0",
-    },
-    {
-      id: 4,
-      title: "Lunar Clubman",
-      price: 243,
-      monthlyPrice: 243,
-      image: "/caravans/caravan4.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: "2023",
-      mileage: "0",
-      fuel: "N/A",
-      transmission: "N/A",
-      tag: "Lease",
-      make: "Lunar",
-      model: "Clubman",
-      description: "Elegant touring caravan with premium finishes",
-      initialPayment: "£2,916",
-      contractLength: "48",
-      milesPerYear: "0",
-    },
-  ]
-
   return (
-    <section className="py-12 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6 text-center">Lease a Brand New Caravan</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-          {caravans.map((vehicle) => (
-            <VehicleCard
-              key={vehicle.id}
-              id={vehicle.id}
-              image={vehicle.image}
-              title={vehicle.title}
-              price={vehicle.price}
-              monthlyPrice={vehicle.monthlyPrice}
-              year={vehicle.year}
-              mileage={vehicle.mileage}
-              fuel={vehicle.fuel}
-              transmission={vehicle.transmission}
-              distance={vehicle.distance}
-              location={vehicle.location}
-              view="grid"
-            />
-          ))}
-
-          {/* Next button */}
-          <Button variant="ghost" size="icon" className="absolute -right-12 top-1/2 transform -translate-y-1/2">
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-        </div>
-
-        <div className="flex justify-center mt-4">
-          <Link href="#" className="flex items-center text-sm text-primary">
-            View more lease deals <ChevronRight className="h-4 w-4 ml-1" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  )
+    <Carousel
+      items={leaseCaravans}
+      renderItem={(vehicle) => (
+        <VehicleCard
+          key={vehicle.id}
+          vehicle={vehicle}
+          view="grid"
+        />
+      )}
+      title="Lease Caravans"
+      viewMoreLink="/caravans/lease"
+      autoScroll={true}
+    />
+  );
 }

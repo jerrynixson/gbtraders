@@ -15,6 +15,7 @@ import CarRentalBanner from "@/components/dealer-advert-banner"
 import BlogPostsSection from "@/components/blog-post-section"
 import { GBTraderFeatures } from "@/components/gbtrader-features"
 import { AnimatedSection } from "@/components/animated-section"
+import Link from "next/link"
 
 const categories = [
   {

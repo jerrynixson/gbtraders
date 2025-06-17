@@ -1,90 +1,102 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ChevronRight } from "lucide-react"
+"use client";
+
 import { VehicleCard } from "@/components/vehicle-card"
+import { Carousel } from "@/components/ui/carousel"
+import { VehicleSummary } from "@/types/vehicles"
+
+const leaseElectricVehicles: VehicleSummary[] = [
+  {
+    id: "1",
+    type: "car",
+    make: "Tesla",
+    model: "Model 3 Long Range AWD",
+    year: 2023,
+    price: 549,
+    monthlyPrice: 549,
+    mileage: 0,
+    fuel: "electric",
+    transmission: "automatic",
+    color: "Midnight Silver",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/electric-vehicles/lease-ev1.jpg"
+  },
+  {
+    id: "2",
+    type: "car",
+    make: "BMW",
+    model: "i4 eDrive40 M Sport",
+    year: 2023,
+    price: 649,
+    monthlyPrice: 649,
+    mileage: 0,
+    fuel: "electric",
+    transmission: "automatic",
+    color: "Mineral White",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/electric-vehicles/lease-ev2.jpg"
+  },
+  {
+    id: "3",
+    type: "car",
+    make: "Audi",
+    model: "Q4 e-tron 50 quattro S line",
+    year: 2023,
+    price: 599,
+    monthlyPrice: 599,
+    mileage: 0,
+    fuel: "electric",
+    transmission: "automatic",
+    color: "Daytona Gray",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/electric-vehicles/lease-ev3.jpg"
+  },
+  {
+    id: "4",
+    type: "car",
+    make: "Mercedes-Benz",
+    model: "EQS 450+ AMG Line",
+    year: 2023,
+    price: 729,
+    monthlyPrice: 729,
+    mileage: 0,
+    fuel: "electric",
+    transmission: "automatic",
+    color: "Obsidian Black",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/electric-vehicles/lease-ev4.jpg"
+  }
+];
 
 export function LeaseElectricVehicleListings() {
-  const leaseElectricVehicles = [
-    {
-      id: 1,
-      title: "Tesla Model 3 Long Range AWD",
-      price: 549,
-      monthlyPrice: 549,
-      image: "/electric-vehicles/lease-ev1.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: 2023,
-      mileage: 0,
-      fuel: "Electric",
-      transmission: "Automatic",
-      isHighlighted: false,
-    },
-    {
-      id: 2,
-      title: "BMW i4 eDrive40 M Sport",
-      price: 649,
-      monthlyPrice: 649,
-      image: "/electric-vehicles/lease-ev2.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: 2023,
-      mileage: 0,
-      fuel: "Electric",
-      transmission: "Automatic",
-      isHighlighted: false,
-    },
-    {
-      id: 3,
-      title: "Audi Q4 e-tron 50 quattro S line",
-      price: 599,
-      monthlyPrice: 599,
-      image: "/electric-vehicles/lease-ev3.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: 2023,
-      mileage: 0,
-      fuel: "Electric",
-      transmission: "Automatic",
-      isHighlighted: false,
-    },
-    {
-      id: 4,
-      title: "Mercedes-Benz EQS 450+ AMG Line",
-      price: 729,
-      monthlyPrice: 729,
-      image: "/electric-vehicles/lease-ev4.jpg",
-      distance: "0 miles away",
-      location: "GB Traders",
-      year: 2023,
-      mileage: 0,
-      fuel: "Electric",
-      transmission: "Automatic",
-      isHighlighted: false,
-    },
-  ]
-
   return (
-    <section className="py-12 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6 text-center">Lease Electric Vehicles</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-          {leaseElectricVehicles.map((vehicle) => (
-            <VehicleCard key={vehicle.id} {...vehicle} />
-          ))}
-
-          {/* Next button */}
-          <Button variant="ghost" size="icon" className="absolute -right-12 top-1/2 transform -translate-y-1/2">
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-        </div>
-
-        <div className="flex justify-center mt-4">
-          <Link href="#" className="flex items-center text-sm text-primary">
-            View more lease deals <ChevronRight className="h-4 w-4 ml-1" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  )
+    <Carousel
+      items={leaseElectricVehicles}
+      renderItem={(vehicle) => (
+        <VehicleCard
+          key={vehicle.id}
+          vehicle={vehicle}
+          view="grid"
+        />
+      )}
+      title="Lease Electric Vehicles"
+      viewMoreLink="/electric-vehicles/lease"
+      autoScroll={true}
+    />
+  );
 } 

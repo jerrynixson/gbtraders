@@ -1,132 +1,102 @@
 "use client";
 
-import { useState } from "react";
-import Link from 'next/link'
-import Image from 'next/image'
-import { Button } from "@/components/ui/button"
-import { ChevronRight, Heart, Share2 } from "lucide-react"
-import { VehicleCard, Vehicle } from "@/components/vehicle-card"
+import { VehicleCard } from "@/components/vehicle-card"
+import { Carousel } from "@/components/ui/carousel"
+import { VehicleSummary } from "@/types/vehicles"
 
-const leaseEBikes: Vehicle[] = [
+const leaseEBikes: VehicleSummary[] = [
   {
-    id: 1,
-    title: "Specialized Turbo Vado SL 4.0",
-    price: 2999,
-    monthlyPrice: 99,
-    image: "/e-bikes/lease-bike1.jpg",
-    distance: "0 miles away",
-    location: "GB Traders",
-    year: "2023",
-    mileage: "0",
-    fuel: "Electric",
-    transmission: "Shimano Deore",
-    tag: "Lease",
+    id: "1",
+    type: "car",
     make: "Specialized",
     model: "Turbo Vado SL 4.0",
-    description: "Lightweight electric bike with premium components",
-    initialPayment: "£299",
-    contractLength: "36",
-    milesPerYear: "0",
+    year: 2023,
+    price: 2999,
+    monthlyPrice: 99,
+    mileage: 0,
+    fuel: "electric",
+    transmission: "manual",
+    color: "Gloss White",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/e-bikes/lease-bike1.jpg"
   },
   {
-    id: 2,
-    title: "Trek Allant+ 7S",
-    price: 3499,
-    monthlyPrice: 129,
-    image: "/e-bikes/lease-bike2.jpg",
-    distance: "0 miles away",
-    location: "GB Traders",
-    year: "2023",
-    mileage: "0",
-    fuel: "Electric",
-    transmission: "Shimano Deore XT",
-    tag: "Lease",
+    id: "2",
+    type: "car",
     make: "Trek",
     model: "Allant+ 7S",
-    description: "Premium electric bike with advanced features",
-    initialPayment: "£349",
-    contractLength: "36",
-    milesPerYear: "0",
+    year: 2023,
+    price: 3499,
+    monthlyPrice: 129,
+    mileage: 0,
+    fuel: "electric",
+    transmission: "manual",
+    color: "Matte Black",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/e-bikes/lease-bike2.jpg"
   },
   {
-    id: 3,
-    title: "Giant Explore E+ 2",
-    price: 2799,
-    monthlyPrice: 89,
-    image: "/e-bikes/lease-bike3.jpg",
-    distance: "0 miles away",
-    location: "GB Traders",
-    year: "2023",
-    mileage: "0",
-    fuel: "Electric",
-    transmission: "Shimano Deore",
-    tag: "Lease",
+    id: "3",
+    type: "car",
     make: "Giant",
     model: "Explore E+ 2",
-    description: "Versatile electric bike for urban commuting",
-    initialPayment: "£279",
-    contractLength: "36",
-    milesPerYear: "0",
+    year: 2023,
+    price: 2799,
+    monthlyPrice: 89,
+    mileage: 0,
+    fuel: "electric",
+    transmission: "manual",
+    color: "Deep Blue",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/e-bikes/lease-bike3.jpg"
   },
   {
-    id: 4,
-    title: "Cannondale Adventure Neo 4",
-    price: 2499,
-    monthlyPrice: 79,
-    image: "/e-bikes/lease-bike4.jpg",
-    distance: "0 miles away",
-    location: "GB Traders",
-    year: "2023",
-    mileage: "0",
-    fuel: "Electric",
-    transmission: "Shimano Acera",
-    tag: "Lease",
+    id: "4",
+    type: "car",
     make: "Cannondale",
     model: "Adventure Neo 4",
-    description: "Comfortable electric bike for everyday use",
-    initialPayment: "£249",
-    contractLength: "36",
-    milesPerYear: "0",
+    year: 2023,
+    price: 2499,
+    monthlyPrice: 79,
+    mileage: 0,
+    fuel: "electric",
+    transmission: "manual",
+    color: "Forest Green",
+    location: {
+      address: "GB Traders",
+      city: "London",
+      country: "UK"
+    },
+    mainImage: "/e-bikes/lease-bike4.jpg"
   }
 ];
 
 export function LeaseEBikeListings() {
   return (
-    <section className="py-12 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6 text-center">Lease an E-Bike</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-          {leaseEBikes.map((vehicle) => (
-            <VehicleCard
-              key={vehicle.id}
-              id={vehicle.id}
-              image={vehicle.image}
-              title={vehicle.title}
-              price={vehicle.price}
-              monthlyPrice={vehicle.monthlyPrice}
-              year={vehicle.year}
-              mileage={vehicle.mileage}
-              fuel={vehicle.fuel}
-              transmission={vehicle.transmission}
-              distance={vehicle.distance}
-              location={vehicle.location}
-              view="grid"
-            />
-          ))}
-
-          {/* Next button */}
-          <Button variant="ghost" size="icon" className="absolute -right-12 top-1/2 transform -translate-y-1/2">
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-        </div>
-
-        <div className="flex justify-center mt-4">
-          <Link href="#" className="flex items-center text-sm text-primary">
-            View more lease deals <ChevronRight className="h-4 w-4 ml-1" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  )
+    <Carousel
+      items={leaseEBikes}
+      renderItem={(vehicle) => (
+        <VehicleCard
+          key={vehicle.id}
+          vehicle={vehicle}
+          view="grid"
+        />
+      )}
+      title="Lease an E-Bike"
+      viewMoreLink="/e-bikes/lease"
+      autoScroll={true}
+    />
+  );
 } 

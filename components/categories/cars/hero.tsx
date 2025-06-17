@@ -1,31 +1,40 @@
 "use client";
 
-import React, { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu"
-import { Search, Car, Euro, MapPin } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Search, Car, Euro, MapPin, Sliders, X } from "lucide-react";
 
 interface HeroProps {
   backgroundImage?: string;
-  onSearch?: (make: string | null, model: string | null, minPrice: string, maxPrice: string, bodyType: string | null) => void;
+  onSearch?: (
+    make: string | null,
+    model: string | null,
+    minPrice: string,
+    maxPrice: string,
+    bodyType: string | null
+  ) => void;
 }
 
 export function Hero({
-  backgroundImage = '/banner-home.jpg',
-  onSearch
+  backgroundImage = "/banner-home.jpg",
+  onSearch,
 }: HeroProps) {
   const [selectedMake, setSelectedMake] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
-  const [minPrice, setMinPrice] = useState<string>('');
-  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [minPrice, setMinPrice] = useState<string>("");
+  const [maxPrice, setMaxPrice] = useState<string>("");
   const [selectedBodyType, setSelectedBodyType] = useState<string | null>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [nextImageIndex, setNextImageIndex] = useState(1);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Popular UK car brands
   const carBrands = [
@@ -38,7 +47,7 @@ export function Hero({
     "Vauxhall",
     "Volkswagen",
     "Volvo",
-    "Land Rover"
+    "Land Rover",
   ];
 
   // Car body types
@@ -50,38 +59,44 @@ export function Hero({
     "Coupe",
     "Convertible",
     "MPV",
-    "Pickup"
+    "Pickup",
   ];
 
   // Example models - these would ideally be populated based on the selected make
   const carModels: Record<string, string[]> = {
-    "Audi": ["A1", "A3", "A4", "A6", "Q3", "Q5", "Q7", "e-tron"],
-    "BMW": ["1 Series", "3 Series", "5 Series", "X3", "X5", "i3", "i4", "i7"],
-    "Ford": ["Fiesta", "Focus", "Puma", "Kuga", "Mustang", "Transit", "Mondeo"],
+    Audi: ["A1", "A3", "A4", "A6", "Q3", "Q5", "Q7", "e-tron"],
+    BMW: ["1 Series", "3 Series", "5 Series", "X3", "X5", "i3", "i4", "i7"],
+    Ford: ["Fiesta", "Focus", "Puma", "Kuga", "Mustang", "Transit", "Mondeo"],
     "Mercedes-Benz": ["A-Class", "C-Class", "E-Class", "GLA", "GLC", "EQA", "EQC"],
-    "Nissan": ["Micra", "Juke", "Qashqai", "X-Trail", "Leaf", "Ariya"],
-    "Toyota": ["Aygo", "Yaris", "Corolla", "Prius", "RAV4", "Land Cruiser"],
-    "Vauxhall": ["Corsa", "Astra", "Mokka", "Grandland", "Insignia"],
-    "Volkswagen": ["Polo", "Golf", "Tiguan", "Passat", "ID.3", "ID.4"],
-    "Volvo": ["XC40", "XC60", "XC90", "S60", "V60", "C40"],
-    "Land Rover": ["Discovery", "Discovery Sport", "Range Rover", "Range Rover Evoque", "Defender"]
+    Nissan: ["Micra", "Juke", "Qashqai", "X-Trail", "Leaf", "Ariya"],
+    Toyota: ["Aygo", "Yaris", "Corolla", "Prius", "RAV4", "Land Cruiser"],
+    Vauxhall: ["Corsa", "Astra", "Mokka", "Grandland", "Insignia"],
+    Volkswagen: ["Polo", "Golf", "Tiguan", "Passat", "ID.3", "ID.4"],
+    Volvo: ["XC40", "XC60", "XC90", "S60", "V60", "C40"],
+    "Land Rover": ["Discovery", "Discovery Sport", "Range Rover", "Range Rover Evoque", "Defender"],
   };
 
+  const images = [
+    '/banner_prop/ChatGPT Image Jun 9, 2025, 03_47_41 PM.png',
+    '/banner_prop/ChatGPT Image Jun 9, 2025, 03_43_18 PM.png',
+    '/banner_prop/ChatGPT Image Jun 9, 2025, 03_41_50 PM.png',
+    '/banner_prop/ChatGPT Image Jun 9, 2025, 03_39_02 PM.png',
+  ];
+
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const windowHeight = window.innerHeight;
+    const interval = setInterval(() => {
+      setIsTransitioning(true);
+      setNextImageIndex((currentImageIndex + 1) % images.length);
       
-      // Calculate scroll progress (0 to 1)
-      const progress = Math.min(scrollTop / windowHeight, 1);
-      setScrollProgress(progress);
-    };
+      setTimeout(() => {
+        setCurrentImageIndex(nextImageIndex);
+        setIsTransitioning(false);
+      }, 1000);
+    }, 5000);
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    return () => clearInterval(interval);
+  }, [currentImageIndex, nextImageIndex, images.length]);
 
-  // Reset model when make changes
   useEffect(() => {
     setSelectedModel(null);
   }, [selectedMake]);
@@ -95,75 +110,42 @@ export function Hero({
   const resetFilters = () => {
     setSelectedMake(null);
     setSelectedModel(null);
-    setMinPrice('');
-    setMaxPrice('');
+    setMinPrice("");
+    setMaxPrice("");
     setSelectedBodyType(null);
   };
 
   return (
-    <div 
-      className="relative w-full min-h-screen overflow-hidden"
-      style={{
-        transform: `translateY(-${scrollProgress * 50}%)`,
-        opacity: 1 - scrollProgress,
-        filter: `blur(${scrollProgress * 5}px)`
-      }}
-    >
-      {/* Background Image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center filter brightness-50"
-        style={{ 
-          backgroundImage: `url('${backgroundImage}')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
-      />
+    <div className="relative mx-auto w-full max-w-[85rem] overflow-hidden rounded-2xl bg-gradient-to-br from-red-500 via-blue-600 to-red-700 shadow-xl">
+      <div className="flex min-h-[400px] flex-col lg:flex-row rounded-2xl border border-white/20 bg-white/10 shadow-lg backdrop-filter backdrop-blur-xl">
+        {/* Search Section - Full width on mobile */}
+        <div className="flex w-full flex-col justify-between p-4 sm:p-6 lg:w-1/3 bg-white/10 backdrop-blur-xl rounded-2xl lg:rounded-r-none order-2 lg:order-1">
+          <div>
+            <h2 className="mb-4 sm:mb-6 text-center text-lg sm:text-xl font-semibold text-white">Find Your Perfect Car</h2>
 
-      {/* Content Container */}
-      <div className="relative container mx-auto px-4 py-20 md:py-32 flex flex-col md:flex-row items-center">
-        {/* Left Side - Welcome Text */}
-        <div className="w-full md:w-1/2 text-white z-10 mb-8 md:mb-0">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            WELCOME TO 
-            <span className="block text-primary">GB TRADER</span>
-          </h1>
-          <p className="text-xl italic">Drive off today</p>
-        </div>
-
-        {/* Right Side - Search Box */}
-        <div className="w-full md:w-1/2 z-10">
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-center mb-6">
-              Discover Your Perfect Drive
-            </h2>
-
-            {/* Search Inputs */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Make and Model Row */}
-              <div className="flex space-x-2">
-                {/* Make Dropdown */}
-                <div className="flex-1">
+              <div className="flex space-x-2 sm:space-x-3">
+                <div className="relative flex-1">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <Car className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200" />
+                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full h-12 justify-start text-left text-sm"
+                      <Button
+                        variant="outline"
+                        className="h-10 sm:h-12 w-full justify-start rounded-xl sm:rounded-2xl border-none bg-white/10 text-left text-sm text-white ring-1 ring-inset ring-white/20 pl-10"
                       >
-                        <Car className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {selectedMake || 'Make'}
+                        {selectedMake || "Make"}
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="max-h-56 overflow-y-auto">
+                    <DropdownMenuContent className="w-full rounded-xl sm:rounded-2xl">
                       {carBrands.map((brand) => (
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           key={brand}
-                          onSelect={() => setSelectedMake(
-                            selectedMake === brand ? null : brand
-                          )}
+                          onSelect={() => setSelectedMake(selectedMake === brand ? null : brand)}
                           className={`cursor-pointer text-sm ${
-                            selectedMake === brand 
-                              ? "bg-primary/10 font-semibold" 
-                              : ""
+                            selectedMake === brand ? "bg-blue-100 font-semibold text-blue-800" : ""
                           }`}
                         >
                           {brand}
@@ -173,63 +155,57 @@ export function Hero({
                   </DropdownMenu>
                 </div>
 
-                {/* Model Dropdown */}
-                <div className="flex-1">
+                <div className="relative flex-1">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full h-12 justify-start text-left text-sm"
+                      <Button
+                        variant="outline"
+                        className="h-10 sm:h-12 w-full justify-start rounded-xl sm:rounded-2xl border-none bg-white/10 text-left text-sm text-white ring-1 ring-inset ring-white/20"
                         disabled={!selectedMake}
                       >
-                        {selectedModel || 'Model'}
+                        {selectedModel || "Model"}
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="max-h-56 overflow-y-auto">
-                      {selectedMake && carModels[selectedMake]?.map((model) => (
-                        <DropdownMenuItem 
-                          key={model}
-                          onSelect={() => setSelectedModel(
-                            selectedModel === model ? null : model
-                          )}
-                          className={`cursor-pointer text-sm ${
-                            selectedModel === model 
-                              ? "bg-primary/10 font-semibold" 
-                              : ""
-                          }`}
-                        >
-                          {model}
-                        </DropdownMenuItem>
-                      ))}
+                    <DropdownMenuContent className="w-full rounded-xl sm:rounded-2xl">
+                      {selectedMake &&
+                        carModels[selectedMake]?.map((model) => (
+                          <DropdownMenuItem
+                            key={model}
+                            onSelect={() => setSelectedModel(selectedModel === model ? null : model)}
+                            className={`cursor-pointer text-sm ${
+                              selectedModel === model ? "bg-blue-100 font-semibold text-blue-800" : ""
+                            }`}
+                          >
+                            {model}
+                          </DropdownMenuItem>
+                        ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </div>
 
-              {/* Min and Max Price Row */}
-              <div className="flex space-x-2">
-                {/* Min Price Input */}
+              {/* Price Range Row */}
+              <div className="flex space-x-2 sm:space-x-3">
                 <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Euro className="text-primary h-5 w-5" />
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <Euro className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200" />
                   </div>
-                  <Input 
-                    placeholder="Min Price" 
-                    className="pl-10 h-12 text-sm"
+                  <Input
+                    placeholder="Min Price"
+                    className="h-10 sm:h-12 w-full rounded-xl sm:rounded-2xl border-none bg-white/10 pl-10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/60"
                     type="number"
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                   />
                 </div>
 
-                {/* Max Price Input */}
                 <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Euro className="text-primary h-5 w-5" />
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <Euro className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200" />
                   </div>
-                  <Input 
-                    placeholder="Max Price" 
-                    className="pl-10 h-12 text-sm"
+                  <Input
+                    placeholder="Max Price"
+                    className="h-10 sm:h-12 w-full rounded-xl sm:rounded-2xl border-none bg-white/10 pl-10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/60"
                     type="number"
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
@@ -241,25 +217,21 @@ export function Hero({
               <div className="relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      className="w-full h-12 justify-start text-left text-sm"
+                    <Button
+                      variant="outline"
+                      className="h-10 sm:h-12 w-full justify-start rounded-xl sm:rounded-2xl border-none bg-white/10 text-left text-sm text-white ring-1 ring-inset ring-white/20"
                     >
-                      <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
-                      {selectedBodyType || 'Body Type'}
+                      <Sliders className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200 mr-2" />
+                      {selectedBodyType || "Body Type"}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
+                  <DropdownMenuContent className="w-full rounded-xl sm:rounded-2xl">
                     {bodyTypes.map((type) => (
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         key={type}
-                        onSelect={() => setSelectedBodyType(
-                          selectedBodyType === type ? null : type
-                        )}
+                        onSelect={() => setSelectedBodyType(selectedBodyType === type ? null : type)}
                         className={`cursor-pointer text-sm ${
-                          selectedBodyType === type 
-                            ? "bg-primary/10 font-semibold" 
-                            : ""
+                          selectedBodyType === type ? "bg-blue-100 font-semibold text-blue-800" : ""
                         }`}
                       >
                         {type}
@@ -269,33 +241,183 @@ export function Hero({
                 </DropdownMenu>
               </div>
 
-              {/* Search Button */}
-              <Button 
-                className="w-full h-12 text-sm"
+              <Button
+                className="h-10 sm:h-12 w-full rounded-xl sm:rounded-2xl bg-white/20 text-sm sm:text-base text-white hover:bg-white/30"
                 onClick={handleSearch}
               >
-                <Search className="mr-2 h-5 w-5" /> Search
+                <Search className="h-4 sm:h-5 w-4 sm:w-5" /> Search
               </Button>
+            </div>
+          </div>
 
-              {/* Additional Links */}
-              <div className="flex justify-between text-sm">
-                <Button 
-                  variant="link" 
-                  className="text-gray-500 p-0"
-                  onClick={resetFilters}
-                >
-                  Reset filters
-                </Button>
-                <Button variant="link" className="text-primary p-0">
-                  More options
-                </Button>
-              </div>
+          <div className="mt-4 sm:mt-6">
+            <div className="flex justify-between text-sm">
+              <Button 
+                variant="outline" 
+                className="rounded-full bg-white/5 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white/70 hover:bg-white/10 hover:text-white border-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+                onClick={resetFilters}
+              >
+                Reset filters
+              </Button>
+              <Button 
+                variant="outline" 
+                className="rounded-full bg-white/5 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white/70 hover:bg-white/10 hover:text-white border-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                More options
+              </Button>
             </div>
           </div>
         </div>
+
+        {/* Image Section - Reduced height on mobile */}
+        <div
+          className="relative flex w-full items-center justify-center h-[250px] sm:h-[300px] lg:h-auto rounded-2xl p-4 sm:p-6 lg:w-2/3 lg:rounded-l-none overflow-hidden order-1 lg:order-2"
+        >
+          {showFilters ? (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-3xl shadow-2xl shadow-inner rounded-2xl border border-white/30">
+              <div className="h-full flex flex-col">
+                <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200/50">
+                  <h2 className="text-base font-semibold text-gray-800">Advanced Filters</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowFilters(false)}
+                    className="rounded-full hover:bg-gray-100 h-7 w-7"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="p-4 grid grid-cols-2 gap-4">
+                  {/* Year Range */}
+                  <div className="space-y-1.5">
+                    <h3 className="text-xs font-medium text-gray-600">Year Range</h3>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        placeholder="From"
+                        className="h-7 rounded-lg text-xs bg-white/50"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="To"
+                        className="h-7 rounded-lg text-xs bg-white/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mileage */}
+                  <div className="space-y-1.5">
+                    <h3 className="text-xs font-medium text-gray-600">Mileage</h3>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Min"
+                        className="h-7 rounded-lg text-xs bg-white/50"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Max"
+                        className="h-7 rounded-lg text-xs bg-white/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Condition */}
+                  <div className="space-y-1.5">
+                    <h3 className="text-xs font-medium text-gray-600">Condition</h3>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">New</Button>
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">Used</Button>
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">Certified</Button>
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">Salvage</Button>
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <div className="space-y-1.5">
+                    <h3 className="text-xs font-medium text-gray-600">Features</h3>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">Auto</Button>
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">Manual</Button>
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">4x4</Button>
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">Hybrid</Button>
+                    </div>
+                  </div>
+
+                  {/* Fuel Type */}
+                  <div className="col-span-2 space-y-1.5">
+                    <h3 className="text-xs font-medium text-gray-600">Fuel Type</h3>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">Petrol</Button>
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">Diesel</Button>
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">Electric</Button>
+                      <Button variant="outline" className="h-6 rounded-lg text-xs px-1 bg-white/50 hover:bg-white/80">Hybrid</Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-5 py-3 border-t border-gray-200/50 flex justify-center gap-3">
+                  <Button
+                    className="rounded-lg bg-blue-600 text-white hover:bg-blue-700 h-7 text-xs px-4"
+                    onClick={() => setShowFilters(false)}
+                  >
+                    Apply Filters
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-lg h-7 text-xs px-4 bg-white/50 hover:bg-white/80"
+                    onClick={() => setShowFilters(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+                style={{
+                  backgroundImage: `url('${images[currentImageIndex]}')`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  opacity: 1,
+                }}
+              />
+              <div
+                className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+                style={{
+                  backgroundImage: `url('${images[nextImageIndex]}')`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  opacity: isTransitioning ? 1 : 0,
+                }}
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-black/5 p-4 sm:p-6 text-white lg:rounded-l-none">
+                <div className="flex flex-col items-center">
+                  <div className="mb-4 sm:mb-6 grid grid-cols-3 gap-1 sm:gap-2">
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-red-400 rounded-full"></div>
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-blue-500 rounded-full"></div>
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-red-400 rounded-full"></div>
+                  </div>
+                  <h1 className="mb-3 sm:mb-4 text-center text-3xl sm:text-4xl md:text-5xl font-bold uppercase leading-tight drop-shadow-lg">
+                    FIND YOUR DREAM CAR
+                  </h1>
+                  <div className="mb-6 sm:mb-8 grid grid-cols-3 gap-1 sm:gap-2">
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-blue-500 rounded-full"></div>
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-red-400 rounded-full"></div>
+                    <div className="h-1.5 sm:h-2 w-6 sm:w-8 bg-blue-500 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Hero
+export default Hero;
