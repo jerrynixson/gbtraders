@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -51,6 +52,7 @@ function useDragScroll() {
 }
 
 export function Hero() {
+  const router = useRouter()
   const [selectedDropdownCategory, setSelectedDropdownCategory] = useState<string | null>(null)
   const [keywords, setKeywords] = useState<string>("")
   const [postcode, setPostcode] = useState<string>("")
@@ -74,6 +76,17 @@ export function Hero() {
     "Caravans",
     "E-Bikes"
   ]
+
+  // Mapping vehicle types to their category pages
+  const vehicleTypeToPageMap: Record<string, string> = {
+    "Cars": "/categories/cars",
+    "Vans": "/categories/vans",
+    "Motorcycles": "/categories/motorcycles",
+    "Trucks": "/categories/trucks",
+    "Electric Vehicles": "/categories/electric-vehicles",
+    "Caravans": "/categories/caravans",
+    "E-Bikes": "/categories/e-bikes"
+  }
 
   const images = [
     '/banner_prop/ChatGPT Image Jun 9, 2025, 03_47_41 PM.png',
@@ -150,6 +163,14 @@ export function Hero() {
   const handleButtonClick = (idx: number) => {
     if (dragData.current.moved) return
     setCarouselIndex(idx)
+    
+    // Navigate to the corresponding category page
+    const selectedVehicleType = vehicleTypes[idx]
+    const targetPage = vehicleTypeToPageMap[selectedVehicleType]
+    
+    if (targetPage) {
+      router.push(targetPage)
+    }
   }
 
   const handleSearch = () => {
