@@ -1,0 +1,145 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is an admin
+    function isAdmin() {
+      let adminEmails = request.auth.token.email in ['abelsajuchazhoor@gmail.com'];
+      let isInAdminsCollection = exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return adminEmails || isInAdminsCollection;
+    }
+
+    // Function to check if user is authenticated and email verified
+    function isAuthenticatedAndVerified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    // Function to check if user is authenticated (without email verification)
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Function to check if user is a dealer
+    function isDealer() {
+      let userDoc = get(/databases/(default)/documents/users/$(request.auth.uid));
+      return userDoc != null && userDoc.data != null && userDoc.data.role == 'dealer';
+    }
+
+    // Users collection rules
+    match /users/{userId} {
+      // Allow read if user is authenticated
+      allow read: if request.auth != null;
+      // Allow write if user is admin or the document belongs to the user
+      // For user's own document, allow write even if email is not verified (needed for initial signup)
+      allow write: if isAdmin() || (request.auth.uid == userId && isAuthenticated());
+    }
+
+    // Admins collection rules
+    match /admins/{adminId} {
+      // Allow read if user is authenticated and verified
+      allow read: if isAuthenticatedAndVerified();
+      // Allow write only if user is an admin
+      allow write: if isAdmin();
+    }
+
+    // Function to validate vehicle data
+    function isValidVehicleData() {
+      let requiredFields = ['make', 'model', 'year', 'price', 'mileage', 'type', 'dealerUid'];
+      return request.resource.data.keys().hasAll(requiredFields) 
+        && request.resource.data.dealerUid == request.auth.uid
+        && request.resource.data.type in ['car', 'van', 'truck'];
+    }
+
+    // Function to validate dealer profile data
+    function isValidDealerProfile() {
+      let requiredFields = ['businessName', 'contact', 'description', 'location', 'businessHours', 'socialMedia', 'updatedAt'];
+      let data = request.resource.data;
+      
+      return data.keys().hasAll(requiredFields)
+        && data.contact.keys().hasAll(['email', 'phone', 'website'])
+        && data.location.keys().hasAll(['lat', 'long', 'addressLines'])
+        && data.businessHours.keys().hasAll(['mondayToFriday', 'saturday', 'sunday'])
+        && data.description.size() <= 2000 // Approx. 100 words
+        && data.socialMedia is list;
+    }
+
+    // Function to check if dealer owns the vehicle listing
+    function ownsVehicle() {
+      return resource.data.dealerUid == request.auth.uid;
+    }
+
+    // Vehicles collection rules
+    match /vehicles/{vehicleId} {
+      // Allow read for everyone (public listings)
+      allow read: if true;
+      
+      // Allow list operation for verified dealers querying their own listings
+      allow list: if isAuthenticatedAndVerified() 
+        && isDealer()
+        && request.query.limit <= 100  // Limit query size for security
+        && (
+          // Allow if no where clause (getting all listings)
+          !('where' in request.query)
+          // Or if querying by dealerUid matching their own ID
+          || (
+            request.query.where.size() == 1
+            && request.query.where[0].op == '=='
+            && request.query.where[0].field == 'dealerUid'
+            && request.query.where[0].value == request.auth.uid
+          )
+        );
+      
+      // Allow create for authenticated and verified dealers with valid data
+      allow create: if isAuthenticatedAndVerified() 
+        && isDealer()
+        && isValidVehicleData();
+      
+      // Allow update/delete only for verified dealers who own the listing
+      allow update: if isAuthenticatedAndVerified() 
+        && isDealer()
+        && ownsVehicle()
+        && isValidVehicleData();
+        
+      allow delete: if isAuthenticatedAndVerified() 
+        && isDealer()
+        && ownsVehicle();
+    }
+
+    // Dealers collection rules
+    match /dealers/{userId} {
+      // Allow read for everyone (public dealer profiles)
+      allow read: if true;
+      
+      // Allow write only for verified dealers' own profile
+      allow write: if isAuthenticatedAndVerified() 
+        && isDealer()
+        && request.auth.uid == userId
+        && isValidDealerProfile();
+    }
+
+    // Dealer profile assets rules
+    match /dealer-assets/{userId}/{imageType} {
+      // Allow read for everyone (public dealer profiles)
+      allow read: if true;
+      
+      // Allow write only for verified dealers' own profile images
+      allow write: if isAuthenticatedAndVerified() 
+        && request.auth.uid == userId
+        && isDealerUser()
+        && isValidImage()
+        // Ensure imageType is either 'logo' or 'banner'
+        && (imageType == 'logo' || imageType == 'banner');
+    }
+
+    // Keep existing rules for other collections
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // Favorites collection rules
+    match /favorites/{userId} {
+      // Users can only read and write their own favorites if verified
+      allow read, write: if isAuthenticatedAndVerified() && request.auth.uid == userId;
+    }
+  }
+}
