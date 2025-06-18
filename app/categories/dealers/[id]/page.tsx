@@ -19,6 +19,7 @@ type DealerData = {
   businessName: string;
   dealerBanner?: string;
   dealerBannerUrl?: string;
+  dealerLogoUrl?: string;
   contact: {
     phone: string;
     email: string;
@@ -224,6 +225,21 @@ export default function DealerInfoPage() {
               style={{ objectFit: "contain" }}
               onError={(e: any) => { e.target.src = "/placeholder.svg"; }}
             />
+            {/* Logo overlay on the left side */}
+            {dealer.dealerLogoUrl && (
+              <div className="absolute top-12 left-4 z-10">
+                <div className="w-32 h-32 bg-white rounded-xl shadow-lg p-2 border border-gray-200">
+                  <Image
+                    src={dealer.dealerLogoUrl}
+                    alt={dealer.businessName + " logo"}
+                    width={112}
+                    height={112}
+                    className="w-full h-full object-contain"
+                    onError={(e: any) => { e.target.src = "/placeholder-logo.png"; }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <h1 className="text-3xl font-bold text-blue-900 mb-2">{dealer.businessName}</h1>
           <div className="flex items-center text-blue-700 mb-4">
