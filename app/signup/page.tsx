@@ -67,7 +67,7 @@ const SignUpPage: React.FC = () => {
 
     try {
       // Create the user account
-      const userCredential = await signUp(email, password);
+      const userCredential = await signUp(email, password, firstName, lastName);
       const user = userCredential.user;
       const role = isDealerAccount ? 'dealer' : 'user';
 

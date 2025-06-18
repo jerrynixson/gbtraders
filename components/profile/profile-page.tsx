@@ -41,6 +41,27 @@ interface UserProfile {
   additionalRoles?: string[];
 }
 
+// Utility to normalize Firestore Timestamp, string, Date, or number to Date
+function parseDate(date: any): Date | null {
+  if (!date) return null;
+  if (typeof date === 'string' || date instanceof String) {
+    const d = new Date(date as string);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof date === 'number') {
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  if (date instanceof Date) {
+    return isNaN(date.getTime()) ? null : date;
+  }
+  if (typeof date === 'object' && typeof date.seconds === 'number') {
+    // Firestore Timestamp
+    return new Date(date.seconds * 1000);
+  }
+  return null;
+}
+
 export function ProfilePage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -88,11 +109,14 @@ export function ProfilePage() {
     return null;
   }
 
-  const createdDate = userProfile.createdAt 
-    ? format(new Date(userProfile.createdAt.seconds * 1000), 'MMMM dd, yyyy')
-    : 'N/A';
+  const createdDateObj = parseDate(userProfile.createdAt);
+  const createdDate = createdDateObj ? format(createdDateObj, 'MMMM dd, yyyy') : 'N/A';
 
-  const userInitials = `${userProfile.firstName.charAt(0)}${userProfile.lastName.charAt(0)}`.toUpperCase();
+  const firstInitial = (userProfile.firstName && userProfile.firstName !== "undefined") ? userProfile.firstName.charAt(0) : '';
+  const lastInitial = (userProfile.lastName && userProfile.lastName !== "undefined") ? userProfile.lastName.charAt(0) : '';
+  const userInitials = (firstInitial + lastInitial).toUpperCase() || '?';
+
+  const fullName = `${userProfile.firstName && userProfile.firstName !== "undefined" ? userProfile.firstName : ''} ${userProfile.lastName && userProfile.lastName !== "undefined" ? userProfile.lastName : ''}`.trim() || 'User';
 
   return (
     <div className="min-h-screen bg-white">
@@ -108,7 +132,7 @@ export function ProfilePage() {
                 </Avatar>
                 <div className="flex-1 text-center md:text-left">
                   <CardTitle className="text-4xl font-extrabold text-gray-900 tracking-tight">
-                    {`${userProfile.firstName} ${userProfile.lastName}`}
+                    {fullName}
                   </CardTitle>
                   <CardDescription className="text-xl font-semibold text-blue-600 mt-1">
                     {userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)} Account

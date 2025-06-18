@@ -24,7 +24,7 @@ interface User extends FirebaseUser {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<UserCredential>;
+  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<UserCredential>;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   getUserProfile: () => Promise<any>;
@@ -91,19 +91,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
       // Send verification email
       await sendFirebaseEmailVerification(userCredential.user);
       
-      // Create user document with verification status
+      // Create user document with verification status and names
       await setDoc(doc(db, "users", userCredential.user.uid), {
         email,
         emailVerified: false,
         createdAt: new Date().toISOString(),
-        role: 'user'
+        role: 'user',
+        firstName,
+        lastName
       });
 
       return userCredential;
