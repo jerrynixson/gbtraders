@@ -37,9 +37,11 @@ interface SearchParams {
 }
 
 // Convert search params to filters
+// Convert search params to filters
 function getFiltersFromSearchParams(searchParams: SearchParams): VehicleFilters {
   const filters: VehicleFilters = {
-    type: 'car', // Default to car type
+    // Set type from searchParams, or default to 'car' if not provided
+    type: (searchParams.type as VehicleType) || 'car', 
   };
 
   // Handle keyword search
@@ -89,22 +91,23 @@ function getFiltersFromSearchParams(searchParams: SearchParams): VehicleFilters 
     filters.maxMileage = Number(searchParams.maxMileage);
   }
 
-  if (searchParams.fuelType) {
-    filters.fuelType = Array.isArray(searchParams.fuelType) 
-      ? searchParams.fuelType 
-      : [searchParams.fuelType];
+  // Ensure 'fuelType' is used instead of 'fuel' to match VehicleFilters
+  if (searchParams.fuel) { // Changed from searchParams.fuelType to searchParams.fuel
+    filters.fuelType = Array.isArray(searchParams.fuel) 
+      ? (searchParams.fuel as FuelType[]) 
+      : [searchParams.fuel as FuelType];
   }
 
   if (searchParams.transmission) {
     filters.transmission = Array.isArray(searchParams.transmission) 
-      ? searchParams.transmission 
-      : [searchParams.transmission];
+      ? (searchParams.transmission as TransmissionType[]) 
+      : [searchParams.transmission as TransmissionType];
   }
 
   if (searchParams.bodyStyle) {
     filters.bodyStyle = Array.isArray(searchParams.bodyStyle) 
-      ? searchParams.bodyStyle 
-      : [searchParams.bodyStyle];
+      ? (searchParams.bodyStyle as CarBodyStyle[]) 
+      : [searchParams.bodyStyle as CarBodyStyle];
   }
 
   return filters;
