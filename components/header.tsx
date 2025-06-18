@@ -39,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { useAdmin } from "@/hooks/useAdmin"
 
 interface NavItem {
   href?: string;
@@ -59,6 +60,7 @@ export function Header() {
   const [showSignOutDialog, setShowSignOutDialog] = useState(false)
   const pathname = usePathname()
   const { user, logout } = useAuth()
+  const { isAdmin } = useAdmin()
   const { toast } = useToast()
 
   const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(email => email.trim());
@@ -228,7 +230,7 @@ export function Header() {
                       <DropdownMenuSeparator />
                     </>
                   )}
-                  {user && (user.role === "dealer" || (user.email && adminEmails.includes(user.email))) && (
+                  {user && (user.role === "dealer" || isAdmin) && (
                     <>
                       {dealerNavItems.map((item) => (
                         <DropdownMenuItem key={item.href} asChild>
@@ -241,7 +243,7 @@ export function Header() {
                       <DropdownMenuSeparator />
                     </>
                   )}
-                  {user.email && adminEmails.includes(user.email) && (
+                  {isAdmin && (
                     <>
                       {adminNavItems.map((item) => (
                         <DropdownMenuItem key={item.href} asChild>
