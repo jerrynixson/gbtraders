@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Edit, Trash2, Search, Filter, Eye, MessageSquare, TrendingUp, Settings, Users, DollarSign, Car, Upload, Building2, MapPin, Phone, Mail, Globe, Clock, ChevronRight, Calendar, Share2, Bell, FileSpreadsheet, Database, RefreshCw, AlertCircle } from "lucide-react"
+import { Plus, Edit, Trash2, Search, Filter, Eye, MessageSquare, TrendingUp, Settings, Users, DollarSign, Car, Upload, Building2, MapPin, Phone, Mail, Globe, Clock, ChevronRight, Calendar, Share2, Bell, FileSpreadsheet, Database, RefreshCw, AlertCircle, CreditCard } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { getDealerListings, deleteListing } from "@/lib/firebase"
 import { toast } from "sonner"
@@ -21,7 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/hooks/useAuth"
-import { DealerProfileSection, DealerProfile } from "@/components/dealer/profile"
+import { DealerProfileSection } from "@/components/dealer/profile"
 
 interface Listing {
   id: string
@@ -81,39 +81,6 @@ interface FirebaseListing {
   [key: string]: any; // Allow for additional fields from Firebase
 }
 
-const defaultProfile: DealerProfile = {
-  businessName: "Premium Auto Dealership",
-  contactEmail: "contact@premiumauto.com",
-  phoneNumber: "+44 123 456 7890",
-  location: "123 Auto Street, London, UK",
-  website: "www.premiumauto.com",
-  description: "Your trusted partner in premium automotive sales and service.",
-  businessHours: {
-    monday: "9:00 AM - 6:00 PM",
-    tuesday: "9:00 AM - 6:00 PM",
-    wednesday: "9:00 AM - 6:00 PM",
-    thursday: "9:00 AM - 6:00 PM",
-    friday: "9:00 AM - 6:00 PM",
-    saturday: "10:00 AM - 4:00 PM",
-    sunday: "Closed"
-  },
-  socialMedia: {
-    facebook: "premiumauto",
-    twitter: "premiumauto",
-    instagram: "premiumauto",
-    linkedin: "premiumauto"
-  },
-  notifications: {
-    email: true,
-    sms: true,
-    newInquiries: true,
-    listingUpdates: true,
-    marketing: false
-  },
-  logo: "/dealers/premium-auto-logo.png",
-  coverImage: "/dealers/premium-auto-cover.jpg"
-}
-
 // Custom Badge component for status
 const StatusBadge = ({ status }: { status: string }) => {
   const getStatusColor = (status: string) => {
@@ -141,9 +108,6 @@ export default function DealerDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isLoading, setIsLoading] = useState(true)
-  const [profile, setProfile] = useState<DealerProfile>(defaultProfile)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [bulkUploadStatus, setBulkUploadStatus] = useState<BulkUploadStatus | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [selectedAPI, setSelectedAPI] = useState<string>("")
@@ -174,11 +138,11 @@ export default function DealerDashboard() {
   }, [user])
 
   const handleAddListing = () => {
-    router.push("/dealer/dashboard/add-listing")
+    router.push("/dashboard/add-listing")
   }
 
   const handleEditListing = (id: string) => {
-    router.push(`/dealer/dashboard/edit-listing/${id}`)
+    router.push(`/dashboard/edit-listing/${id}`)
   }
 
   const handleDeleteListing = async (id: string) => {
@@ -189,58 +153,6 @@ export default function DealerDashboard() {
     } catch (error) {
       console.error("Error deleting listing:", error)
       toast.error("Failed to delete listing")
-    }
-  }
-
-  const handleProfileChange = (field: string, value: any) => {
-    setProfile(prev => ({
-      ...prev,
-      [field]: value
-    }))
-  }
-
-  const handleBusinessHoursChange = (day: string, value: string) => {
-    setProfile(prev => ({
-      ...prev,
-      businessHours: {
-        ...prev.businessHours,
-        [day]: value
-      }
-    }))
-  }
-
-  const handleSocialMediaChange = (platform: string, value: string) => {
-    setProfile(prev => ({
-      ...prev,
-      socialMedia: {
-        ...prev.socialMedia,
-        [platform]: value
-      }
-    }))
-  }
-
-  const handleNotificationChange = (type: string, value: boolean) => {
-    setProfile(prev => ({
-      ...prev,
-      notifications: {
-        ...prev.notifications,
-        [type]: value
-      }
-    }))
-  }
-
-  const handleSaveProfile = async () => {
-    setIsSaving(true)
-    try {
-      // TODO: Implement Firebase update
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulated API call
-      toast.success("Profile updated successfully")
-      setIsEditing(false)
-    } catch (error) {
-      toast.error("Failed to update profile")
-      console.error("Error updating profile:", error)
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -310,26 +222,13 @@ export default function DealerDashboard() {
     )
   }
 
-  if (listings.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <h2 className="text-2xl font-semibold mb-4">No Listings Found</h2>
-        <p className="text-gray-600 mb-6">Try adjusting your search filters or add a new listing to get started.</p>
-        <Button onClick={handleAddListing}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Listing
-        </Button>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
       <Header />
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome back, {profile.businessName}</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome back, Dealer</h1>
           <p className="text-gray-600">Manage your dealership and listings</p>
         </div>
 
@@ -405,10 +304,20 @@ export default function DealerDashboard() {
                 Profile
               </TabsTrigger>
             </TabsList>
-            <Button onClick={handleAddListing} className="bg-blue-600 hover:bg-blue-700 shadow-sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Add New Listing
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => router.push("/payment-plans")} 
+                className="border-gray-200 hover:bg-gray-50"
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                Payment Plans
+              </Button>
+              <Button onClick={handleAddListing} className="bg-blue-600 hover:bg-blue-700 shadow-sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add New Listing
+              </Button>
+            </div>
           </div>
 
           <TabsContent value="listings">
@@ -457,57 +366,95 @@ export default function DealerDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {filteredListings.map((listing) => (
-                    <div
-                      key={listing.id}
-                      className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all hover:shadow-sm"
+                {listings.length === 0 ? (
+                  // Empty state within the listings tab
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <Car className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Listings Yet</h3>
+                    <p className="text-gray-600 text-center mb-6 max-w-md">
+                      Get started by adding your first vehicle listing. Showcase your inventory to potential buyers.
+                    </p>
+                    <Button onClick={handleAddListing} className="bg-blue-600 hover:bg-blue-700">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Your First Listing
+                    </Button>
+                  </div>
+                ) : filteredListings.length === 0 ? (
+                  // No results from search/filter
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <Search className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Results Found</h3>
+                    <p className="text-gray-600 text-center mb-6 max-w-md">
+                      Try adjusting your search terms or filters to find what you're looking for.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setSearchQuery("")
+                        setStatusFilter("all")
+                      }}
                     >
-                      <div className="flex items-center space-x-4">
-                        <div className="w-24 h-24 relative rounded-lg overflow-hidden">
-                          <img
-                            src={listing.image}
-                            alt={listing.title}
-                            className="object-cover w-full h-full"
-                          />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
-                          <p className="text-lg font-medium text-blue-600 mb-2">£{listing.price.toLocaleString()}</p>
-                          <div className="flex items-center space-x-3">
-                            <StatusBadge status={listing.status} />
-                            <span className="text-sm text-gray-500 flex items-center">
-                              <Eye className="w-4 h-4 mr-1" />
-                              {listing.views}
-                            </span>
-                            <span className="text-sm text-gray-500 flex items-center">
-                              <MessageSquare className="w-4 h-4 mr-1" />
-                              {listing.inquiries}
-                            </span>
+                      Clear Filters
+                    </Button>
+                  </div>
+                ) : (
+                  // Listings grid
+                  <div className="space-y-4">
+                    {filteredListings.map((listing) => (
+                      <div
+                        key={listing.id}
+                        className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all hover:shadow-sm"
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="w-24 h-24 relative rounded-lg overflow-hidden">
+                            <img
+                              src={listing.image}
+                              alt={listing.title}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
+                            <p className="text-lg font-medium text-blue-600 mb-2">£{listing.price.toLocaleString()}</p>
+                            <div className="flex items-center space-x-3">
+                              <StatusBadge status={listing.status} />
+                              <span className="text-sm text-gray-500 flex items-center">
+                                <Eye className="w-4 h-4 mr-1" />
+                                {listing.views}
+                              </span>
+                              <span className="text-sm text-gray-500 flex items-center">
+                                <MessageSquare className="w-4 h-4 mr-1" />
+                                {listing.inquiries}
+                              </span>
+                            </div>
                           </div>
                         </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditListing(listing.id)}
+                            className="hover:bg-gray-100"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteListing(listing.id)}
+                            className="hover:bg-red-50 text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditListing(listing.id)}
-                          className="hover:bg-gray-100"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteListing(listing.id)}
-                          className="hover:bg-red-50 text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -546,48 +493,53 @@ export default function DealerDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {listings.map((listing) => (
-                    <div key={listing.id} className="p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all hover:shadow-sm">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-16 h-16 relative rounded-lg overflow-hidden">
-                            <img
-                              src={listing.image}
-                              alt={listing.title}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{listing.title}</h3>
-                            <p className="text-sm text-gray-500">{listing.inquiries} inquiries</p>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm" className="text-blue-600 hover:bg-blue-50">
-                          View Details
-                          <ChevronRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </div>
+                {listings.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <MessageSquare className="w-12 h-12 text-gray-400" />
                     </div>
-                  ))}
-                </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Inquiries Yet</h3>
+                    <p className="text-gray-600 text-center mb-6 max-w-md">
+                      Once you add listings, customer inquiries will appear here for you to manage.
+                    </p>
+                    <Button onClick={handleAddListing} className="bg-blue-600 hover:bg-blue-700">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Your First Listing
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {listings.map((listing) => (
+                      <div key={listing.id} className="p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all hover:shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-16 h-16 relative rounded-lg overflow-hidden">
+                              <img
+                                src={listing.image}
+                                alt={listing.title}
+                                className="object-cover w-full h-full"
+                              />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{listing.title}</h3>
+                              <p className="text-sm text-gray-500">{listing.inquiries} inquiries</p>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm" className="text-blue-600 hover:bg-blue-50">
+                            View Details
+                            <ChevronRight className="w-4 h-4 ml-2" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="profile">
-            <DealerProfileSection
-              profile={profile}
-              isEditing={isEditing}
-              isSaving={isSaving}
-              onEditToggle={() => setIsEditing(!isEditing)}
-              onProfileChange={handleProfileChange}
-              onBusinessHoursChange={handleBusinessHoursChange}
-              onSocialMediaChange={handleSocialMediaChange}
-              onNotificationChange={handleNotificationChange}
-              onSaveProfile={handleSaveProfile}
-              onCancelEdit={() => setIsEditing(false)}
-            />
+            <DealerProfileSection />
           </TabsContent>
         </Tabs>
       </main>
