@@ -9,37 +9,20 @@ service cloud.firestore {
       return adminEmails || isInAdminsCollection;
     }
 
-    // Function to check if user is authenticated and email verified
-    function isAuthenticatedAndVerified() {
-      return request.auth != null && request.auth.token.email_verified == true;
-    }
-
-    // Function to check if user is authenticated (without email verification)
+    // Function to check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
+    }
+
+    // Function to check if user is email verified
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
     }
 
     // Function to check if user is a dealer
     function isDealer() {
       let userDoc = get(/databases/(default)/documents/users/$(request.auth.uid));
       return userDoc != null && userDoc.data != null && userDoc.data.role == 'dealer';
-    }
-
-    // Users collection rules
-    match /users/{userId} {
-      // Allow read if user is authenticated
-      allow read: if request.auth != null;
-      // Allow write if user is admin or the document belongs to the user
-      // For user's own document, allow write even if email is not verified (needed for initial signup)
-      allow write: if isAdmin() || (request.auth.uid == userId && isAuthenticated());
-    }
-
-    // Admins collection rules
-    match /admins/{adminId} {
-      // Allow read if user is authenticated and verified
-      allow read: if isAuthenticatedAndVerified();
-      // Allow write only if user is an admin
-      allow write: if isAdmin();
     }
 
     // Function to validate vehicle data
@@ -68,13 +51,37 @@ service cloud.firestore {
       return resource.data.dealerUid == request.auth.uid;
     }
 
+    // Users collection rules
+    match /users/{userId} {
+      // Allow read if user is authenticated
+      allow read: if request.auth != null;
+      // Allow create during signup (no verification required)
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      // Allow update if user is admin, or if it's the user's own document and they're verified
+      // Exception: Allow unverified users to update their emailVerified status
+      allow update: if isAdmin() || 
+        (request.auth.uid == userId && 
+          (isEmailVerified() || 
+           (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['emailVerified'])))
+        );
+    }
+
+    // Admins collection rules
+    match /admins/{adminId} {
+      // Allow read if user is authenticated
+      allow read: if request.auth != null;
+      // Allow write only if user is an admin
+      allow write: if isAdmin();
+    }
+
     // Vehicles collection rules
     match /vehicles/{vehicleId} {
       // Allow read for everyone (public listings)
       allow read: if true;
       
       // Allow list operation for verified dealers querying their own listings
-      allow list: if isAuthenticatedAndVerified() 
+      allow list: if isAuthenticated() 
+        && isEmailVerified()
         && isDealer()
         && request.query.limit <= 100  // Limit query size for security
         && (
@@ -90,19 +97,22 @@ service cloud.firestore {
         );
       
       // Allow create for authenticated and verified dealers with valid data
-      allow create: if isAuthenticatedAndVerified() 
+      allow create: if (isAuthenticated() 
+        && isEmailVerified()
         && isDealer()
-        && isValidVehicleData();
+        && isValidVehicleData()) || isAdmin();
       
-      // Allow update/delete only for verified dealers who own the listing
-      allow update: if isAuthenticatedAndVerified() 
+      // Allow update/delete for verified dealers who own the listing or admins
+      allow update: if (isAuthenticated() 
+        && isEmailVerified()
         && isDealer()
         && ownsVehicle()
-        && isValidVehicleData();
+        && isValidVehicleData()) || isAdmin();
         
-      allow delete: if isAuthenticatedAndVerified() 
+      allow delete: if (isAuthenticated() 
+        && isEmailVerified()
         && isDealer()
-        && ownsVehicle();
+        && ownsVehicle()) || isAdmin();
     }
 
     // Dealers collection rules
@@ -110,11 +120,12 @@ service cloud.firestore {
       // Allow read for everyone (public dealer profiles)
       allow read: if true;
       
-      // Allow write only for verified dealers' own profile
-      allow write: if isAuthenticatedAndVerified() 
+      // Allow write for verified dealers' own profile or admins
+      allow write: if (isAuthenticated() 
+        && isEmailVerified()
         && isDealer()
         && request.auth.uid == userId
-        && isValidDealerProfile();
+        && isValidDealerProfile()) || isAdmin();
     }
 
     // Dealer profile assets rules
@@ -122,24 +133,27 @@ service cloud.firestore {
       // Allow read for everyone (public dealer profiles)
       allow read: if true;
       
-      // Allow write only for verified dealers' own profile images
-      allow write: if isAuthenticatedAndVerified() 
+      // Allow write for verified dealers' own profile images or admins
+      allow write: if (isAuthenticated() 
+        && isEmailVerified()
         && request.auth.uid == userId
         && isDealerUser()
         && isValidImage()
         // Ensure imageType is either 'logo' or 'banner'
-        && (imageType == 'logo' || imageType == 'banner');
-    }
-
-    // Keep existing rules for other collections
-    match /{document=**} {
-      allow read, write: if isAdmin();
+        && (imageType == 'logo' || imageType == 'banner')) || isAdmin();
     }
 
     // Favorites collection rules
     match /favorites/{userId} {
       // Users can only read and write their own favorites if verified
-      allow read, write: if isAuthenticatedAndVerified() && request.auth.uid == userId;
+      allow read, write: if (isAuthenticated() 
+        && isEmailVerified() 
+        && request.auth.uid == userId) || isAdmin();
+    }
+
+    // Keep existing rules for other collections
+    match /{document=**} {
+      allow read, write: if isAdmin();
     }
   }
 }
