@@ -41,7 +41,12 @@ const SignUpPage: React.FC = () => {
 
   const handleResendVerification = async () => {
     try {
-      await sendVerificationEmail();
+      // Sign in the user (even if not verified)
+      const { signInWithEmailAndPassword, sendEmailVerification: sendFirebaseEmailVerification, signOut } = await import('firebase/auth');
+      const { auth } = await import('@/lib/firebase');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await sendFirebaseEmailVerification(userCredential.user);
+      await signOut(auth);
       toast({
         title: "Verification Email Sent",
         description: "Please check your inbox for the verification link.",
