@@ -66,6 +66,7 @@ interface ListingFormData {
   location: {
     city: string
     country: string
+    pincode: string
     coordinates: {
       latitude: string
       longitude: string
@@ -156,6 +157,7 @@ export default function AddVehicleForm() {
     location: {
       city: "",
       country: "",
+      pincode: "",
       coordinates: {
         latitude: "",
         longitude: ""
@@ -203,12 +205,7 @@ export default function AddVehicleForm() {
     // Location validation
     if (!formData.location.city.trim()) errors["location.city"] = "City is required"
     if (!formData.location.country.trim()) errors["location.country"] = "Country is required"
-    if (isNaN(Number(formData.location.coordinates.latitude))) {
-      errors["location.coordinates.latitude"] = "Latitude must be a valid number"
-    }
-    if (isNaN(Number(formData.location.coordinates.longitude))) {
-      errors["location.coordinates.longitude"] = "Longitude must be a valid number"
-    }
+    if (!formData.location.pincode.trim()) errors["location.pincode"] = "Pincode is required"
 
     // Type-specific validation
     switch (formData.type) {
@@ -326,6 +323,22 @@ export default function AddVehicleForm() {
     setIsLoading(true)
 
     try {
+      // Get coordinates from pincode
+      const coordinates = await getCoordinatesFromPincode(
+        formData.location.pincode,
+        formData.location.city,
+        formData.location.country
+      )
+      
+      // Update form data with coordinates
+      setFormData(prev => ({
+        ...prev,
+        location: {
+          ...prev.location,
+          coordinates
+        }
+      }))
+
       const vehicleId = doc(collection(db, "vehicles")).id
 
       // Upload images
@@ -508,6 +521,26 @@ export default function AddVehicleForm() {
       })
     }
   }
+
+  const getCoordinatesFromPincode = async (pincode: string, city: string, country: string) => {
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          `${pincode} ${city} ${country}`
+        )}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+      );
+      const data = await response.json();
+      
+      if (data.results && data.results.length > 0) {
+        const { lat, lng } = data.results[0].geometry.location;
+        return { latitude: lat.toString(), longitude: lng.toString() };
+      }
+      throw new Error('No results found');
+    } catch (error) {
+      console.error('Error getting coordinates:', error);
+      throw error;
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -790,31 +823,16 @@ export default function AddVehicleForm() {
             )}
           </div>
           <div className="space-y-2">
-            <Label>Latitude (Optional)</Label>
+            <Label>Pincode</Label>
             <Input
-              type="number"
-              step="any"
-              value={formData.location.coordinates?.latitude}
-              onChange={(e) => handleCoordinatesChange("latitude", e.target.value)}
-              placeholder="Enter latitude"
-              className={formErrors['location.coordinates.latitude'] ? "border-red-500" : ""}
+              value={formData.location.pincode}
+              onChange={(e) => handleLocationChange("pincode", e.target.value)}
+              placeholder="Enter pincode"
+              required
+              className={formErrors['location.pincode'] ? "border-red-500" : ""}
             />
-            {formErrors['location.coordinates.latitude'] && (
-              <p className="text-sm text-red-500">{formErrors['location.coordinates.latitude']}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label>Longitude (Optional)</Label>
-            <Input
-              type="number"
-              step="any"
-              value={formData.location.coordinates?.longitude}
-              onChange={(e) => handleCoordinatesChange("longitude", e.target.value)}
-              placeholder="Enter longitude"
-              className={formErrors['location.coordinates.longitude'] ? "border-red-500" : ""}
-            />
-            {formErrors['location.coordinates.longitude'] && (
-              <p className="text-sm text-red-500">{formErrors['location.coordinates.longitude']}</p>
+            {formErrors['location.pincode'] && (
+              <p className="text-sm text-red-500">{formErrors['location.pincode']}</p>
             )}
           </div>
         </div>

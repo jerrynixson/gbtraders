@@ -33,24 +33,81 @@ interface SearchParams {
   page?: string;
   view?: 'grid' | 'list';
   sort?: string;
+  q?: string;
 }
 
 // Convert search params to filters
 function getFiltersFromSearchParams(searchParams: SearchParams): VehicleFilters {
-  return {
-    type: (searchParams.type as VehicleType) || 'car',
-    make: searchParams.make ? [searchParams.make] : undefined,
-    model: searchParams.model ? [searchParams.model] : undefined,
-    minPrice: typeof searchParams.minPrice === 'string' ? parseInt(searchParams.minPrice) : undefined,
-    maxPrice: typeof searchParams.maxPrice === 'string' ? parseInt(searchParams.maxPrice) : undefined,
-    minYear: typeof searchParams.minYear === 'string' ? parseInt(searchParams.minYear) : undefined,
-    maxYear: typeof searchParams.maxYear === 'string' ? parseInt(searchParams.maxYear) : undefined,
-    minMileage: typeof searchParams.minMileage === 'string' ? parseInt(searchParams.minMileage) : undefined,
-    maxMileage: typeof searchParams.maxMileage === 'string' ? parseInt(searchParams.maxMileage) : undefined,
-    fuelType: searchParams.fuel ? [searchParams.fuel as FuelType] : undefined,
-    transmission: searchParams.transmission ? [searchParams.transmission as TransmissionType] : undefined,
-    bodyStyle: searchParams.bodyStyle ? [searchParams.bodyStyle as CarBodyStyle] : undefined,
+  const filters: VehicleFilters = {
+    type: 'car', // Default to car type
   };
+
+  // Handle keyword search
+  if (searchParams.q) {
+    const keyword = searchParams.q.toLowerCase();
+    // If no specific make/model is provided, use the keyword as make
+    if (!searchParams.make && !searchParams.model) {
+      filters.make = [keyword];
+    }
+  }
+
+  // Handle specific make/model filters
+  if (searchParams.make) {
+    filters.make = Array.isArray(searchParams.make) 
+      ? searchParams.make 
+      : [searchParams.make];
+  }
+
+  if (searchParams.model) {
+    filters.model = Array.isArray(searchParams.model) 
+      ? searchParams.model 
+      : [searchParams.model];
+  }
+
+  // Handle other filters
+  if (searchParams.minPrice) {
+    filters.minPrice = Number(searchParams.minPrice);
+  }
+
+  if (searchParams.maxPrice) {
+    filters.maxPrice = Number(searchParams.maxPrice);
+  }
+
+  if (searchParams.minYear) {
+    filters.minYear = Number(searchParams.minYear);
+  }
+
+  if (searchParams.maxYear) {
+    filters.maxYear = Number(searchParams.maxYear);
+  }
+
+  if (searchParams.minMileage) {
+    filters.minMileage = Number(searchParams.minMileage);
+  }
+
+  if (searchParams.maxMileage) {
+    filters.maxMileage = Number(searchParams.maxMileage);
+  }
+
+  if (searchParams.fuelType) {
+    filters.fuelType = Array.isArray(searchParams.fuelType) 
+      ? searchParams.fuelType 
+      : [searchParams.fuelType];
+  }
+
+  if (searchParams.transmission) {
+    filters.transmission = Array.isArray(searchParams.transmission) 
+      ? searchParams.transmission 
+      : [searchParams.transmission];
+  }
+
+  if (searchParams.bodyStyle) {
+    filters.bodyStyle = Array.isArray(searchParams.bodyStyle) 
+      ? searchParams.bodyStyle 
+      : [searchParams.bodyStyle];
+  }
+
+  return filters;
 }
 
 export default async function SearchPage({

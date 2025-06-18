@@ -174,8 +174,52 @@ export function Hero() {
   }
 
   const handleSearch = () => {
-    console.log({ selectedDropdownCategory, keywords, postcode })
-  }
+    // Create search params object
+    const searchParams = new URLSearchParams();
+    
+    // Add keywords if provided
+    if (keywords) {
+      // For vehicles, split keywords into make and model
+      if (selectedDropdownCategory === 'Vehicles') {
+        const parts = keywords.split(' ');
+        if (parts.length >= 2) {
+          searchParams.set('make', parts[0]);
+          searchParams.set('model', parts.slice(1).join(' '));
+        } else {
+          searchParams.set('make', keywords);
+        }
+      } else {
+        // For other categories, use the keyword as is
+        searchParams.set('q', keywords);
+      }
+    }
+    
+    // Add postcode if provided
+    if (postcode) {
+      searchParams.set('location', postcode);
+    }
+    
+    // Add category if selected
+    if (selectedDropdownCategory) {
+      // Map category to route
+      const categoryToRoute: Record<string, string> = {
+        'Vehicles': '/search',
+        'Breakdown Services': '/categories/breakdown-services',
+        'Shop': '/categories/shop',
+        'Garages': '/categories/garages',
+        'Dealers': '/categories/dealers'
+      };
+      
+      const route = categoryToRoute[selectedDropdownCategory];
+      if (route) {
+        router.push(`${route}?${searchParams.toString()}`);
+        return;
+      }
+    }
+    
+    // Default to search page if no category selected
+    router.push(`/search?${searchParams.toString()}`);
+  };
 
   const resetFilters = () => {
     setSelectedDropdownCategory(null)

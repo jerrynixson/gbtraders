@@ -60,11 +60,15 @@ export class VehicleRepository {
 
     // Optional filters
     if (filters.make?.length) {
-      constraints.push(where('make', 'in', filters.make));
+      // For make, we'll use a case-insensitive comparison
+      constraints.push(where('make', '>=', filters.make[0].toLowerCase()));
+      constraints.push(where('make', '<=', filters.make[0].toLowerCase() + '\uf8ff'));
     }
 
     if (filters.model?.length) {
-      constraints.push(where('model', 'in', filters.model));
+      // For model, we'll use a case-insensitive comparison
+      constraints.push(where('model', '>=', filters.model[0].toLowerCase()));
+      constraints.push(where('model', '<=', filters.model[0].toLowerCase() + '\uf8ff'));
     }
 
     if (filters.minPrice !== undefined) {
@@ -131,15 +135,24 @@ export class VehicleRepository {
     const q = query(this.collection, ...constraints);
     const snapshot = await getDocs(q);
     
-    const vehicles = snapshot.docs.map(doc => this.convertToVehicle(doc));
+    let vehicles = snapshot.docs.map(doc => this.convertToVehicle(doc));
+
+    // If we have a make filter, perform case-insensitive partial matching
+    if (filters.make?.length) {
+      const searchTerm = filters.make[0].toLowerCase();
+      vehicles = vehicles.filter(vehicle => 
+        vehicle.make.toLowerCase().includes(searchTerm)
+      );
+    }
+
     const summaries = vehicles.map(vehicle => this.convertToSummary(vehicle));
 
     return {
       items: summaries,
-      total: snapshot.size, // Note: This is not the total count, just the current page size
+      total: vehicles.length,
       page,
       limit: pageSize,
-      hasMore: snapshot.size === pageSize,
+      hasMore: vehicles.length === pageSize,
     };
   }
 
