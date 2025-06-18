@@ -23,7 +23,7 @@ interface VehicleData {
   make: string
   model: string
   year: number
-  vin: string
+  registrationNumber: string
   specifications: {
     engine: string
     transmission: string
@@ -131,7 +131,7 @@ export default function AddVehicleForm() {
   const [user, loading, error] = useAuthState(auth)
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
-  const [vin, setVin] = useState("")
+  const [registrationNumber, setRegistrationNumber] = useState("")
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null)
   const [formData, setFormData] = useState<ListingFormData>({
     type: 'car',
@@ -255,16 +255,16 @@ export default function AddVehicleForm() {
     return Object.keys(errors).length === 0
   }
 
-  const handleVinSubmit = async () => {
-    if (!vin.trim()) {
-      toast.error("Please enter a VIN")
+  const handleRegistrationSubmit = async () => {
+    if (!registrationNumber.trim()) {
+      toast.error("Please enter a registration number")
       return
     }
     setIsFetchingVehicleData(true)
     try {
       // TODO: Implement actual API call
       const mockData: VehicleData = {
-        make: "Toyota", model: "Camry", year: 2023, vin: vin,
+        make: "Toyota", model: "Camry", year: 2023, registrationNumber,
         specifications: { engine: "2.5L 4-Cylinder", transmission: "Automatic", fuelType: "Gasoline", mileage: 0, color: "Silver" }
       }
       setVehicleData(mockData)
@@ -548,17 +548,17 @@ export default function AddVehicleForm() {
       <div className="space-y-4">
         <div className="flex items-end gap-4">
           <div className="flex-1">
-            <Label>Vehicle Identification Number (VIN)</Label>
+            <Label>Registration Number</Label>
             <Input
-              placeholder="Enter VIN to fetch vehicle details"
-              value={vin}
-              onChange={(e) => setVin(e.target.value)}
+              placeholder="Enter registration number to fetch vehicle details"
+              value={registrationNumber}
+              onChange={(e) => setRegistrationNumber(e.target.value)}
               className="mt-1"
             />
           </div>
           <Button
             type="button"
-            onClick={handleVinSubmit}
+            onClick={handleRegistrationSubmit}
             disabled={isFetchingVehicleData}
             className="bg-blue-600 hover:bg-blue-700"
           >
