@@ -12,16 +12,14 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { getDealerListings } from '@/lib/firebase';
 import { 
   Mail, 
-  Phone, 
   MapPin, 
   Calendar, 
   Car, 
   Heart, 
   Settings, 
-  Shield, 
-  Bell,
   Lock,
   Trash2,
   Edit2,
@@ -39,6 +37,26 @@ interface UserProfile {
   lastName: string;
   role: "user" | "dealer";
   additionalRoles?: string[];
+}
+
+interface DealerVehicle {
+  id: string;
+  title: string;
+  price: number;
+  status: string;
+  views: number;
+  inquiries: number;
+  createdAt: string;
+  image: string;
+  make: string;
+  model: string;
+  year: number;
+  mileage: number;
+  fuel: string;
+  transmission: string;
+  description: string;
+  images: string[];
+  updatedAt: string;
 }
 
 // Utility to normalize Firestore Timestamp, string, Date, or number to Date
@@ -66,6 +84,7 @@ export function ProfilePage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [vehicles, setVehicles] = useState<DealerVehicle[]>([]);
   const { user, getUserProfile } = useAuth();
   const router = useRouter();
 
@@ -79,6 +98,12 @@ export function ProfilePage() {
       try {
         const profile = await getUserProfile();
         setUserProfile(profile as UserProfile);
+
+        // Fetch vehicles if user is a dealer
+        if (profile && profile.role === 'dealer') {
+          const dealerVehicles = await getDealerListings(user.uid);
+          setVehicles(dealerVehicles);
+        }
       } catch (error) {
         console.error('Error fetching profile:', error);
       } finally {
@@ -177,7 +202,7 @@ export function ProfilePage() {
                     <Car className="h-5 w-5 text-blue-600" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">Active Listings</p>
-                      <p className="text-lg font-bold text-gray-900">5</p>
+                      <p className="text-lg font-bold text-gray-900">{vehicles.length}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -259,13 +284,6 @@ export function ProfilePage() {
                         <Input id="email" type="email" defaultValue={userProfile.email} className="text-gray-900" />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="phone" className="flex items-center gap-2 text-base font-medium text-gray-900">
-                          <Phone className="h-4 w-4" />
-                          Phone Number
-                        </Label>
-                        <Input id="phone" type="tel" defaultValue="+1 (555) 000-0000" className="text-gray-900" />
-                      </div>
-                      <div className="space-y-2">
                         <Label htmlFor="location" className="flex items-center gap-2 text-base font-medium text-gray-900">
                           <MapPin className="h-4 w-4" />
                           Location
@@ -291,14 +309,6 @@ export function ProfilePage() {
                         </div>
                       </div>
                       <Separator className="my-4" />
-                      <div className="space-y-2">
-                        <Label htmlFor="bio" className="text-base font-medium text-gray-900">Bio</Label>
-                        <textarea
-                          id="bio"
-                          className="w-full min-h-[100px] p-2 border rounded-md text-gray-900"
-                          defaultValue="Car enthusiast and collector..."
-                        />
-                      </div>
                       <Button className="w-full md:w-auto font-medium">Save Changes</Button>
                     </CardContent>
                   </Card>
@@ -311,15 +321,60 @@ export function ProfilePage() {
                       <CardDescription className="text-base text-gray-700">Manage your vehicle listings</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-center py-12">
-                        <Car className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                        <p className="text-xl font-bold text-gray-900 mb-2">No active listings found</p>
-                        <p className="text-base text-gray-700 mb-4">Start by adding your first vehicle listing</p>
-                        <Button variant="outline" className="gap-2 font-medium">
-                          <Car className="h-4 w-4" />
-                          Add New Listing
-                        </Button>
-                      </div>
+                      {vehicles.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Car className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                          <p className="text-xl font-bold text-gray-900 mb-2">No active listings found</p>
+                          <p className="text-base text-gray-700 mb-4">Start by adding your first vehicle listing</p>
+                          <Button variant="outline" className="gap-2 font-medium">
+                            <Car className="h-4 w-4" />
+                            Add New Listing
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {vehicles.map((vehicle) => (
+                            <Card key={vehicle.id} className="p-4">
+                              <div className="flex items-center gap-4">
+                                <div className="w-24 h-24 relative rounded-lg overflow-hidden">
+                                  <img 
+                                    src={vehicle.image} 
+                                    alt={vehicle.title}
+                                    className="object-cover w-full h-full"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <h3 className="text-lg font-semibold text-gray-900">{vehicle.title}</h3>
+                                  <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <div className="text-sm text-gray-600">
+                                      <span className="font-medium">Price:</span> £{vehicle.price.toLocaleString()}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                      <span className="font-medium">Status:</span> {vehicle.status}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                      <span className="font-medium">Views:</span> {vehicle.views}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                      <span className="font-medium">Inquiries:</span> {vehicle.inquiries}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button variant="outline" size="sm" className="gap-1">
+                                    <Edit2 className="h-4 w-4" />
+                                    Edit
+                                  </Button>
+                                  <Button variant="destructive" size="sm" className="gap-1">
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -351,29 +406,6 @@ export function ProfilePage() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <Label className="flex items-center gap-2 text-base font-medium text-gray-900">
-                              <Bell className="h-4 w-4" />
-                              Email Notifications
-                            </Label>
-                            <p className="text-base text-gray-700">
-                              Receive email notifications for new messages and updates
-                            </p>
-                          </div>
-                          <input type="checkbox" className="rounded" />
-                        </div>
-                        <Separator />
-                        <div className="space-y-1">
-                          <Label className="flex items-center gap-2 text-base font-medium text-gray-900">
-                            <Shield className="h-4 w-4" />
-                            Privacy Settings
-                          </Label>
-                          <p className="text-base text-gray-700">
-                            Control who can see your profile and listings
-                          </p>
-                        </div>
-                        <Separator />
                         <div className="space-y-2">
                           <Label className="flex items-center gap-2 text-base font-medium text-gray-900">
                             <Lock className="h-4 w-4" />
