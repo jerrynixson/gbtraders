@@ -17,7 +17,8 @@ import {
   Megaphone,
   Settings,
   PlusCircle,
-  UserCircle
+  UserCircle,
+  LayoutDashboard
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -209,6 +210,13 @@ export function Header() {
                 <Heart className="h-6 w-6" />
               </Button>
             </Link>
+            {user && user.role === "dealer" && (
+              <Link href="/dashboard">
+                <Button variant="secondary" className="hidden lg:flex">
+                  Dashboard
+                </Button>
+              </Link>
+            )}
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -350,6 +358,14 @@ export function Header() {
                     <span className="sr-only">Favorites</span>
                   </Button>
                 </Link>
+                {user && user.role === "dealer" && (
+                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
+                      <LayoutDashboard className="h-4 w-4" />
+                      <span className="sr-only">Dashboard</span>
+                    </Button>
+                  </Link>
+                )}
                 {user ? (
                   <>
                     <Link href="/profile" onClick={() => setMobileMenuOpen(false)}>
