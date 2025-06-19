@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,15 +17,15 @@ import {
   MapPin, 
   Calendar, 
   Car, 
-  Heart, 
   Settings, 
   Lock,
   Trash2,
   Edit2,
-  Camera,
   User,
   Globe,
-  UserCircle
+  UserCircle,
+  Heart,
+  ChevronRight
 } from "lucide-react";
 
 interface UserProfile {
@@ -137,10 +136,6 @@ export function ProfilePage() {
   const createdDateObj = parseDate(userProfile.createdAt);
   const createdDate = createdDateObj ? format(createdDateObj, 'MMMM dd, yyyy') : 'N/A';
 
-  const firstInitial = (userProfile.firstName && userProfile.firstName !== "undefined") ? userProfile.firstName.charAt(0) : '';
-  const lastInitial = (userProfile.lastName && userProfile.lastName !== "undefined") ? userProfile.lastName.charAt(0) : '';
-  const userInitials = (firstInitial + lastInitial).toUpperCase() || '?';
-
   const fullName = `${userProfile.firstName && userProfile.firstName !== "undefined" ? userProfile.firstName : ''} ${userProfile.lastName && userProfile.lastName !== "undefined" ? userProfile.lastName : ''}`.trim() || 'User';
 
   return (
@@ -151,10 +146,6 @@ export function ProfilePage() {
           <Card className="mb-8 border-2">
             <CardHeader>
               <div className="flex flex-col md:flex-row items-center gap-6">
-                <Avatar className="h-32 w-32 border-4 border-white shadow-lg">
-                  <AvatarImage src="/placeholder-avatar.jpg" alt="User avatar" />
-                  <AvatarFallback className="text-4xl font-bold text-white bg-blue-600">{userInitials}</AvatarFallback>
-                </Avatar>
                 <div className="flex-1 text-center md:text-left">
                   <CardTitle className="text-4xl font-extrabold text-gray-900 tracking-tight">
                     {fullName}
@@ -205,12 +196,17 @@ export function ProfilePage() {
                       <p className="text-lg font-bold text-gray-900">{vehicles.length}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Heart className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Favorites</p>
-                      <p className="text-lg font-bold text-gray-900">12</p>
+                  <div 
+                    className="group cursor-pointer flex items-center justify-between hover:text-blue-600 transition-colors p-1 -m-1 rounded hover:bg-blue-50"
+                    onClick={() => router.push('/favourites')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Heart className="h-5 w-5 text-blue-600 group-hover:fill-current" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 group-hover:text-blue-600">Favorites</p>
+                      </div>
                     </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-blue-600" />
                   </div>
                   <div className="flex items-center gap-3">
                     <Calendar className="h-5 w-5 text-blue-600" />
@@ -240,7 +236,7 @@ export function ProfilePage() {
             {/* Main Content */}
             <div className="lg:col-span-3">
               <Tabs defaultValue="profile" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 mb-8 bg-gray-100">
+                <TabsList className="grid w-full grid-cols-3 mb-8 bg-gray-100">
                   <TabsTrigger value="profile" className="flex items-center gap-2 font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600">
                     <User className="h-4 w-4" />
                     Profile
@@ -248,10 +244,6 @@ export function ProfilePage() {
                   <TabsTrigger value="listings" className="flex items-center gap-2 font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600">
                     <Car className="h-4 w-4" />
                     My Listings
-                  </TabsTrigger>
-                  <TabsTrigger value="favorites" className="flex items-center gap-2 font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600">
-                    <Heart className="h-4 w-4" />
-                    Favorites
                   </TabsTrigger>
                   <TabsTrigger value="settings" className="flex items-center gap-2 font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600">
                     <Settings className="h-4 w-4" />
@@ -379,25 +371,6 @@ export function ProfilePage() {
                   </Card>
                 </TabsContent>
 
-                <TabsContent value="favorites">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-xl font-bold text-gray-900">Favorite Vehicles</CardTitle>
-                      <CardDescription className="text-base text-gray-700">Your saved vehicle listings</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center py-12">
-                        <Heart className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                        <p className="text-xl font-bold text-gray-900 mb-2">No favorite vehicles yet</p>
-                        <p className="text-base text-gray-700 mb-4">Browse vehicles and add them to your favorites</p>
-                        <Button variant="outline" className="gap-2 font-medium">
-                          Browse Vehicles
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
                 <TabsContent value="settings">
                   <Card>
                     <CardHeader>
@@ -438,4 +411,4 @@ export function ProfilePage() {
       </div>
     </div>
   );
-} 
+}
