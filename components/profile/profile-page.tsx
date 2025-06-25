@@ -402,8 +402,14 @@ export function ProfilePage() {
                           <UserCircle className="h-4 w-4" />
                           Account Type
                         </Label>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {userProfile.role === 'user' ? 
+                            "You can upgrade your account to a Dealer account to list vehicles." :
+                            "Dealer accounts cannot be downgraded to regular user accounts."
+                          }
+                        </p>
                         <div className="flex items-center gap-2">
-                          {isEditing ? (
+                          {isEditing && userProfile.role === 'user' ? (
                             <select
                               id="role"
                               value={editedProfile?.role}
