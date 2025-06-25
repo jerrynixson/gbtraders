@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { getDealerListings } from '@/lib/firebase';
+import { useToast } from "@/hooks/use-toast";
 import { 
   Mail, 
   MapPin, 
@@ -25,7 +26,9 @@ import {
   Globe,
   UserCircle,
   Heart,
-  ChevronRight
+  ChevronRight,
+  Save,
+  X
 } from "lucide-react";
 
 interface UserProfile {
@@ -84,8 +87,12 @@ export function ProfilePage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [vehicles, setVehicles] = useState<DealerVehicle[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const { user, getUserProfile } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!user) {
@@ -97,6 +104,7 @@ export function ProfilePage() {
       try {
         const profile = await getUserProfile();
         setUserProfile(profile as UserProfile);
+        setEditedProfile(profile as UserProfile);
 
         // Fetch vehicles if user is a dealer
         if (profile && profile.role === 'dealer') {
@@ -112,6 +120,84 @@ export function ProfilePage() {
 
     fetchProfile();
   }, [user, getUserProfile, router]);
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+    setEditedProfile({ ...userProfile! });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedProfile({ ...userProfile! });
+  };
+
+  const handleSaveChanges = async () => {
+    if (!editedProfile || !user) return;
+
+    setIsSaving(true);
+    try {
+      // Update user profile through the API
+      const updateProfileResponse = await fetch('/api/auth/update-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          uid: user.uid,
+          firstName: editedProfile.firstName,
+          lastName: editedProfile.lastName,
+          country: editedProfile.country,
+          role: editedProfile.role,
+        }),
+      });
+
+      const responseData = await updateProfileResponse.json();
+
+      if (!updateProfileResponse.ok) {
+        throw new Error(responseData.error || 'Failed to update profile');
+      }
+
+      // If role has changed, update user role through the API
+      if (userProfile?.role !== editedProfile.role) {
+        const setRoleResponse = await fetch('/api/auth/set-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            role: editedProfile.role,
+          }),
+        });
+
+        const roleResponseData = await setRoleResponse.json();
+
+        if (!setRoleResponse.ok) {
+          throw new Error(roleResponseData.error || 'Failed to update user role');
+        }
+      }
+
+      // Update local state
+      setUserProfile(editedProfile);
+      setIsEditing(false);
+      
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+        variant: "default",
+      });
+
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Show loading state
   if (loading) {
@@ -168,7 +254,12 @@ export function ProfilePage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" className="gap-2 font-semibold border-blue-200 text-blue-700 hover:bg-blue-50">
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 font-semibold border-blue-200 text-blue-700 hover:bg-blue-50"
+                    onClick={handleEditClick}
+                    disabled={isEditing}
+                  >
                     <Edit2 className="h-4 w-4" />
                     Edit Profile
                   </Button>
@@ -261,11 +352,23 @@ export function ProfilePage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <Label htmlFor="firstName" className="text-base font-medium text-gray-900">First Name</Label>
-                          <Input id="firstName" defaultValue={userProfile.firstName} className="text-gray-900" />
+                          <Input 
+                            id="firstName" 
+                            value={isEditing ? editedProfile?.firstName : userProfile.firstName} 
+                            onChange={(e) => isEditing && setEditedProfile(prev => ({ ...prev!, firstName: e.target.value }))}
+                            className="text-gray-900" 
+                            disabled={!isEditing}
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="lastName" className="text-base font-medium text-gray-900">Last Name</Label>
-                          <Input id="lastName" defaultValue={userProfile.lastName} className="text-gray-900" />
+                          <Input 
+                            id="lastName" 
+                            value={isEditing ? editedProfile?.lastName : userProfile.lastName} 
+                            onChange={(e) => isEditing && setEditedProfile(prev => ({ ...prev!, lastName: e.target.value }))}
+                            className="text-gray-900" 
+                            disabled={!isEditing}
+                          />
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -273,14 +376,26 @@ export function ProfilePage() {
                           <Mail className="h-4 w-4" />
                           Email
                         </Label>
-                        <Input id="email" type="email" defaultValue={userProfile.email} className="text-gray-900" />
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          value={userProfile.email} 
+                          className="text-gray-900" 
+                          disabled 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="location" className="flex items-center gap-2 text-base font-medium text-gray-900">
                           <MapPin className="h-4 w-4" />
                           Location
                         </Label>
-                        <Input id="location" defaultValue={userProfile.country} className="text-gray-900" />
+                        <Input 
+                          id="location" 
+                          value={isEditing ? editedProfile?.country : userProfile.country} 
+                          onChange={(e) => isEditing && setEditedProfile(prev => ({ ...prev!, country: e.target.value }))}
+                          className="text-gray-900" 
+                          disabled={!isEditing}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="role" className="flex items-center gap-2 text-base font-medium text-gray-900">
@@ -288,7 +403,19 @@ export function ProfilePage() {
                           Account Type
                         </Label>
                         <div className="flex items-center gap-2">
-                          <Input id="role" defaultValue={userProfile.role} className="text-gray-900 capitalize" disabled />
+                          {isEditing ? (
+                            <select
+                              id="role"
+                              value={editedProfile?.role}
+                              onChange={(e) => setEditedProfile(prev => ({ ...prev!, role: e.target.value as "user" | "dealer" }))}
+                              className="w-full p-2 text-gray-900 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="user">User</option>
+                              <option value="dealer">Dealer</option>
+                            </select>
+                          ) : (
+                            <Input id="role" value={userProfile.role} className="text-gray-900 capitalize" disabled />
+                          )}
                           {userProfile.additionalRoles && userProfile.additionalRoles.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               {userProfile.additionalRoles.map((role) => (
@@ -301,7 +428,32 @@ export function ProfilePage() {
                         </div>
                       </div>
                       <Separator className="my-4" />
-                      <Button className="w-full md:w-auto font-medium">Save Changes</Button>
+                      {isEditing ? (
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleSaveChanges} 
+                            className="gap-2 font-medium"
+                            disabled={isSaving}
+                          >
+                            <Save className="h-4 w-4" />
+                            {isSaving ? "Saving..." : "Save Changes"}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={handleCancelEdit}
+                            className="gap-2 font-medium"
+                            disabled={isSaving}
+                          >
+                            <X className="h-4 w-4" />
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button className="w-full md:w-auto font-medium" onClick={handleEditClick}>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Edit Profile
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
