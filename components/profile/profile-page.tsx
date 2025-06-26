@@ -19,7 +19,6 @@ import {
   Calendar, 
   Car, 
   Settings, 
-  Lock,
   Trash2,
   Edit2,
   User,
@@ -533,19 +532,9 @@ export function ProfilePage() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-xl font-bold text-gray-900">Account Settings</CardTitle>
-                      <CardDescription className="text-base text-gray-700">Manage your account preferences</CardDescription>
+                      
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-base font-medium text-gray-900">
-                            <Lock className="h-4 w-4" />
-                            Change Password
-                          </Label>
-                          <Input type="password" placeholder="Enter new password" className="text-gray-900" />
-                        </div>
-                      </div>
-                      <Separator className="my-4" />
                       <div className="space-y-2">
                         <Label className="text-destructive flex items-center gap-2 text-base font-medium">
                           <Trash2 className="h-4 w-4" />
