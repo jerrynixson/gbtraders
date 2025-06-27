@@ -287,4 +287,18 @@ export class VehicleRepository {
     const docRef = doc(this.collection, id);
     await deleteDoc(docRef);
   }
+
+  /**
+   * Get all vehicles by dealer ID
+   */
+  async getVehiclesByDealerId(dealerId: string): Promise<Vehicle[]> {
+    const q = query(
+      this.collection,
+      where('dealerUid', '==', dealerId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.convertToVehicle(doc));
+  }
 } 

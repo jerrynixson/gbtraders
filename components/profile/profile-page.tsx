@@ -27,8 +27,24 @@ import {
   Heart,
   ChevronRight,
   Save,
-  X
+  X,
+  AlertCircle
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { FavoritesRepository } from "@/lib/db/repositories/favoritesRepository";
+import { VehicleRepository } from "@/lib/db/repositories/vehicleRepository";
+import { auth, storage } from "@/lib/firebase";
+import { deleteUser } from "firebase/auth";
+import { ref, listAll, deleteObject } from "firebase/storage";
 
 interface UserProfile {
   country: string;
@@ -59,6 +75,9 @@ interface DealerVehicle {
   images: string[];
   updatedAt: string;
 }
+
+const favoritesRepo = new FavoritesRepository();
+const vehicleRepo = new VehicleRepository();
 
 // Utility to normalize Firestore Timestamp, string, Date, or number to Date
 function parseDate(date: any): Date | null {
@@ -92,6 +111,8 @@ export function ProfilePage() {
   const { user, getUserProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -195,6 +216,94 @@ export function ProfilePage() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user || !userProfile) return;
+
+    setIsDeleting(true);
+    try {
+      // Check if user is an admin
+      if (userProfile.additionalRoles?.includes('admin')) {
+        toast({
+          title: "Error",
+          description: "Admin accounts cannot be deleted.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // 1. Delete favorites
+      await favoritesRepo.deleteUserFavorites(user.uid);
+
+      // 2. Delete vehicle listings if they exist
+      const userVehicles = await vehicleRepo.getVehiclesByDealerId(user.uid);
+      
+      // Delete vehicle images from storage using admin API
+      if (userVehicles.length > 0) {
+        await fetch('/api/auth/delete-storage', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: user.uid, type: 'vehicles' })
+        });
+      }
+      
+      // Delete vehicle documents
+      for (const vehicle of userVehicles) {
+        await vehicleRepo.deleteVehicle(vehicle.id);
+      }
+
+      // 3. Delete dealer profile if user is a dealer
+      if (userProfile.role === 'dealer') {
+        // Delete dealer profile images using admin API
+        await fetch('/api/auth/delete-storage', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: user.uid, type: 'dealer' })
+        });
+
+        // Delete dealer profile document
+        await fetch('/api/dealer/profile', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: user.uid }),
+        });
+      }
+
+      // 4. Delete user profile and auth account
+      await fetch('/api/auth/delete-user', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.uid }),
+      });
+
+      // No need to call deleteUser here, as the backend already deleted the user.
+      // Optionally, sign out the user if still signed in:
+      if (auth.currentUser) {
+        await auth.signOut();
+      }
+
+      toast({
+        title: "Success",
+        description: "Your account has been deleted successfully.",
+        variant: "default",
+      });
+
+      // Redirect to home page and stop further execution
+      router.push('/');
+      return;
+
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -543,10 +652,54 @@ export function ProfilePage() {
                         <p className="text-base text-gray-700">
                           Once you delete your account, there is no going back. Please be certain.
                         </p>
-                        <Button variant="destructive" className="gap-2 font-medium">
+                        <Button 
+                          variant="destructive" 
+                          className="gap-2 font-medium"
+                          onClick={() => setIsDeleteDialogOpen(true)}
+                          disabled={isDeleting || userProfile?.additionalRoles?.includes('admin')}
+                        >
                           <Trash2 className="h-4 w-4" />
-                          Delete Account
+                          {isDeleting ? "Deleting..." : "Delete Account"}
                         </Button>
+
+                        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2">
+                                <AlertCircle className="h-5 w-5 text-destructive" />
+                                Delete Account
+                              </AlertDialogTitle>
+                              <div className="space-y-4">
+                                <AlertDialogDescription>
+                                  Are you absolutely sure you want to delete your account? This action cannot be undone.
+                                </AlertDialogDescription>
+                                <div>
+                                  <div className="font-semibold mb-2">This will permanently delete:</div>
+                                  <ul className="list-disc list-inside space-y-1">
+                                    <li>Your profile information</li>
+                                    <li>All your favorite listings</li>
+                                    {userProfile?.role === 'dealer' && (
+                                      <>
+                                        <li>All your vehicle listings</li>
+                                        <li>Your dealer profile</li>
+                                      </>
+                                    )}
+                                  </ul>
+                                </div>
+                              </div>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleDeleteAccount}
+                                disabled={isDeleting}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                {isDeleting ? "Deleting..." : "Delete Account"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </CardContent>
                   </Card>

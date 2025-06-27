@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/db/firebase';
 
 export class FavoritesRepository {
@@ -61,5 +61,13 @@ export class FavoritesRepository {
   async isFavorite(userId: string, vehicleId: string): Promise<boolean> {
     const favorites = await this.getUserFavorites(userId);
     return favorites.includes(vehicleId);
+  }
+
+  /**
+   * Delete all favorites for a user
+   */
+  async deleteUserFavorites(userId: string): Promise<void> {
+    const userFavoritesRef = doc(this.collection, userId);
+    await deleteDoc(userFavoritesRef);
   }
 } 

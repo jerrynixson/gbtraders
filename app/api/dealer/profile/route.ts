@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { submitDealerProfileAdmin, getDealerProfileAdmin } from '@/lib/dealer/admin-profile';
-import { adminAuth } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { DealerProfile } from '@/lib/dealer/profile';
 
 export async function POST(request: NextRequest) {
@@ -84,6 +84,27 @@ export async function GET(request: NextRequest) {
     console.error('Error in dealer profile API:', error);
     return NextResponse.json(
       { error: 'Failed to fetch dealer profile' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { uid } = await request.json();
+
+    if (!uid) {
+      return NextResponse.json({ error: 'Dealer ID is required' }, { status: 400 });
+    }
+
+    // Delete dealer profile from Firestore
+    await adminDb.collection('dealers').doc(uid).delete();
+
+    return NextResponse.json({ message: 'Dealer profile deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting dealer profile:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete dealer profile' },
       { status: 500 }
     );
   }
