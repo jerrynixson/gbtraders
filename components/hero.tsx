@@ -307,6 +307,8 @@ export function Hero() {
               >
                 Reset filters
               </Button>
+              {/*
+              // More options button hidden for now - for future use
               <Button 
                 variant="outline" 
                 className="rounded-full bg-white/5 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white/70 hover:bg-white/10 hover:text-white border-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
@@ -314,6 +316,7 @@ export function Hero() {
               >
                 More options
               </Button>
+              */}
             </div>
           </div>
         </div>
