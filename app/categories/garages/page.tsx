@@ -6,6 +6,7 @@ import { Search, MapPin, Filter, Grid, List, Star, Clock, Phone, Globe, Mail, Fa
 import { useState } from "react"
 import { Header } from "@/components/header"
 import { GoogleMapComponent } from "@/components/ui/google-map"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface Garage {
   id: string;
@@ -41,13 +42,15 @@ interface Garage {
 export default function SearchGaragesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sortBy, setSortBy] = useState("rating")
+  const [selectedCategory, setSelectedCategory] = useState<string>("All Services")
   const [selectedServices, setSelectedServices] = useState<string[]>([])
+  const [selectedContent, setSelectedContent] = useState("Websites")
   const [showMoreFilters, setShowMoreFilters] = useState(false)
   const [priceRange, setPriceRange] = useState([0, 1000])
   const [selectedDistance, setSelectedDistance] = useState("all")
   const [selectedRating, setSelectedRating] = useState("all")
-  const [showContentFilters, setShowContentFilters] = useState(false)
-  const [selectedContent, setSelectedContent] = useState("Websites")
+  const isMobile = useIsMobile();
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Sample garage data with enhanced information
   const garages = Array.from({ length: 12 }).map((_, index) => ({
@@ -108,19 +111,38 @@ export default function SearchGaragesPage() {
     { name: "Engine", count: 112 }
   ]
 
+  const contentTypes = [
+    "Websites", "Photos", "Reviews", "Videos", "Messaging"
+  ]
+
   const toggleService = (service: string) => {
-    setSelectedServices(prev => 
-      prev.includes(service) 
+    setSelectedServices(prev =>
+      prev.includes(service)
         ? prev.filter(s => s !== service)
         : [...prev, service]
     )
   }
 
+  const clearFilters = () => {
+    setSelectedCategory("All Services")
+    setSelectedServices([])
+    setSelectedContent("Websites")
+    setSelectedDistance("all")
+    setSelectedRating("all")
+  }
+
+  // Filtering logic
   const filteredGarages = garages.filter(garage => {
-    const serviceMatch = selectedServices.length === 0 || 
-      selectedServices.some(service => garage.services.includes(service))
+    // Category filter (simulate by matching category to a service in the garage)
+    const categoryMatch = selectedCategory === "All Services" || garage.services.includes(selectedCategory)
+    // Services filter (all selected services must be present)
+    const servicesMatch = selectedServices.length === 0 || selectedServices.every(service => garage.services.includes(service))
+    // Content filter (simulate: always true, as we don't have content types in data)
+    const contentMatch = true // Could be extended if data supports it
+    // Rating filter
     const ratingMatch = selectedRating === "all" || garage.rating >= parseFloat(selectedRating)
-    return serviceMatch && ratingMatch
+    // Distance filter (not implemented, always true)
+    return categoryMatch && servicesMatch && contentMatch && ratingMatch
   })
 
   const GarageCard = ({ garage }: { garage: Garage }) => (
@@ -207,9 +229,9 @@ export default function SearchGaragesPage() {
       <Header />
       {/* Header placeholder */}
       <div className="flex justify-center items-center py-4 mb-2">
-        <div className="w-full max-w-4xl flex rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-blue-200 relative">
-          <div className="w-2 h-full bg-gradient-to-b from-blue-400 to-blue-700 rounded-l-3xl"></div>
-          <form className="flex-1 flex items-center gap-4 p-4">
+        <div className="w-full max-w-4xl flex flex-col md:flex-row rounded-none md:rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-blue-200 relative">
+          <div className="hidden md:block md:w-2 md:h-full bg-gradient-to-b from-blue-400 to-blue-700 md:rounded-l-3xl md:rounded-t-none"></div>
+          <form className="flex-1 flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4 p-4">
             {/* Reg Number Field */}
             <div className="flex-1 min-w-[140px]">
               <label htmlFor="reg-number" className="block text-xs font-semibold text-gray-700 mb-1 ml-1">Enter Reg Number</label>
@@ -262,11 +284,20 @@ export default function SearchGaragesPage() {
       {/* Removed from here */}
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-2 sm:px-4 py-4">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Sidebar - Filters */}
-          <div className="lg:w-1/4">
-            <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-lg border border-blue-100 p-6 sticky top-4 flex flex-col gap-8">
+          {/* Mobile Filter Toggle */}
+          {isMobile && (
+            <div className="mb-2 flex justify-end">
+              <Button variant="outline" className="w-full flex items-center justify-center gap-2" onClick={() => setShowMobileFilters(v => !v)}>
+                <Filter className="h-5 w-5" />
+                {showMobileFilters ? "Hide Filters" : "Show Filters"}
+              </Button>
+            </div>
+          )}
+          {/* Sidebar - show above results on mobile, left on desktop */}
+          <div className={`lg:w-1/4 ${isMobile ? (showMobileFilters ? "block" : "hidden") : "block"}`}>
+            <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-lg border border-blue-100 p-4 sm:p-6 sticky top-4 flex flex-col gap-8">
               {/* Map Preview - Glassmorphic Card */}
               <div className="relative flex flex-col items-center mb-2">
                 <div className="w-full h-40 rounded-2xl bg-white/30 backdrop-blur-md shadow-md overflow-hidden flex items-center justify-center border border-blue-100">
@@ -277,65 +308,72 @@ export default function SearchGaragesPage() {
                 </div>
               </div>
 
-              {/* Filter header - force divider flush below */}
+              {/* Filter header */}
               <div className="flex items-center gap-2 mb-0 mt-0 p-0 h-auto min-h-0">
                 <Filter className="h-6 w-6 text-blue-700" />
                 <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Filter</h2>
-              </div><div className="h-px bg-gradient-to-r from-blue-200/60 via-transparent to-blue-200/60 m-0 mb-4 p-0" />
+              </div>
+              <div className="h-px bg-gradient-to-r from-blue-200/60 via-transparent to-blue-200/60 m-0 mb-4 p-0" />
 
-              {/* Category Filter (always expanded) */}
+              {/* Category Filter */}
               <div className="mb-4">
-                <span className="font-semibold text-gray-900 text-lg mb-3 block">Category</span>
-                <div className="flex flex-col gap-3 pl-1">
-                  {[
-                    "Mobile Mechanics", "Garage Services", "Mot Testing", "Car Servicing", "Brakes & Clutches", "Breakdown Recovery", "Tyres", "Car Electrics", "Car Diagnostics", "Mobile Tyre Fitting", "Engine Reconditioning", "Commercial Vehicle Repairs", "Car Body Repairs", "Brakes Repairs", "Engine Diagnostics"
-                  ].map((cat) => (
-                    <label key={cat} className="flex items-center gap-3 text-base text-gray-800 cursor-pointer">
+                <label htmlFor="category-select" className="font-semibold text-gray-900 text-lg mb-3 block">Category</label>
+                <select
+                  id="category-select"
+                  className="w-full pl-4 pr-4 py-2.5 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 h-12"
+                  value={selectedCategory}
+                  onChange={e => setSelectedCategory(e.target.value)}
+                >
+                  {categories.map(cat => (
+                    <option key={cat.name} value={cat.name}>{cat.name} ({cat.count})</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Services Filter */}
+              <div className="mb-4">
+                <span className="font-semibold text-gray-900 text-lg mb-3 block">Services</span>
+                <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pl-1 pr-2">
+                  {allServices.map(service => (
+                    <label key={service} className="flex items-center gap-2 text-base text-gray-800 cursor-pointer">
                       <input
-                        type="radio"
-                        name="category"
-                        value={cat}
+                        type="checkbox"
+                        checked={selectedServices.includes(service)}
+                        onChange={() => toggleService(service)}
                         className="accent-blue-600 w-4 h-4 border-2 border-blue-400 focus:ring-2 focus:ring-blue-300 transition-all"
-                        checked={selectedServices[0] === cat}
-                        onChange={() => setSelectedServices([cat])}
                       />
-                      <span className="font-medium">{cat}</span>
+                      <span className="font-medium">{service}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-blue-200/60 via-transparent to-blue-200/60 my-2" />
-
-              {/* Content Filter (always expanded) */}
-              <div className="mb-2">
-                <span className="font-semibold text-gray-900 text-lg mb-3 block">Content</span>
-                <div className="flex flex-col gap-3 pl-1">
-                  {[
-                    "Websites", "Photos", "Reviews", "Videos", "Messaging"
-                  ].map((content) => (
-                    <label key={content} className="flex items-center gap-3 text-base text-gray-800 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="content"
-                        value={content}
-                        className="accent-blue-600 w-4 h-4 border-2 border-blue-400 focus:ring-2 focus:ring-blue-300 transition-all"
-                        checked={selectedContent === content}
-                        onChange={() => setSelectedContent(content)}
-                      />
-                      <span className="font-medium">{content}</span>
-                    </label>
+              {/* Content Filter */}
+              <div className="mb-4">
+                <label htmlFor="content-select" className="font-semibold text-gray-900 text-lg mb-3 block">Content</label>
+                <select
+                  id="content-select"
+                  className="w-full pl-4 pr-4 py-2.5 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 h-12"
+                  value={selectedContent}
+                  onChange={e => setSelectedContent(e.target.value)}
+                >
+                  {contentTypes.map(content => (
+                    <option key={content} value={content}>{content}</option>
                   ))}
-                </div>
+                </select>
               </div>
+
+              {/* Clear Filters Button */}
+              <Button variant="outline" className="w-full" onClick={clearFilters}>
+                Clear Filters
+              </Button>
             </div>
           </div>
 
           {/* Right Content - Results */}
-          <div className="lg:w-3/4">
+          <div className="lg:w-3/4 w-full">
             {/* Feature Bar - now above results header */}
-            <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-6 px-4 py-6 bg-white/70 backdrop-blur rounded-2xl shadow mb-6">
+            <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 px-2 sm:px-4 py-4 sm:py-6 bg-white/70 backdrop-blur rounded-2xl shadow mb-6">
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2z" /></svg>
                 <div>
@@ -367,12 +405,12 @@ export default function SearchGaragesPage() {
             </div>
 
             {/* Results Header */}
-            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-3 md:gap-4">
+              <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2 xs:gap-4 w-full">
                 <p className="text-gray-600">
                   Showing <span className="font-semibold">{filteredGarages.length}</span> of <span className="font-semibold">{garages.length}</span> garages
                 </p>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 mt-2 xs:mt-0">
                   <Button
                     variant={viewMode === "grid" ? "default" : "outline"}
                     size="sm"
@@ -401,8 +439,7 @@ export default function SearchGaragesPage() {
                   </Button>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end">
                 <span className="text-sm font-medium">Sort by:</span>
                 <select
                   value={sortBy}
@@ -419,13 +456,13 @@ export default function SearchGaragesPage() {
 
             {/* Garage listings */}
             {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                 {filteredGarages.map((garage: Garage) => (
                   <GarageCard key={garage.id} garage={garage} />
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3 sm:gap-4">
                 {filteredGarages.map((garage: Garage) => (
                   <div key={garage.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200">
                     {garage.isSponsored && (
@@ -510,7 +547,7 @@ export default function SearchGaragesPage() {
             )}
 
             {/* Pagination */}
-            <div className="flex justify-center mt-8 gap-2">
+            <div className="flex flex-wrap justify-center mt-8 gap-2">
               <Button variant="outline" className="px-4 hover:bg-blue-50">Previous</Button>
               <Button variant="outline" className="px-4 bg-blue-600 text-white hover:bg-blue-700">1</Button>
               <Button variant="outline" className="px-4 hover:bg-blue-50">2</Button>

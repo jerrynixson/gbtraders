@@ -225,11 +225,11 @@ export default function DealerDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
       <Header />
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
+      <main className="container mx-auto px-2 sm:px-4 py-6 sm:py-8 max-w-7xl">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome back, Dealer</h1>
-          <p className="text-gray-600">Manage your dealership and listings</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">Welcome back, Dealer</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Manage your dealership and listings</p>
         </div>
 
         {/* Quick Stats */}
@@ -289,31 +289,23 @@ export default function DealerDashboard() {
         </div>
 
         <Tabs defaultValue="listings" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-lg shadow-sm">
-              <TabsTrigger value="listings" className="rounded-md data-[state=active]:bg-gray-100">
-                Listings
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="rounded-md data-[state=active]:bg-gray-100">
-                Analytics
-              </TabsTrigger>
-              <TabsTrigger value="inquiries" className="rounded-md data-[state=active]:bg-gray-100">
-                Inquiries
-              </TabsTrigger>
-              <TabsTrigger value="profile" className="rounded-md data-[state=active]:bg-gray-100">
-                Profile
-              </TabsTrigger>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
+            <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-lg shadow-sm w-full sm:w-auto">
+              <TabsTrigger value="listings" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Listings</TabsTrigger>
+              <TabsTrigger value="analytics" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Analytics</TabsTrigger>
+              <TabsTrigger value="inquiries" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Inquiries</TabsTrigger>
+              <TabsTrigger value="profile" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Profile</TabsTrigger>
             </TabsList>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
               <Button 
                 variant="outline" 
-                onClick={() => router.push("/payment-plans")} 
-                className="border-gray-200 hover:bg-gray-50"
+                onClick={() => router.push("/payment-plans")}
+                className="border-gray-200 hover:bg-gray-50 w-full sm:w-auto"
               >
                 <CreditCard className="w-4 h-4 mr-2" />
                 Payment Plans
               </Button>
-              <Button onClick={handleAddListing} className="bg-blue-600 hover:bg-blue-700 shadow-sm">
+              <Button onClick={handleAddListing} className="bg-blue-600 hover:bg-blue-700 shadow-sm w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Add New Listing
               </Button>
@@ -323,42 +315,42 @@ export default function DealerDashboard() {
           <TabsContent value="listings">
             <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="relative flex-1">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <div className="relative flex-1 w-full">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                       placeholder="Search by title, make, or model..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 bg-gray-50/50 border-gray-200 focus:border-blue-200 focus:ring-blue-200"
+                      className="pl-10 bg-gray-50/50 border-gray-200 focus:border-blue-200 focus:ring-blue-200 text-sm"
                     />
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <Button
                       variant={statusFilter === "all" ? "default" : "outline"}
                       onClick={() => setStatusFilter("all")}
-                      className="bg-gray-50/50 hover:bg-gray-100"
+                      className={`flex-1 sm:flex-none ${statusFilter === "all" ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-gray-50/50 hover:bg-gray-100'}`}
                     >
                       All
                     </Button>
                     <Button
                       variant={statusFilter === "active" ? "default" : "outline"}
                       onClick={() => setStatusFilter("active")}
-                      className="bg-gray-50/50 hover:bg-gray-100"
+                      className={`flex-1 sm:flex-none ${statusFilter === "active" ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-gray-50/50 hover:bg-gray-100'}`}
                     >
                       Active
                     </Button>
                     <Button
                       variant={statusFilter === "pending" ? "default" : "outline"}
                       onClick={() => setStatusFilter("pending")}
-                      className="bg-gray-50/50 hover:bg-gray-100"
+                      className={`flex-1 sm:flex-none ${statusFilter === "pending" ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-gray-50/50 hover:bg-gray-100'}`}
                     >
                       Pending
                     </Button>
                     <Button
                       variant={statusFilter === "sold" ? "default" : "outline"}
                       onClick={() => setStatusFilter("sold")}
-                      className="bg-gray-50/50 hover:bg-gray-100"
+                      className={`flex-1 sm:flex-none ${statusFilter === "sold" ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-gray-50/50 hover:bg-gray-100'}`}
                     >
                       Sold
                     </Button>
@@ -407,20 +399,20 @@ export default function DealerDashboard() {
                     {filteredListings.map((listing) => (
                       <div
                         key={listing.id}
-                        className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all hover:shadow-sm"
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all hover:shadow-sm gap-3 sm:gap-0"
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="w-24 h-24 relative rounded-lg overflow-hidden">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 w-full">
+                          <div className="w-full sm:w-24 h-40 sm:h-24 relative rounded-lg overflow-hidden mb-2 sm:mb-0">
                             <img
                               src={listing.image}
                               alt={listing.title}
                               className="object-cover w-full h-full"
                             />
                           </div>
-                          <div>
+                          <div className="flex-1 w-full text-center sm:text-left">
                             <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
                             <p className="text-lg font-medium text-blue-600 mb-2">£{listing.price.toLocaleString()}</p>
-                            <div className="flex items-center space-x-3">
+                            <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-3 mb-2 sm:mb-0">
                               <StatusBadge status={listing.status} />
                               <span className="text-sm text-gray-500 flex items-center">
                                 <Eye className="w-4 h-4 mr-1" />
@@ -433,7 +425,7 @@ export default function DealerDashboard() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex gap-2 justify-center sm:justify-end w-full sm:w-auto">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -460,7 +452,7 @@ export default function DealerDashboard() {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
               <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-lg font-medium">Views Over Time</CardTitle>
@@ -510,26 +502,22 @@ export default function DealerDashboard() {
                 ) : (
                   <div className="space-y-4">
                     {listings.map((listing) => (
-                      <div key={listing.id} className="p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all hover:shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-16 h-16 relative rounded-lg overflow-hidden">
-                              <img
-                                src={listing.image}
-                                alt={listing.title}
-                                className="object-cover w-full h-full"
-                              />
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-gray-900">{listing.title}</h3>
-                              <p className="text-sm text-gray-500">{listing.inquiries} inquiries</p>
-                            </div>
-                          </div>
-                          <Button variant="outline" size="sm" className="text-blue-600 hover:bg-blue-50">
-                            View Details
-                            <ChevronRight className="w-4 h-4 ml-2" />
-                          </Button>
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 w-full">
+                        <div className="w-full sm:w-16 h-32 sm:h-16 relative rounded-lg overflow-hidden mb-2 sm:mb-0">
+                          <img
+                            src={listing.image}
+                            alt={listing.title}
+                            className="object-cover w-full h-full"
+                          />
                         </div>
+                        <div className="flex-1 w-full text-center sm:text-left">
+                          <h3 className="font-semibold text-gray-900">{listing.title}</h3>
+                          <p className="text-sm text-gray-500">{listing.inquiries} inquiries</p>
+                        </div>
+                        <Button variant="outline" size="sm" className="text-blue-600 hover:bg-blue-50 w-full sm:w-auto mt-2 sm:mt-0">
+                          View Details
+                          <ChevronRight className="w-4 h-4 ml-2" />
+                        </Button>
                       </div>
                     ))}
                   </div>
