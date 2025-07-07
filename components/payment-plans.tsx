@@ -19,11 +19,12 @@ const plans = [
       "Basic support"
     ],
     isFeatured: false,
-    buttonText: "Start Free",
+    buttonText: "Select Plan",
     isFree: true,
     icon: Shield,
     color: "blue",
-    description: "Perfect for getting started"
+    description: "Perfect for getting started",
+    link: "https://buy.stripe.com/8x25kE17GgPHgapgq46wE01?prefilled_promo_code=STARTER100"
   },
   {
     name: "Private Gold",
@@ -37,10 +38,11 @@ const plans = [
       "Analytics dashboard"
     ],
     isFeatured: true,
-    buttonText: "Get Started",
+    buttonText: "Select Plan",
     icon: Star,
     color: "red",
-    description: "Most popular choice"
+    description: "Most popular choice",
+    link: "https://buy.stripe.com/aFaeVe03C56Z2jz7Ty6wE02"
   },
   {
     name: "Traders Silver",
@@ -54,11 +56,12 @@ const plans = [
       "Email support"
     ],
     isFeatured: false,
-    buttonText: "Start Free",
+    buttonText: "Select Plan",
     isFree: true,
     icon: TrendingUp,
     color: "blue",
-    description: "Great for small traders"
+    description: "Great for small traders",
+    link: "https://buy.stripe.com/7sY9AU3fObvn8HX4Hm6wE03"
   },
   {
     name: "Traders Gold",
@@ -73,10 +76,11 @@ const plans = [
       "Custom branding"
     ],
     isFeatured: true,
-    buttonText: "Get Started",
+    buttonText: "Select Plan",
     icon: Crown,
     color: "red",
-    description: "For growing businesses"
+    description: "For growing businesses",
+    link: "https://buy.stripe.com/5kQcN66s056Z9M13Di6wE04"
   },
   {
     name: "Traders Platinum",
@@ -92,10 +96,11 @@ const plans = [
       "API access"
     ],
     isFeatured: true,
-    buttonText: "Get Started",
+    buttonText: "Select Plan",
     icon: Zap,
     color: "blue",
-    description: "Enterprise solution"
+    description: "Enterprise solution",
+    link: "https://buy.stripe.com/eVqeVe8A88jbaQ55Lq6wE00"
   }
 ]
 
@@ -208,12 +213,15 @@ export function PaymentPlans() {
                 </CardContent>
 
                 <CardFooter className="px-6 pb-6">
-                  <Button 
-                    className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105`}
-                    size="lg"
-                  >
-                    {plan.buttonText}
-                  </Button>
+                  <a href={plan.link} target="_blank" rel="noopener noreferrer" className="w-full">
+                    <Button 
+                      className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105`}
+                      size="lg"
+                      asChild
+                    >
+                      <span>{plan.buttonText}</span>
+                    </Button>
+                  </a>
                 </CardFooter>
               </Card>
             )
@@ -281,4 +289,4 @@ export function PaymentPlans() {
       </div>
     </section>
   )
-} 
+}
