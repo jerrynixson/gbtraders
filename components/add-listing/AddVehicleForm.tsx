@@ -12,24 +12,109 @@ import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { useDropzone } from "react-dropzone"
-import { VehicleType, Car as CarType, Van as VanType, Truck as TruckType, VehicleBase } from "@/types/vehicles"
+import { VehicleType, Car as CarType, Van as VanType, Truck as TruckType } from "@/types/vehicles"
 import { db, storage, auth } from "@/lib/firebase"
 import { doc, collection, setDoc, serverTimestamp } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { useAuthState } from 'react-firebase-hooks/auth'
 
-// Interfaces (moved from page.tsx)
+// OneAuto API interfaces
+interface OneAutoApiResponse {
+  success: boolean
+  result?: {
+    vehicle_identification: {
+      ukvd_id: string
+      ukvd_uvc: string
+      vehicle_registration_mark: string
+      vehicle_identification_number: string
+      dvla_manufacturer_desc: string
+      dvla_model_desc: string
+      registration_date: string
+      first_registration_date: string
+      used_before_first_registration: boolean
+      manufactured_year: number
+      v5c_qty: number
+      date_v5c_issued: string
+      engine_number?: string
+      prior_ni_vrm?: string
+      dvla_body_desc: string
+      dvla_fuel_desc: string
+    }
+    vehicle_status_details?: {
+      is_non_eu_import: boolean
+      is_imported: boolean
+      is_exported: boolean
+      exported_date?: string
+      is_scrapped: boolean
+      scrapped_date?: string
+    }
+    vehicle_excise_duty_details?: {
+      co2_gkm: number
+      dvla_co2_band: string
+      "12_month_rfl_y1": number
+      "6_month_rfl_y2_to_y6_premium": number
+      "12_month_rfl_y2_to_y6_premium": number
+      "6_month_rfl_y2_to_y6": number
+      "12_month_rfl_y2_to_y6": number
+    }
+    colour_details?: {
+      colour: string
+      colour_changes_qty: number
+      original_colour?: string
+      last_colour?: string
+      date_of_last_colour_change?: string
+    }
+    keeper_change_list?: Array<{
+      number_previous_keepers: number
+      date_of_last_keeper_change: string
+    }>
+    plate_change_list?: Array<{
+      current_vehicle_registration_mark: string
+      transfer_type: string
+      date_of_receipt: string
+      previous_vehicle_registration_mark?: string
+      cherished_plate_transfer_date?: string
+    }>
+  }
+  error?: string
+}
+
 interface VehicleData {
   make: string
   model: string
   year: number
   registrationNumber: string
-  specifications: {
-    engine: string
-    transmission: string
-    fuelType: string
-    mileage: number
-    color: string
+  engineNumber?: string
+  bodyType: string
+  fuelType: string
+  co2Emissions: number
+  co2Band?: string
+  color: string
+  originalColor?: string
+  v5cQty: number
+  dateV5cIssued: string
+  registrationDate: string
+  firstRegistrationDate: string
+  usedBeforeFirstRegistration: boolean
+  vehicleIdentificationNumber?: string
+  priorNiVrm?: string
+  // Extended data for non-car vehicles
+  isNonEuImport?: boolean
+  isImported?: boolean
+  isExported?: boolean
+  exportedDate?: string
+  isScrapped?: boolean
+  scrappedDate?: string
+  previousKeepers?: number
+  lastKeeperChangeDate?: string
+  colorChanges?: number
+  lastColorChangeDate?: string
+  taxDetails?: {
+    month12RflY1: number
+    month6RflY2ToY6Premium: number
+    month12RflY2ToY6Premium: number
+    month6RflY2ToY6: number
+    month12RflY2ToY6: number
   }
 }
 
@@ -46,14 +131,19 @@ interface ListingFormData {
   description: string
   images: File[]
   registrationNumber: string
+  vehicleIdentificationNumber: string
+  engineNumber: string
   color: string
+  originalColor: string
   range: string
-  euroStatus: string
   dateOfLastV5CIssued: string
-  taxStatus: 'taxed' | 'tax-due' | 'tax-exempt'
+  registrationDate: string
+  firstRegistrationDate: string
+  usedBeforeFirstRegistration: boolean
+  v5cQty: string
   engineCapacity: string
-  motStatus: 'passed' | 'failed' | 'due'
   co2Emissions: string
+  co2Band: string
   bodyType?: 'sedan' | 'suv' | 'hatchback' | 'coupe' | 'wagon'
   doors?: string
   seats?: string
@@ -63,6 +153,22 @@ interface ListingFormData {
   height?: string
   axles?: string
   cabType?: 'day' | 'sleeper'
+  // Extended fields for non-car vehicles
+  isNonEuImport: boolean
+  isImported: boolean
+  isExported: boolean
+  exportedDate: string
+  isScrapped: boolean
+  scrappedDate: string
+  previousKeepers: string
+  lastKeeperChangeDate: string
+  colorChanges: string
+  lastColorChangeDate: string
+  month12RflY1: string
+  month6RflY2ToY6Premium: string
+  month12RflY2ToY6Premium: string
+  month6RflY2ToY6: string
+  month12RflY2ToY6: string
   location: {
     city: string
     country: string
@@ -111,18 +217,6 @@ const TRANSMISSION_TYPES = [
   { value: "semi-automatic", label: "Semi-Automatic" }
 ] as const
 
-const TAX_STATUS = [
-  { value: "taxed", label: "Taxed" },
-  { value: "tax-due", label: "Tax Due" },
-  { value: "tax-exempt", label: "Tax Exempt" }
-] as const
-
-const MOT_STATUS = [
-  { value: "passed", label: "Passed" },
-  { value: "failed", label: "Failed" },
-  { value: "due", label: "Due" }
-] as const
-
 const MAX_IMAGES = 8
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
@@ -146,14 +240,34 @@ export default function AddVehicleForm() {
     description: "",
     images: [],
     registrationNumber: "",
+    vehicleIdentificationNumber: "",
+    engineNumber: "",
     color: "",
+    originalColor: "",
     range: "0",
-    euroStatus: "",
-    dateOfLastV5CIssued: new Date().toISOString(),
-    taxStatus: "tax-exempt",
+    dateOfLastV5CIssued: new Date().toISOString().split('T')[0],
+    registrationDate: "",
+    firstRegistrationDate: "",
+    usedBeforeFirstRegistration: false,
+    v5cQty: "1",
     engineCapacity: "",
-    motStatus: "due",
     co2Emissions: "0",
+    co2Band: "",
+    isNonEuImport: false,
+    isImported: false,
+    isExported: false,
+    exportedDate: "",
+    isScrapped: false,
+    scrappedDate: "",
+    previousKeepers: "0",
+    lastKeeperChangeDate: "",
+    colorChanges: "0",
+    lastColorChangeDate: "",
+    month12RflY1: "0",
+    month6RflY2ToY6Premium: "0",
+    month12RflY2ToY6Premium: "0",
+    month6RflY2ToY6: "0",
+    month12RflY2ToY6: "0",
     location: {
       city: "",
       country: "",
@@ -182,7 +296,6 @@ export default function AddVehicleForm() {
     if (formData.images.length === 0) errors.images = "At least one image is required"
     if (!formData.registrationNumber.trim()) errors.registrationNumber = "Registration number is required"
     if (!formData.color.trim()) errors.color = "Color is required"
-    if (!formData.euroStatus.trim()) errors.euroStatus = "Euro status is required"
     if (!formData.engineCapacity.trim()) errors.engineCapacity = "Engine capacity is required"
 
     // Numeric validation
@@ -262,21 +375,126 @@ export default function AddVehicleForm() {
     }
     setIsFetchingVehicleData(true)
     try {
-      // TODO: Implement actual API call
-      const mockData: VehicleData = {
-        make: "Toyota", model: "Camry", year: 2023, registrationNumber,
-        specifications: { engine: "2.5L 4-Cylinder", transmission: "Automatic", fuelType: "Gasoline", mileage: 0, color: "Silver" }
+      const apiKey = "76vnSKaRUrazD9cwlqSvm3eXqWvmJU7NaLow4hNI" // Using API key directly for now
+      if (!apiKey) {
+        throw new Error("OneAuto API key not configured")
       }
-      setVehicleData(mockData)
-      setFormData(prev => ({
+
+      console.log("Making API request with registration:", registrationNumber)
+      console.log("API Key (first 10 chars):", apiKey.substring(0, 10))
+
+      const response = await fetch(
+        `https://api.oneautoapi.com/ukvehicledata/vehicledetailsfromvrm/v2?vehicle_registration_mark=${registrationNumber}`,
+        {
+          method: 'GET',
+          headers: {
+            'x-api-key': apiKey,
+          },
+        }
+      )
+
+      console.log("API Response status:", response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("API Error response:", errorText)
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`)
+      }
+
+      const data: OneAutoApiResponse = await response.json()
+      console.log("API Response data:", data)
+
+      if (!data.success || !data.result) {
+        throw new Error(data.error || "Vehicle not found")
+      }
+
+      const apiResult = data.result
+      
+      const vehicleData: VehicleData = {
+        make: apiResult.vehicle_identification.dvla_manufacturer_desc,
+        model: apiResult.vehicle_identification.dvla_model_desc,
+        year: apiResult.vehicle_identification.manufactured_year,
+        registrationNumber: apiResult.vehicle_identification.vehicle_registration_mark,
+        engineNumber: apiResult.vehicle_identification.engine_number || "",
+        bodyType: apiResult.vehicle_identification.dvla_body_desc,
+        fuelType: apiResult.vehicle_identification.dvla_fuel_desc,
+        co2Emissions: apiResult.vehicle_excise_duty_details?.co2_gkm || 0,
+        co2Band: apiResult.vehicle_excise_duty_details?.dvla_co2_band || "",
+        color: apiResult.colour_details?.colour || "",
+        originalColor: apiResult.colour_details?.original_colour || "",
+        v5cQty: apiResult.vehicle_identification.v5c_qty,
+        dateV5cIssued: apiResult.vehicle_identification.date_v5c_issued,
+        registrationDate: apiResult.vehicle_identification.registration_date,
+        firstRegistrationDate: apiResult.vehicle_identification.first_registration_date,
+        usedBeforeFirstRegistration: apiResult.vehicle_identification.used_before_first_registration,
+        vehicleIdentificationNumber: apiResult.vehicle_identification.vehicle_identification_number || "",
+        priorNiVrm: apiResult.vehicle_identification.prior_ni_vrm || "",
+        isNonEuImport: apiResult.vehicle_status_details?.is_non_eu_import || false,
+        isImported: apiResult.vehicle_status_details?.is_imported || false,
+        isExported: apiResult.vehicle_status_details?.is_exported || false,
+        exportedDate: apiResult.vehicle_status_details?.exported_date || "",
+        isScrapped: apiResult.vehicle_status_details?.is_scrapped || false,
+        scrappedDate: apiResult.vehicle_status_details?.scrapped_date || "",
+        previousKeepers: apiResult.keeper_change_list?.[0]?.number_previous_keepers || 0,
+        lastKeeperChangeDate: apiResult.keeper_change_list?.[0]?.date_of_last_keeper_change || "",
+        colorChanges: apiResult.colour_details?.colour_changes_qty || 0,
+        lastColorChangeDate: apiResult.colour_details?.date_of_last_colour_change || "",
+        taxDetails: apiResult.vehicle_excise_duty_details ? {
+          month12RflY1: apiResult.vehicle_excise_duty_details["12_month_rfl_y1"],
+          month6RflY2ToY6Premium: apiResult.vehicle_excise_duty_details["6_month_rfl_y2_to_y6_premium"],
+          month12RflY2ToY6Premium: apiResult.vehicle_excise_duty_details["12_month_rfl_y2_to_y6_premium"],
+          month6RflY2ToY6: apiResult.vehicle_excise_duty_details["6_month_rfl_y2_to_y6"],
+          month12RflY2ToY6: apiResult.vehicle_excise_duty_details["12_month_rfl_y2_to_y6"]
+        } : undefined
+      }
+
+      setVehicleData(vehicleData)
+      
+      // Map fuel type to our enum
+      let mappedFuelType: 'petrol' | 'diesel' | 'electric' | 'hybrid' = 'petrol'
+      const fuelTypeLower = vehicleData.fuelType.toLowerCase()
+      if (fuelTypeLower.includes('diesel')) mappedFuelType = 'diesel'
+      else if (fuelTypeLower.includes('electric')) mappedFuelType = 'electric'
+      else if (fuelTypeLower.includes('hybrid')) mappedFuelType = 'hybrid'
+
+      setFormData((prev: any) => ({
         ...prev,
-        make: mockData.make, model: mockData.model, year: mockData.year.toString(),
-        fuelType: mockData.specifications.fuelType.toLowerCase() as 'petrol' | 'diesel' | 'electric' | 'hybrid',
-        transmission: mockData.specifications.transmission.toLowerCase() as 'manual' | 'automatic'
+        make: vehicleData.make,
+        model: vehicleData.model,
+        year: vehicleData.year.toString(),
+        registrationNumber: vehicleData.registrationNumber,
+        vehicleIdentificationNumber: vehicleData.vehicleIdentificationNumber || "",
+        engineNumber: vehicleData.engineNumber || "",
+        fuelType: mappedFuelType,
+        color: vehicleData.color,
+        originalColor: vehicleData.originalColor || "",
+        co2Emissions: vehicleData.co2Emissions.toString(),
+        co2Band: vehicleData.co2Band || "",
+        v5cQty: vehicleData.v5cQty.toString(),
+        dateOfLastV5CIssued: vehicleData.dateV5cIssued,
+        registrationDate: vehicleData.registrationDate,
+        firstRegistrationDate: vehicleData.firstRegistrationDate,
+        usedBeforeFirstRegistration: vehicleData.usedBeforeFirstRegistration,
+        isNonEuImport: vehicleData.isNonEuImport || false,
+        isImported: vehicleData.isImported || false,
+        isExported: vehicleData.isExported || false,
+        exportedDate: vehicleData.exportedDate || "",
+        isScrapped: vehicleData.isScrapped || false,
+        scrappedDate: vehicleData.scrappedDate || "",
+        previousKeepers: (vehicleData.previousKeepers || 0).toString(),
+        lastKeeperChangeDate: vehicleData.lastKeeperChangeDate || "",
+        colorChanges: (vehicleData.colorChanges || 0).toString(),
+        lastColorChangeDate: vehicleData.lastColorChangeDate || "",
+        month12RflY1: (vehicleData.taxDetails?.month12RflY1 || 0).toString(),
+        month6RflY2ToY6Premium: (vehicleData.taxDetails?.month6RflY2ToY6Premium || 0).toString(),
+        month12RflY2ToY6Premium: (vehicleData.taxDetails?.month12RflY2ToY6Premium || 0).toString(),
+        month6RflY2ToY6: (vehicleData.taxDetails?.month6RflY2ToY6 || 0).toString(),
+        month12RflY2ToY6: (vehicleData.taxDetails?.month12RflY2ToY6 || 0).toString(),
       }))
+      
       toast.success("Vehicle data fetched successfully")
     } catch (error) {
-      toast.error("Failed to fetch vehicle data")
+      toast.error(`Failed to fetch vehicle data: ${error instanceof Error ? error.message : 'Unknown error'}`)
       console.error("Error fetching vehicle data:", error)
     } finally {
       setIsFetchingVehicleData(false)
@@ -284,7 +502,7 @@ export default function AddVehicleForm() {
   }
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const validFiles = acceptedFiles.filter(file => {
+    const validFiles = acceptedFiles.filter((file: any) => {
       if (!file.type.startsWith('image/')) {
         toast.error(`${file.name} is not an image file`)
         return false
@@ -299,7 +517,7 @@ export default function AddVehicleForm() {
       toast.error(`Maximum ${MAX_IMAGES} images allowed`)
       return
     }
-    setFormData(prev => ({ ...prev, images: [...prev.images, ...validFiles] }))
+    setFormData((prev: any) => ({ ...prev, images: [...prev.images, ...validFiles] }))
   }, [formData.images])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -307,10 +525,10 @@ export default function AddVehicleForm() {
   })
 
   const removeImage = (index: number) => {
-    setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }))
+    setFormData((prev: any) => ({ ...prev, images: prev.images.filter((_: any, i: any) => i !== index) }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault()
     if (!user) {
       toast.error("You must be logged in to create a listing")
@@ -323,15 +541,21 @@ export default function AddVehicleForm() {
     setIsLoading(true)
 
     try {
-      // Get coordinates from pincode
-      const coordinates = await getCoordinatesFromPincode(
-        formData.location.pincode,
-        formData.location.city,
-        formData.location.country
-      )
+      // Get coordinates from pincode (optional - don't fail if this doesn't work)
+      let coordinates = { latitude: "0", longitude: "0" }
+      try {
+        coordinates = await getCoordinatesFromPincode(
+          formData.location.pincode,
+          formData.location.city,
+          formData.location.country
+        )
+      } catch (coordError) {
+        console.warn("Could not get coordinates, using default values:", coordError)
+        // Continue with default coordinates - this is not a critical error
+      }
       
       // Update form data with coordinates
-      setFormData(prev => ({
+      setFormData((prev: any) => ({
         ...prev,
         location: {
           ...prev.location,
@@ -368,11 +592,9 @@ export default function AddVehicleForm() {
         registrationNumber: formData.registrationNumber,
         color: formData.color,
         range: Number(formData.range),
-        euroStatus: formData.euroStatus,
         dateOfLastV5CIssued: new Date(formData.dateOfLastV5CIssued),
-        taxStatus: formData.taxStatus,
+        registrationDate: formData.registrationDate,
         engineCapacity: formData.engineCapacity,
-        motStatus: formData.motStatus,
         co2Emissions: Number(formData.co2Emissions),
       }
 
@@ -384,7 +606,7 @@ export default function AddVehicleForm() {
             ...vehicleDataFromForm,
             id: vehicleId,
             type: 'car',
-            bodyType: formData.bodyType as CarType['bodyType'],
+            bodyStyle: formData.bodyType as CarType['bodyStyle'],
             doors: Number(formData.doors),
             seats: Number(formData.seats),
             features: [],
@@ -474,10 +696,10 @@ export default function AddVehicleForm() {
     }
   }
 
-  const handleFormChange = (field: keyof ListingFormData, value: string | VehicleType) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+  const handleFormChange = (field: keyof ListingFormData, value: string | VehicleType | boolean) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }))
     if (formErrors[field]) {
-      setFormErrors(prev => {
+      setFormErrors((prev: any) => {
         const newErrors = { ...prev }
         delete newErrors[field]
         return newErrors
@@ -486,7 +708,7 @@ export default function AddVehicleForm() {
   }
 
   const handleLocationChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       location: {
         ...prev.location,
@@ -494,7 +716,7 @@ export default function AddVehicleForm() {
       }
     }))
     if (formErrors[`location.${field}`]) {
-      setFormErrors(prev => {
+      setFormErrors((prev: any) => {
         const newErrors = { ...prev }
         delete newErrors[`location.${field}`]
         return newErrors
@@ -503,7 +725,7 @@ export default function AddVehicleForm() {
   }
 
   const handleCoordinatesChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       location: {
         ...prev.location,
@@ -514,7 +736,7 @@ export default function AddVehicleForm() {
       }
     }))
     if (formErrors[`location.coordinates.${field}`]) {
-      setFormErrors(prev => {
+      setFormErrors((prev: any) => {
         const newErrors = { ...prev }
         delete newErrors[`location.coordinates.${field}`]
         return newErrors
@@ -524,18 +746,38 @@ export default function AddVehicleForm() {
 
   const getCoordinatesFromPincode = async (pincode: string, city: string, country: string) => {
     try {
+      // Check if we have a Google Maps API key
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      if (!apiKey) {
+        console.warn("Google Maps API key not configured")
+        throw new Error('Google Maps API key not configured')
+      }
+
+      console.log("Making geocoding request for:", `${pincode} ${city} ${country}`)
+      
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
           `${pincode} ${city} ${country}`
-        )}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+        )}&key=${apiKey}`
       );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const data = await response.json();
+      console.log("Geocoding API response:", data)
+      
+      if (data.status !== 'OK') {
+        throw new Error(`Geocoding API error: ${data.status} - ${data.error_message || 'Unknown error'}`)
+      }
       
       if (data.results && data.results.length > 0) {
         const { lat, lng } = data.results[0].geometry.location;
+        console.log("Found coordinates:", { lat, lng })
         return { latitude: lat.toString(), longitude: lng.toString() };
       }
-      throw new Error('No results found');
+      throw new Error('No results found for the provided address');
     } catch (error) {
       console.error('Error getting coordinates:', error);
       throw error;
@@ -573,7 +815,11 @@ export default function AddVehicleForm() {
           <Alert className="bg-green-50 border-green-200">
             <AlertCircle className="h-4 w-4 text-green-600" />
             <AlertTitle>Vehicle Found</AlertTitle>
-            <AlertDescription>{vehicleData.year} {vehicleData.make} {vehicleData.model}</AlertDescription>
+            <AlertDescription>
+              {vehicleData.year} {vehicleData.make} {vehicleData.model} - {vehicleData.bodyType}
+              <br />
+              {vehicleData.fuelType} • {vehicleData.color} • {vehicleData.co2Emissions}g/km CO2
+            </AlertDescription>
           </Alert>
         )}
       </div>
@@ -693,16 +939,15 @@ export default function AddVehicleForm() {
             )}
           </div>
           <div className="space-y-2">
-            <Label>Euro Status</Label>
+            <Label>Registration Date</Label>
             <Input
-              value={formData.euroStatus}
-              onChange={(e) => handleFormChange("euroStatus", e.target.value)}
-              placeholder="Enter Euro status"
-              required
-              className={formErrors.euroStatus ? "border-red-500" : ""}
+              type="date"
+              value={formData.registrationDate}
+              onChange={(e) => handleFormChange("registrationDate", e.target.value)}
+              className={formErrors.registrationDate ? "border-red-500" : ""}
             />
-            {formErrors.euroStatus && (
-              <p className="text-sm text-red-500">{formErrors.euroStatus}</p>
+            {formErrors.registrationDate && (
+              <p className="text-sm text-red-500">{formErrors.registrationDate}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -719,27 +964,6 @@ export default function AddVehicleForm() {
             )}
           </div>
           <div className="space-y-2">
-            <Label>Tax Status</Label>
-            <Select
-              value={formData.taxStatus}
-              onValueChange={(value) => handleFormChange("taxStatus", value as 'taxed' | 'tax-due' | 'tax-exempt')}
-            >
-              <SelectTrigger className={formErrors.taxStatus ? "border-red-500" : ""}>
-                <SelectValue placeholder="Select tax status" />
-              </SelectTrigger>
-              <SelectContent>
-                {TAX_STATUS.map(status => (
-                  <SelectItem key={status.value} value={status.value}>
-                    {status.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {formErrors.taxStatus && (
-              <p className="text-sm text-red-500">{formErrors.taxStatus}</p>
-            )}
-          </div>
-          <div className="space-y-2">
             <Label>Engine Capacity</Label>
             <Input
               value={formData.engineCapacity}
@@ -750,27 +974,6 @@ export default function AddVehicleForm() {
             />
             {formErrors.engineCapacity && (
               <p className="text-sm text-red-500">{formErrors.engineCapacity}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label>MOT Status</Label>
-            <Select
-              value={formData.motStatus}
-              onValueChange={(value) => handleFormChange("motStatus", value as 'passed' | 'failed' | 'due')}
-            >
-              <SelectTrigger className={formErrors.motStatus ? "border-red-500" : ""}>
-                <SelectValue placeholder="Select MOT status" />
-              </SelectTrigger>
-              <SelectContent>
-                {MOT_STATUS.map(status => (
-                  <SelectItem key={status.value} value={status.value}>
-                    {status.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {formErrors.motStatus && (
-              <p className="text-sm text-red-500">{formErrors.motStatus}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -791,6 +994,254 @@ export default function AddVehicleForm() {
       </div>
 
       <Separator className="my-6" />
+
+      {/* Extended Vehicle Information - Show for non-car vehicles */}
+      {formData.type !== 'car' && (
+        <>
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Extended Vehicle Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Vehicle Identification Number</Label>
+                <Input
+                  value={formData.vehicleIdentificationNumber}
+                  onChange={(e) => handleFormChange("vehicleIdentificationNumber", e.target.value)}
+                  placeholder="Enter VIN"
+                  className={formErrors.vehicleIdentificationNumber ? "border-red-500" : ""}
+                />
+                {formErrors.vehicleIdentificationNumber && (
+                  <p className="text-sm text-red-500">{formErrors.vehicleIdentificationNumber}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Engine Number</Label>
+                <Input
+                  value={formData.engineNumber}
+                  onChange={(e) => handleFormChange("engineNumber", e.target.value)}
+                  placeholder="Enter engine number"
+                  className={formErrors.engineNumber ? "border-red-500" : ""}
+                />
+                {formErrors.engineNumber && (
+                  <p className="text-sm text-red-500">{formErrors.engineNumber}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Original Color</Label>
+                <Input
+                  value={formData.originalColor}
+                  onChange={(e) => handleFormChange("originalColor", e.target.value)}
+                  placeholder="Enter original color"
+                  className={formErrors.originalColor ? "border-red-500" : ""}
+                />
+                {formErrors.originalColor && (
+                  <p className="text-sm text-red-500">{formErrors.originalColor}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>CO2 Band</Label>
+                <Input
+                  value={formData.co2Band}
+                  onChange={(e) => handleFormChange("co2Band", e.target.value)}
+                  placeholder="Enter CO2 band"
+                  className={formErrors.co2Band ? "border-red-500" : ""}
+                />
+                {formErrors.co2Band && (
+                  <p className="text-sm text-red-500">{formErrors.co2Band}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Registration Date</Label>
+                <Input
+                  type="date"
+                  value={formData.registrationDate}
+                  onChange={(e) => handleFormChange("registrationDate", e.target.value)}
+                  className={formErrors.registrationDate ? "border-red-500" : ""}
+                />
+                {formErrors.registrationDate && (
+                  <p className="text-sm text-red-500">{formErrors.registrationDate}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>First Registration Date</Label>
+                <Input
+                  type="date"
+                  value={formData.firstRegistrationDate}
+                  onChange={(e) => handleFormChange("firstRegistrationDate", e.target.value)}
+                  className={formErrors.firstRegistrationDate ? "border-red-500" : ""}
+                />
+                {formErrors.firstRegistrationDate && (
+                  <p className="text-sm text-red-500">{formErrors.firstRegistrationDate}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>V5C Quantity</Label>
+                <Input
+                  type="number"
+                  value={formData.v5cQty}
+                  onChange={(e) => handleFormChange("v5cQty", e.target.value)}
+                  placeholder="Enter V5C quantity"
+                  className={formErrors.v5cQty ? "border-red-500" : ""}
+                />
+                {formErrors.v5cQty && (
+                  <p className="text-sm text-red-500">{formErrors.v5cQty}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Previous Keepers</Label>
+                <Input
+                  type="number"
+                  value={formData.previousKeepers}
+                  onChange={(e) => handleFormChange("previousKeepers", e.target.value)}
+                  placeholder="Enter number of previous keepers"
+                  className={formErrors.previousKeepers ? "border-red-500" : ""}
+                />
+                {formErrors.previousKeepers && (
+                  <p className="text-sm text-red-500">{formErrors.previousKeepers}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Color Changes</Label>
+                <Input
+                  type="number"
+                  value={formData.colorChanges}
+                  onChange={(e) => handleFormChange("colorChanges", e.target.value)}
+                  placeholder="Enter number of color changes"
+                  className={formErrors.colorChanges ? "border-red-500" : ""}
+                />
+                {formErrors.colorChanges && (
+                  <p className="text-sm text-red-500">{formErrors.colorChanges}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Tax Information */}
+            <h4 className="text-md font-medium mt-6">Tax Information</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>12 Month RFL Y1 (£)</Label>
+                <Input
+                  type="number"
+                  value={formData.month12RflY1}
+                  onChange={(e) => handleFormChange("month12RflY1", e.target.value)}
+                  placeholder="Enter 12 month RFL Y1"
+                  className={formErrors.month12RflY1 ? "border-red-500" : ""}
+                />
+                {formErrors.month12RflY1 && (
+                  <p className="text-sm text-red-500">{formErrors.month12RflY1}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>6 Month RFL Y2-Y6 Premium (£)</Label>
+                <Input
+                  type="number"
+                  value={formData.month6RflY2ToY6Premium}
+                  onChange={(e) => handleFormChange("month6RflY2ToY6Premium", e.target.value)}
+                  placeholder="Enter 6 month RFL Y2-Y6 premium"
+                  className={formErrors.month6RflY2ToY6Premium ? "border-red-500" : ""}
+                />
+                {formErrors.month6RflY2ToY6Premium && (
+                  <p className="text-sm text-red-500">{formErrors.month6RflY2ToY6Premium}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>12 Month RFL Y2-Y6 Premium (£)</Label>
+                <Input
+                  type="number"
+                  value={formData.month12RflY2ToY6Premium}
+                  onChange={(e) => handleFormChange("month12RflY2ToY6Premium", e.target.value)}
+                  placeholder="Enter 12 month RFL Y2-Y6 premium"
+                  className={formErrors.month12RflY2ToY6Premium ? "border-red-500" : ""}
+                />
+                {formErrors.month12RflY2ToY6Premium && (
+                  <p className="text-sm text-red-500">{formErrors.month12RflY2ToY6Premium}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>6 Month RFL Y2-Y6 (£)</Label>
+                <Input
+                  type="number"
+                  value={formData.month6RflY2ToY6}
+                  onChange={(e) => handleFormChange("month6RflY2ToY6", e.target.value)}
+                  placeholder="Enter 6 month RFL Y2-Y6"
+                  className={formErrors.month6RflY2ToY6 ? "border-red-500" : ""}
+                />
+                {formErrors.month6RflY2ToY6 && (
+                  <p className="text-sm text-red-500">{formErrors.month6RflY2ToY6}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>12 Month RFL Y2-Y6 (£)</Label>
+                <Input
+                  type="number"
+                  value={formData.month12RflY2ToY6}
+                  onChange={(e) => handleFormChange("month12RflY2ToY6", e.target.value)}
+                  placeholder="Enter 12 month RFL Y2-Y6"
+                  className={formErrors.month12RflY2ToY6 ? "border-red-500" : ""}
+                />
+                {formErrors.month12RflY2ToY6 && (
+                  <p className="text-sm text-red-500">{formErrors.month12RflY2ToY6}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Status Information */}
+            <h4 className="text-md font-medium mt-6">Status Information</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isNonEuImport"
+                  checked={formData.isNonEuImport}
+                  onChange={(e) => handleFormChange("isNonEuImport", e.target.checked.toString())}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="isNonEuImport">Non-EU Import</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isImported"
+                  checked={formData.isImported}
+                  onChange={(e) => handleFormChange("isImported", e.target.checked.toString())}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="isImported">Imported</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isExported"
+                  checked={formData.isExported}
+                  onChange={(e) => handleFormChange("isExported", e.target.checked.toString())}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="isExported">Exported</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isScrapped"
+                  checked={formData.isScrapped}
+                  onChange={(e) => handleFormChange("isScrapped", e.target.checked.toString())}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="isScrapped">Scrapped</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="usedBeforeFirstRegistration"
+                  checked={formData.usedBeforeFirstRegistration}
+                  onChange={(e) => handleFormChange("usedBeforeFirstRegistration", e.target.checked.toString())}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="usedBeforeFirstRegistration">Used Before First Registration</Label>
+              </div>
+            </div>
+          </div>
+          <Separator className="my-6" />
+        </>
+      )}
 
       {/* Location Information */}
       <div className="space-y-4">
