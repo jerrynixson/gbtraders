@@ -129,8 +129,8 @@ export function Header() {
     (item as DropdownNavItem).type === "dropdown";
 
   return (
-    <header className="border-b border-gray-200 py-3 bg-white">
-      <div className="container mx-auto px-4">
+    <header className="border-b border-gray-200 py-1 lg:py-3 bg-white">
+      <div className="container mx-auto px-4 my-0 lg:my-0">
         <div className="flex items-center justify-between">
           {/* Logo - Using auto-scaling approach */}
           <Link href="/" className="flex items-center flex-shrink-0">
@@ -205,6 +205,7 @@ export function Header() {
 
           {/* User Controls */}
           <div className="flex items-center space-x-4">
+            {/* Desktop-only Favourites */}
             <Link href="/favourites">
               <Button variant="ghost" size="icon" className="hidden lg:flex">
                 <Heart className="h-6 w-6" />
@@ -277,6 +278,20 @@ export function Header() {
                 </Button>
               </Link>
             )}
+            {/* Mobile-only buttons: Favourites, Profile, then Hamburger as rightmost */}
+            <Link href="/favourites" className="lg:hidden">
+              <Button variant="ghost" size="icon">
+                <Heart className="h-6 w-6" />
+              </Button>
+            </Link>
+            {user && (
+              <Link href="/profile" className="lg:hidden">
+                <Button variant="ghost" size="icon">
+                  <UserCircle className="h-6 w-6" />
+                </Button>
+              </Link>
+            )}
+            {/* Hamburger menu icon (mobile only, rightmost) */}
             <Button
               variant="ghost"
               size="icon"
