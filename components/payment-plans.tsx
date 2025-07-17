@@ -1,16 +1,22 @@
 "use client"
 
 import { useState } from "react"
-import { Check, Star, Zap, Crown, TrendingUp, Shield } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
+import { useRouter } from "next/navigation"
+import { auth } from "@/lib/firebase"
+import { Check, Star, Zap, Crown, TrendingUp, Shield, Loader2 } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/hooks/use-toast"
 
 const plans = [
   {
     name: "Basic",
     originalPrice: "£25.00",
-    price: "£0.00",
+    price: "£25.00",
+    couponCode: "BASIC25",
+    couponDiscount: "£25.00",
     image: "/images/basic-package.jpg",
     features: [
       "One Free Listing",
@@ -19,17 +25,19 @@ const plans = [
       "Basic support"
     ],
     isFeatured: false,
-    buttonText: "Select Plan",
-    isFree: true,
+    buttonText: "Get Free Plan",
     icon: Shield,
     color: "blue",
     description: "Perfect for getting started",
-    link: "https://buy.stripe.com/8x25kE17GgPHgapgq46wE01?prefilled_promo_code=STARTER100"
+    token: 1,
+    validity: 7
   },
   {
     name: "Private Gold",
     originalPrice: "£25.00",
-    price: "£5.00",
+    price: "£25.00",
+    couponCode: "PRIVATEGOLD20",
+    couponDiscount: "£20.00",
     features: [
       "One Listing",
       "30 Days Listing period",
@@ -38,16 +46,19 @@ const plans = [
       "Analytics dashboard"
     ],
     isFeatured: true,
-    buttonText: "Select Plan",
+    buttonText: "Get for £5.00",
     icon: Star,
     color: "red",
     description: "Most popular choice",
-    link: "https://buy.stripe.com/aFaeVe03C56Z2jz7Ty6wE02"
+    token: 1,
+    validity: 30
   },
   {
     name: "Traders Silver",
     originalPrice: "£100.00",
-    price: "£0.00",
+    price: "£100.00",
+    couponCode: "TRADERSILVER100",
+    couponDiscount: "£100.00",
     features: [
       "Up to Five Listings",
       "10 Days Period",
@@ -56,17 +67,19 @@ const plans = [
       "Email support"
     ],
     isFeatured: false,
-    buttonText: "Select Plan",
-    isFree: true,
+    buttonText: "Get Free Plan",
     icon: TrendingUp,
     color: "blue",
     description: "Great for small traders",
-    link: "https://buy.stripe.com/7sY9AU3fObvn8HX4Hm6wE03"
+    token: 5,
+    validity: 10
   },
   {
     name: "Traders Gold",
     originalPrice: "£250.00",
-    price: "£50.00",
+    price: "£250.00",
+    couponCode: "TRADERGOLD200",
+    couponDiscount: "£200.00",
     features: [
       "Up to 15 Listings",
       "30 days period",
@@ -76,16 +89,19 @@ const plans = [
       "Custom branding"
     ],
     isFeatured: true,
-    buttonText: "Select Plan",
+    buttonText: "Get for £50.00",
     icon: Crown,
     color: "red",
     description: "For growing businesses",
-    link: "https://buy.stripe.com/5kQcN66s056Z9M13Di6wE04"
+    token: 15,
+    validity: 30
   },
   {
     name: "Traders Platinum",
     originalPrice: "£350.00",
-    price: "£100.00",
+    price: "£350.00",
+    couponCode: "TRADERPLATINUM250",
+    couponDiscount: "£250.00",
     features: [
       "Up to 30 Listings",
       "30 Days period",
@@ -96,11 +112,12 @@ const plans = [
       "API access"
     ],
     isFeatured: true,
-    buttonText: "Select Plan",
+    buttonText: "Get for £100.00",
     icon: Zap,
     color: "blue",
     description: "Enterprise solution",
-    link: "https://buy.stripe.com/eVqeVe8A88jbaQ55Lq6wE00"
+    token: 30,
+    validity: 30
   }
 ]
 
@@ -134,7 +151,80 @@ const getColorClasses = (color: string) => {
 }
 
 export function PaymentPlans() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null)
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  const handlePlanSelection = async (planName: string) => {
+    // Check authentication first
+    if (loading) {
+      toast({
+        title: "Please wait",
+        description: "Checking authentication status...",
+      })
+      return
+    }
+
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to select a payment plan",
+        variant: "destructive",
+      })
+      router.push('/signin')
+      return
+    }
+
+    setLoadingPlan(planName)
+    
+    try {
+      // Get Firebase ID token for authentication
+      const currentUser = auth.currentUser
+      if (!currentUser) {
+        throw new Error('No authenticated user found')
+      }
+      
+      console.log('Getting ID token for user:', currentUser.uid)
+      const idToken = await currentUser.getIdToken(true) // Force refresh token
+      console.log('ID token obtained successfully')
+      
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ planName }),
+      })
+
+      const data = await response.json()
+      console.log('API Response:', data) // Debug log
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session')
+      }
+
+      if (data.sessionUrl) {
+        // All plans redirect to Stripe checkout
+        console.log('Redirecting to Stripe checkout:', data.sessionUrl)
+        window.location.href = data.sessionUrl
+      } else {
+        console.error('No sessionUrl in response:', data)
+        throw new Error('Invalid response from server')
+      }
+    } catch (error) {
+      console.error('Payment error:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to process payment",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingPlan(null)
+    }
+  }
 
   return (
     <section className="w-full py-16">
@@ -185,18 +275,14 @@ export function PaymentPlans() {
                   {/* Price Section */}
                   <div className="mb-6">
                     <div className="flex items-center justify-center gap-2 mb-2">
-                      {plan.isFree ? (
-                        <span className="text-3xl font-bold text-green-600">Free</span>
-                      ) : (
-                        <>
-                          <span className="line-through text-gray-400 text-sm">{plan.originalPrice}</span>
-                          <span className="text-3xl font-bold text-green-600">{plan.price}</span>
-                        </>
-                      )}
+                      <span className="line-through text-gray-400 text-sm">{plan.originalPrice}</span>
+                      <span className="text-3xl font-bold text-green-600">
+                        £{(parseFloat(plan.price.replace('£', '')) - parseFloat(plan.couponDiscount.replace('£', ''))).toFixed(2)}
+                      </span>
                     </div>
-                    {!plan.isFree && (
-                      <p className="text-xs text-gray-500">Save {Math.round(((parseFloat(plan.originalPrice.replace('£', '')) - parseFloat(plan.price.replace('£', ''))) / parseFloat(plan.originalPrice.replace('£', ''))) * 100)}%</p>
-                    )}
+                    <p className="text-xs text-green-600 font-medium">
+                      ✓ {plan.couponDiscount} discount already applied!
+                    </p>
                   </div>
                 </CardHeader>
 
@@ -213,15 +299,21 @@ export function PaymentPlans() {
                 </CardContent>
 
                 <CardFooter className="px-6 pb-6">
-                  <a href={plan.link} target="_blank" rel="noopener noreferrer" className="w-full">
-                    <Button 
-                      className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105`}
-                      size="lg"
-                      asChild
-                    >
-                      <span>{plan.buttonText}</span>
-                    </Button>
-                  </a>
+                  <Button 
+                    onClick={() => handlePlanSelection(plan.name)}
+                    disabled={loadingPlan === plan.name}
+                    className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    size="lg"
+                  >
+                    {loadingPlan === plan.name ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      plan.buttonText
+                    )}
+                  </Button>
                 </CardFooter>
               </Card>
             )
