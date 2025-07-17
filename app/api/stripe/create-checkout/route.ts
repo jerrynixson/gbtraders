@@ -54,23 +54,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user details from Firestore to determine user type
-    const userDoc = await adminDb.collection('users').doc(userId).get();
-    const dealerDoc = await adminDb.collection('dealers').doc(userId).get();
-    
+    // Get user details from Firestore - check dealers first, then users
     let userType: 'user' | 'dealer' = 'user';
     let userData = null;
 
-    if (dealerDoc.exists) {
-      userType = 'dealer';
-      userData = dealerDoc.data();
-    } else if (userDoc.exists) {
-      userType = 'user';
-      userData = userDoc.data();
-    } else {
+    try {
+      // First check if user is a dealer (more specific query)
+      const dealerDoc = await adminDb.collection('dealers').doc(userId).get();
+      
+      if (dealerDoc.exists) {
+        userType = 'dealer';
+        userData = dealerDoc.data();
+      } else {
+        // Only check users collection if not found in dealers
+        const userDoc = await adminDb.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          userType = 'user';
+          userData = userDoc.data();
+        } else {
+          return NextResponse.json(
+            { error: 'User profile not found' },
+            { status: 404 }
+          );
+        }
+      }
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
       return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
+        { error: 'Failed to fetch user data' },
+        { status: 500 }
       );
     }
 
@@ -132,19 +144,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Selected plan:', planName, selectedPlan);
-
     // Calculate the discounted price
     const originalPrice = parseFloat(selectedPlan.price);
     const discountAmount = parseFloat(selectedPlan.couponDiscount);
     const finalPrice = Math.max(0, originalPrice - discountAmount);
     const priceInCents = Math.round(finalPrice * 100);
-
-    console.log('Processing plan:', planName);
-    console.log('Original price:', originalPrice);
-    console.log('Discount:', discountAmount);
-    console.log('Final price:', finalPrice);
-    console.log('Price in cents:', priceInCents);
     
     // Create checkout session with the final discounted price
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -179,8 +183,6 @@ export async function POST(request: NextRequest) {
       },
       customer_email: userEmail || undefined,
     });
-
-    console.log('Stripe checkout session created:', checkoutSession.id, checkoutSession.url);
 
     return NextResponse.json({
       success: true,

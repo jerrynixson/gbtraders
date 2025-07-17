@@ -158,7 +158,7 @@ export function PaymentPlans() {
   const { toast } = useToast()
 
   const handlePlanSelection = async (planName: string) => {
-    // Check authentication first
+    // Quick authentication check
     if (loading) {
       toast({
         title: "Please wait",
@@ -180,15 +180,14 @@ export function PaymentPlans() {
     setLoadingPlan(planName)
     
     try {
-      // Get Firebase ID token for authentication
+      // Get Firebase ID token (without forcing refresh for better performance)
       const currentUser = auth.currentUser
       if (!currentUser) {
         throw new Error('No authenticated user found')
       }
       
-      console.log('Getting ID token for user:', currentUser.uid)
-      const idToken = await currentUser.getIdToken(true) // Force refresh token
-      console.log('ID token obtained successfully')
+      // Use cached token instead of forcing refresh (much faster)
+      const idToken = await currentUser.getIdToken(false)
       
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
@@ -200,18 +199,36 @@ export function PaymentPlans() {
       })
 
       const data = await response.json()
-      console.log('API Response:', data) // Debug log
 
       if (!response.ok) {
+        // If token is invalid, try once more with fresh token
+        if (response.status === 401) {
+          const freshToken = await currentUser.getIdToken(true)
+          const retryResponse = await fetch('/api/stripe/create-checkout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${freshToken}`,
+            },
+            body: JSON.stringify({ planName }),
+          })
+          
+          const retryData = await retryResponse.json()
+          if (!retryResponse.ok) {
+            throw new Error(retryData.error || 'Failed to create checkout session')
+          }
+          
+          if (retryData.sessionUrl) {
+            window.location.href = retryData.sessionUrl
+            return
+          }
+        }
         throw new Error(data.error || 'Failed to create checkout session')
       }
 
       if (data.sessionUrl) {
-        // All plans redirect to Stripe checkout
-        console.log('Redirecting to Stripe checkout:', data.sessionUrl)
         window.location.href = data.sessionUrl
       } else {
-        console.error('No sessionUrl in response:', data)
         throw new Error('Invalid response from server')
       }
     } catch (error) {
