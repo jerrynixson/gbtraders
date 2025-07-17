@@ -218,7 +218,7 @@ export function Hero() {
     }
     
     // Default to search page if no category selected
-    router.push(`/search?${searchParams.toString()}`);
+    router.push(`/search/algolia?${searchParams.toString()}`);
   };
 
   const resetFilters = () => {

@@ -371,7 +371,7 @@ export function ProfilePage() {
                     <Edit2 className="h-4 w-4" />
                     Edit Profile
                   </Button>
-                  <Button variant="default" className="gap-2 font-semibold bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button variant="default" className="gap-2 font-semibold bg-blue-600 hover:bg-blue-700 text-white" onClick={() => router.push('/dashboard/add-listing')}>
                     <Car className="h-4 w-4" />
                     Add Listing
                   </Button>
@@ -584,7 +584,7 @@ export function ProfilePage() {
                           <Car className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                           <p className="text-xl font-bold text-gray-900 mb-2">No active listings found</p>
                           <p className="text-base text-gray-700 mb-4">Start by adding your first vehicle listing</p>
-                          <Button variant="outline" className="gap-2 font-medium">
+                          <Button variant="outline" className="gap-2 font-medium" onClick={() => router.push('/dashboard/add-listing')}>
                             <Car className="h-4 w-4" />
                             Add New Listing
                           </Button>

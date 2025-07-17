@@ -82,7 +82,7 @@ export function GBTraderFeatures() {
         </div>
         {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-6 justify-center mt-12 max-w-md w-full mx-auto">
-          <a href="/sell" className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-md text-lg text-center transition shadow-md">SELL YOUR CAR</a>
+          <a href="/dashboard/add-listing" className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-md text-lg text-center transition shadow-md">SELL YOUR CAR</a>
           <a href="/search" className="flex-1 bg-blue-900 hover:bg-blue-950 text-white font-bold py-4 rounded-md text-lg text-center transition shadow-md">SEARCH VEHICLES</a>
         </div>
       </div>

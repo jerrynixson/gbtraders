@@ -119,7 +119,7 @@ export default function PaymentPlansPage() {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-white text-white hover:bg-white hover:text-blue-600"
+                className="border-white text-white bg-transparent hover:bg-white hover:text-blue-600"
                 onClick={() => setIsContactModalOpen(true)}
               >
                 Contact Support
