@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Edit, Trash2, Search, Filter, Eye, MessageSquare, TrendingUp, Settings, Users, DollarSign, Car, Upload, Building2, MapPin, Phone, Mail, Globe, Clock, ChevronRight, Calendar, Share2, Bell, FileSpreadsheet, Database, RefreshCw, AlertCircle, CreditCard } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { getDealerListings, deleteListing } from "@/lib/firebase"
+import { deleteListing } from "@/lib/firebase"
 import { toast } from "sonner"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -21,7 +21,20 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/hooks/useAuth"
+import { auth } from "@/lib/firebase"
 import { DealerProfileSection } from "@/components/dealer/profile"
+import { PlanInfoSection } from "@/components/dashboard/PlanInfoSection"
+import { TokenizedVehicleCard } from "@/components/dashboard/TokenizedVehicleCard"
+
+interface UserPlanInfo {
+  planName: string
+  planPrice: number
+  totalTokens: number
+  usedTokens: number
+  planStartDate: Date
+  planEndDate: Date
+  userId: string
+}
 
 interface Listing {
   id: string
@@ -104,40 +117,139 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function DealerDashboard() {
   const router = useRouter()
   const { user } = useAuth()
-  const [listings, setListings] = useState<Listing[]>([])
+  const [allVehicles, setAllVehicles] = useState<any[]>([])
+  const [activeVehicles, setActiveVehicles] = useState<any[]>([])
+  const [inactiveVehicles, setInactiveVehicles] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [tokenFilter, setTokenFilter] = useState<string>("all") // all, active, inactive
   const [isLoading, setIsLoading] = useState(true)
+  const [planInfo, setPlanInfo] = useState<UserPlanInfo | null>(null)
   const [bulkUploadStatus, setBulkUploadStatus] = useState<BulkUploadStatus | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [selectedAPI, setSelectedAPI] = useState<string>("")
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
 
-  // Load listings from Firebase
+  // Load all vehicle data and plan info
   useEffect(() => {
-    const loadListings = async () => {
-      if (!user) {
-        console.log("No authenticated user found")
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        const dealerListings = await getDealerListings(user.uid)
-        console.log("Fetched listings from Firebase:", dealerListings)
-        setListings(dealerListings)
-      } catch (error) {
-        console.error("Error loading listings:", error)
-        toast.error("Failed to load listings")
-      } finally {
-        setIsLoading(false)
-      }
+    if (user) {
+      loadDashboardData()
+    } else {
+      setIsLoading(false)
     }
-
-    loadListings()
   }, [user])
 
-  const handleAddListing = () => {
+  const loadDashboardData = async () => {
+    if (!user) {
+      console.log("No authenticated user found")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      
+      // Get ID token - try user method first, then fallback to auth.currentUser
+      let token;
+      try {
+        if (user.getIdToken) {
+          token = await user.getIdToken();
+        } else {
+          // Fallback: get token from auth.currentUser
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            token = await currentUser.getIdToken();
+          } else {
+            throw new Error('No authenticated user found');
+          }
+        }
+      } catch (tokenError) {
+        console.error('Error getting ID token:', tokenError);
+        toast.error('Authentication error - please try logging in again');
+        return;
+      }
+
+      // Load plan information using API
+      const planResponse = await fetch(`/api/plan-info?userType=dealer`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (planResponse.ok) {
+        const planData = await planResponse.json();
+        // Convert date strings back to Date objects
+        const planInfo = planData.planInfo ? {
+          ...planData.planInfo,
+          planStartDate: planData.planInfo.planStartDate ? new Date(planData.planInfo.planStartDate) : undefined,
+          planEndDate: planData.planInfo.planEndDate ? new Date(planData.planInfo.planEndDate) : undefined,
+          lastPaymentDate: planData.planInfo.lastPaymentDate ? new Date(planData.planInfo.lastPaymentDate) : undefined,
+          purchaseHistory: (planData.planInfo.purchaseHistory || []).map((record: any) => ({
+            ...record,
+            purchaseDate: record.purchaseDate ? new Date(record.purchaseDate) : undefined
+          }))
+        } : null;
+        setPlanInfo(planInfo);
+      }
+
+      // Load vehicle data using API
+      const vehicleResponse = await fetch('/api/dealer-vehicles', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (vehicleResponse.ok) {
+        const vehicleData = await vehicleResponse.json();
+        // Convert date strings back to Date objects
+        const processVehicles = (vehicles: any[]) => vehicles.map(vehicle => ({
+          ...vehicle,
+          createdAt: vehicle.createdAt ? new Date(vehicle.createdAt) : undefined,
+          updatedAt: vehicle.updatedAt ? new Date(vehicle.updatedAt) : undefined,
+          tokenActivatedDate: vehicle.tokenActivatedDate ? new Date(vehicle.tokenActivatedDate) : undefined,
+          tokenExpiryDate: vehicle.tokenExpiryDate ? new Date(vehicle.tokenExpiryDate) : undefined,
+          tokenDeactivatedDate: vehicle.tokenDeactivatedDate ? new Date(vehicle.tokenDeactivatedDate) : undefined
+        }));
+
+        const activeVehicles = processVehicles(vehicleData.data.activeVehicles);
+        const inactiveVehicles = processVehicles(vehicleData.data.inactiveVehicles);
+        
+        setActiveVehicles(activeVehicles);
+        setInactiveVehicles(inactiveVehicles);
+        setAllVehicles([...activeVehicles, ...inactiveVehicles]);
+      }
+
+      console.log("Dashboard data loaded successfully");
+    } catch (error) {
+      console.error("Error loading dashboard data:", error)
+      toast.error("Failed to load dashboard data")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAddListing = async () => {
+    if (!user) return
+
+    // Check if user can create a new listing using available tokens
+    const availableTokens = planInfo ? Math.max(0, planInfo.totalTokens - planInfo.usedTokens) : 0;
+    const now = new Date();
+    const planExpired = planInfo?.planEndDate ? planInfo.planEndDate < now : true;
+    
+    if (!planInfo?.planName || planExpired) {
+      toast.error("No active plan found. Please choose a plan to create listings.");
+      router.push('/payment-plans');
+      return;
+    }
+    
+    if (availableTokens <= 0) {
+      toast.error("No available tokens. Please upgrade your plan to create more listings.");
+      router.push('/payment-plans');
+      return;
+    }
+
     router.push("/dashboard/add-listing")
   }
 
@@ -148,12 +260,18 @@ export default function DealerDashboard() {
   const handleDeleteListing = async (id: string) => {
     try {
       await deleteListing(id)
-      setListings(listings.filter(listing => listing.id !== id))
+      // Reload dashboard data after deletion
+      await loadDashboardData()
       toast.success("Listing deleted successfully")
     } catch (error) {
       console.error("Error deleting listing:", error)
       toast.error("Failed to delete listing")
     }
+  }
+
+  const handleTokenStatusChange = async () => {
+    // Reload dashboard data when token status changes
+    await loadDashboardData()
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,21 +315,29 @@ export default function DealerDashboard() {
     }
   }
 
-  // Filter listings based on search query and status
-  const filteredListings = listings.filter(listing => {
-    const matchesSearch = listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      listing.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      listing.model.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || listing.status === statusFilter
-    return matchesSearch && matchesStatus
+  // Filter vehicles based on search query and filters
+  const filteredVehicles = allVehicles.filter(vehicle => {
+    const matchesSearch = vehicle.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vehicle.make?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vehicle.model?.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    const matchesStatus = statusFilter === "all" || vehicle.status === statusFilter
+    
+    const matchesTokenFilter = tokenFilter === "all" || 
+      (tokenFilter === "active" && vehicle.tokenStatus === "active") ||
+      (tokenFilter === "inactive" && vehicle.tokenStatus !== "active")
+    
+    return matchesSearch && matchesStatus && matchesTokenFilter
   })
 
   const stats = {
-    totalListings: listings.length,
-    activeListings: listings.filter(l => l.status === "active").length,
-    totalViews: listings.reduce((sum, l) => sum + l.views, 0),
-    totalInquiries: listings.reduce((sum, l) => sum + l.inquiries, 0),
-    totalValue: listings.reduce((sum, l) => sum + l.price, 0)
+    totalListings: allVehicles.length,
+    activeListings: activeVehicles.filter(v => v.tokenStatus === 'active').length,
+    inactiveListings: allVehicles.filter(v => v.tokenStatus !== 'active').length,
+    totalViews: allVehicles.reduce((sum, v) => sum + (v.views || 0), 0),
+    totalInquiries: allVehicles.reduce((sum, v) => sum + (v.inquiries || 0), 0),
+    totalValue: allVehicles.reduce((sum, v) => sum + (v.price || 0), 0),
+    availableTokens: planInfo ? Math.max(0, planInfo.totalTokens - planInfo.usedTokens) : 0
   }
 
   if (isLoading) {
@@ -233,7 +359,7 @@ export default function DealerDashboard() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -252,7 +378,7 @@ export default function DealerDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-500 mb-1">Active Listings</p>
-                  <h3 className="text-3xl font-bold text-gray-900">{stats.activeListings}</h3>
+                  <h3 className="text-3xl font-bold text-green-600">{stats.activeListings}</h3>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-green-50 flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-green-600" />
@@ -264,8 +390,21 @@ export default function DealerDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Available Tokens</p>
+                  <h3 className="text-3xl font-bold text-blue-600">{stats.availableTokens}</h3>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
+                  <RefreshCw className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
                   <p className="text-sm font-medium text-gray-500 mb-1">Total Views</p>
-                  <h3 className="text-3xl font-bold text-gray-900">{stats.totalViews}</h3>
+                  <h3 className="text-3xl font-bold text-purple-600">{stats.totalViews}</h3>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-purple-50 flex items-center justify-center">
                   <Eye className="h-6 w-6 text-purple-600" />
@@ -278,7 +417,7 @@ export default function DealerDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-500 mb-1">Total Inquiries</p>
-                  <h3 className="text-3xl font-bold text-gray-900">{stats.totalInquiries}</h3>
+                  <h3 className="text-3xl font-bold text-orange-600">{stats.totalInquiries}</h3>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-orange-50 flex items-center justify-center">
                   <MessageSquare className="h-6 w-6 text-orange-600" />
@@ -287,6 +426,17 @@ export default function DealerDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Plan Information Section */}
+        {user && (
+          <div className="mb-8">
+            <PlanInfoSection 
+              userId={user.uid} 
+              userType="dealer"
+              onPlanUpdate={loadDashboardData}
+            />
+          </div>
+        )}
 
         <Tabs defaultValue="listings" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
@@ -326,26 +476,20 @@ export default function DealerDashboard() {
                     />
                   </div>
                   <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                    {/* Status Filters */}
                     <Button
                       variant={statusFilter === "all" ? "default" : "outline"}
                       onClick={() => setStatusFilter("all")}
                       className={`flex-1 sm:flex-none ${statusFilter === "all" ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-gray-50/50 hover:bg-gray-100'}`}
                     >
-                      All
+                      All Status
                     </Button>
                     <Button
                       variant={statusFilter === "active" ? "default" : "outline"}
                       onClick={() => setStatusFilter("active")}
                       className={`flex-1 sm:flex-none ${statusFilter === "active" ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-gray-50/50 hover:bg-gray-100'}`}
                     >
-                      Active
-                    </Button>
-                    <Button
-                      variant={statusFilter === "pending" ? "default" : "outline"}
-                      onClick={() => setStatusFilter("pending")}
-                      className={`flex-1 sm:flex-none ${statusFilter === "pending" ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-gray-50/50 hover:bg-gray-100'}`}
-                    >
-                      Pending
+                      Available
                     </Button>
                     <Button
                       variant={statusFilter === "sold" ? "default" : "outline"}
@@ -356,9 +500,37 @@ export default function DealerDashboard() {
                     </Button>
                   </div>
                 </div>
+                
+                {/* Token Filters */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Button
+                    variant={tokenFilter === "all" ? "default" : "outline"}
+                    onClick={() => setTokenFilter("all")}
+                    size="sm"
+                    className={`${tokenFilter === "all" ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-50/50 hover:bg-gray-100'}`}
+                  >
+                    All Listings
+                  </Button>
+                  <Button
+                    variant={tokenFilter === "active" ? "default" : "outline"}
+                    onClick={() => setTokenFilter("active")}
+                    size="sm"
+                    className={`${tokenFilter === "active" ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-50/50 hover:bg-gray-100'}`}
+                  >
+                    ● Active ({stats.activeListings})
+                  </Button>
+                  <Button
+                    variant={tokenFilter === "inactive" ? "default" : "outline"}
+                    onClick={() => setTokenFilter("inactive")}
+                    size="sm"
+                    className={`${tokenFilter === "inactive" ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-gray-50/50 hover:bg-gray-100'}`}
+                  >
+                    ○ Inactive ({stats.inactiveListings})
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                {listings.length === 0 ? (
+                {allVehicles.length === 0 ? (
                   // Empty state within the listings tab
                   <div className="flex flex-col items-center justify-center py-12">
                     <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
@@ -373,7 +545,7 @@ export default function DealerDashboard() {
                       Add Your First Listing
                     </Button>
                   </div>
-                ) : filteredListings.length === 0 ? (
+                ) : filteredVehicles.length === 0 ? (
                   // No results from search/filter
                   <div className="flex flex-col items-center justify-center py-12">
                     <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
@@ -388,62 +560,26 @@ export default function DealerDashboard() {
                       onClick={() => {
                         setSearchQuery("")
                         setStatusFilter("all")
+                        setTokenFilter("all")
                       }}
                     >
                       Clear Filters
                     </Button>
                   </div>
                 ) : (
-                  // Listings grid
+                  // Vehicles grid with enhanced token management
                   <div className="space-y-4">
-                    {filteredListings.map((listing) => (
-                      <div
-                        key={listing.id}
-                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all hover:shadow-sm gap-3 sm:gap-0"
-                      >
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 w-full">
-                          <div className="w-full sm:w-24 h-40 sm:h-24 relative rounded-lg overflow-hidden mb-2 sm:mb-0">
-                            <img
-                              src={listing.image}
-                              alt={listing.title}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                          <div className="flex-1 w-full text-center sm:text-left">
-                            <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
-                            <p className="text-lg font-medium text-blue-600 mb-2">£{listing.price.toLocaleString()}</p>
-                            <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-3 mb-2 sm:mb-0">
-                              <StatusBadge status={listing.status} />
-                              <span className="text-sm text-gray-500 flex items-center">
-                                <Eye className="w-4 h-4 mr-1" />
-                                {listing.views}
-                              </span>
-                              <span className="text-sm text-gray-500 flex items-center">
-                                <MessageSquare className="w-4 h-4 mr-1" />
-                                {listing.inquiries}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 justify-center sm:justify-end w-full sm:w-auto">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditListing(listing.id)}
-                            className="hover:bg-gray-100"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteListing(listing.id)}
-                            className="hover:bg-red-50 text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
+                    {filteredVehicles.map((vehicle) => (
+                      <TokenizedVehicleCard
+                        key={vehicle.id}
+                        vehicle={vehicle}
+                        userId={user?.uid || ''}
+                        userType="dealer"
+                        availableTokens={stats.availableTokens}
+                        onEdit={handleEditListing}
+                        onDelete={handleDeleteListing}
+                        onTokenStatusChange={handleTokenStatusChange}
+                      />
                     ))}
                   </div>
                 )}
@@ -485,7 +621,7 @@ export default function DealerDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {listings.length === 0 ? (
+                {allVehicles.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
                       <MessageSquare className="w-12 h-12 text-gray-400" />
@@ -501,18 +637,22 @@ export default function DealerDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {listings.map((listing) => (
-                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 w-full">
+                    {allVehicles.map((vehicle) => (
+                      <div key={vehicle.id} className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 w-full">
                         <div className="w-full sm:w-16 h-32 sm:h-16 relative rounded-lg overflow-hidden mb-2 sm:mb-0">
                           <img
-                            src={listing.image}
-                            alt={listing.title}
+                            src={vehicle.image || vehicle.images?.[0] || '/placeholder.jpg'}
+                            alt={vehicle.title || `${vehicle.make} ${vehicle.model}`}
                             className="object-cover w-full h-full"
                           />
                         </div>
                         <div className="flex-1 w-full text-center sm:text-left">
-                          <h3 className="font-semibold text-gray-900">{listing.title}</h3>
-                          <p className="text-sm text-gray-500">{listing.inquiries} inquiries</p>
+                          <h3 className="font-semibold text-gray-900">
+                            {vehicle.title || `${vehicle.make} ${vehicle.model} ${vehicle.year}`}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {vehicle.inquiries || 0} inquiries • {vehicle.views || 0} views
+                          </p>
                         </div>
                         <Button variant="outline" size="sm" className="text-blue-600 hover:bg-blue-50 w-full sm:w-auto mt-2 sm:mt-0">
                           View Details

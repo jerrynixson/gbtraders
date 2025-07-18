@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { adminDb } from '@/lib/firebase-admin';
+import * as admin from 'firebase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-06-30.basil',
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   console.log('Payment succeeded for session:', session.id);
+  console.log('Session metadata:', session.metadata);
   
   const metadata = session.metadata;
   if (!metadata) {
@@ -67,29 +69,60 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
+  console.log(`Processing plan update for ${userType} ${userId}: ${planName} (${tokens} tokens, ${validity} days)`);
+
+  // Get current user data to preserve purchase history
+  const collection = userType === 'dealer' ? 'dealers' : 'users';
+
   try {
     // Calculate plan expiration date
+    const now = new Date();
     const planExpiration = new Date();
     planExpiration.setDate(planExpiration.getDate() + parseInt(validity));
 
-    const updateData = {
-      plan: planName,
+    // Create purchase record
+    const purchaseRecord = {
+      planName,
+      purchaseDate: admin.firestore.Timestamp.fromDate(now),
+      amount: session.amount_total ? session.amount_total / 100 : 0,
+      stripeSessionId: session.id,
       tokens: parseInt(tokens),
-      planExpiration: planExpiration,
-      updatedAt: new Date(),
+      validity: parseInt(validity)
+    };
+
+    const userRef = adminDb.collection(collection).doc(userId);
+    const currentDoc = await userRef.get();
+    const currentData = currentDoc.exists ? currentDoc.data() || {} : {};
+    const currentHistory = currentData.purchaseHistory || [];
+
+    const updateData = {
+      planName: planName,
+      planStartDate: admin.firestore.Timestamp.fromDate(now),
+      planEndDate: admin.firestore.Timestamp.fromDate(planExpiration),
+      totalTokens: parseInt(tokens),
+      usedTokens: 0, // Reset used tokens for new plan
+      purchaseHistory: [...currentHistory, purchaseRecord],
       lastPaymentStatus: 'completed',
       lastPaymentSessionId: session.id,
       lastPaymentAmount: session.amount_total ? session.amount_total / 100 : 0,
-      lastPaymentDate: new Date(),
+      lastPaymentDate: admin.firestore.Timestamp.fromDate(now),
+      updatedAt: admin.firestore.Timestamp.fromDate(now)
     };
 
     // Update the appropriate collection based on user type
-    const collection = userType === 'dealer' ? 'dealers' : 'users';
-    await adminDb.collection(collection).doc(userId).update(updateData);
+    await userRef.update(updateData);
 
     console.log(`Successfully updated ${userType} ${userId} with plan ${planName}`);
+    console.log('Update data applied:', updateData);
   } catch (error) {
     console.error('Error updating user profile after successful payment:', error);
+    console.error('Error details:', {
+      userId,
+      userType,
+      planName,
+      collectionName: collection,
+      sessionId: session.id
+    });
     throw error;
   }
 }

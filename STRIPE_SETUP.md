@@ -11,6 +11,9 @@ Add the following environment variables to your `.env.local` file:
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
 STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+
+# Token System Configuration
+CLEANUP_SECRET=your_secure_cleanup_secret_here
 ```
 
 ## Authentication System

@@ -55,10 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // If user document doesn't exist yet or can't be accessed, don't throw an error
           if (!userDoc.exists()) {
             // Set basic user info without Firestore data
-            const basicUser = {
-              ...firebaseUser,
+            const basicUser = Object.assign(firebaseUser, {
               role: 'user' // Default to user role
-            } as User;
+            }) as User;
             setUser(basicUser);
             setLoading(false);
             return;
@@ -67,19 +66,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           let userData = userDoc.data();
           
           // Extend the Firebase user with our custom data
-          const extendedUser = {
-            ...firebaseUser,
+          const extendedUser = Object.assign(firebaseUser, {
             role: userData?.role || 'user' // Default to user if not set
-          } as User;
+          }) as User;
           
           setUser(extendedUser);
         } catch (error) {
           // Don't log the error to console to avoid alarming users
           // Just use basic Firebase user info
-          const basicUser = {
-            ...firebaseUser,
+          const basicUser = Object.assign(firebaseUser, {
             role: 'user' // Default to user role
-          } as User;
+          }) as User;
           setUser(basicUser);
         }
       } else {

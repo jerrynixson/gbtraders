@@ -1,12 +1,38 @@
 {
   "indexes": [
     {
+      "collectionGroup": "inactiveVehicles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "dealerUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "vehicles",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "type", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" },
-        { "fieldPath": "price", "order": "ASCENDING" },
+        { "fieldPath": "dealerUid", "order": "ASCENDING" },
+        { "fieldPath": "tokenStatus", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "planEndDate", "order": "ASCENDING" },
+        { "fieldPath": "planName", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dealers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "planEndDate", "order": "ASCENDING" },
+        { "fieldPath": "planName", "order": "ASCENDING" },
         { "fieldPath": "__name__", "order": "ASCENDING" }
       ]
     }

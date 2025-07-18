@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +17,7 @@ import { db, storage, auth } from "@/lib/firebase"
 import { doc, collection, setDoc, serverTimestamp } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { useAuthState } from 'react-firebase-hooks/auth'
+import { getTokenErrorMessage } from "@/lib/utils/tokenUtils"
 
 // OneAuto API interfaces
 interface OneAutoApiResponse {
@@ -227,6 +228,8 @@ export default function AddVehicleForm() {
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
   const [registrationNumber, setRegistrationNumber] = useState("")
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null)
+  const [canCreateNewListing, setCanCreateNewListing] = useState(false)
+  const [tokenCheckError, setTokenCheckError] = useState<string>("")
   const [formData, setFormData] = useState<ListingFormData>({
     type: 'car',
     title: "",
@@ -279,6 +282,64 @@ export default function AddVehicleForm() {
     }
   })
   const [formErrors, setFormErrors] = useState<FormErrors>({})
+
+  // Check token availability when component mounts
+  useEffect(() => {
+    const checkTokenAvailability = async () => {
+      if (!user) return
+
+      try {
+        // Use the admin API to check plan information
+        const response = await fetch('/api/plan-info?userType=dealer', {
+          headers: {
+            'Authorization': `Bearer ${await user.getIdToken()}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch plan information');
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.planInfo) {
+          const planInfo = data.planInfo;
+          
+          // Check if plan is active and has available tokens
+          const now = new Date();
+          const planEndDate = new Date(planInfo.planEndDate);
+          const planExpired = planEndDate < now;
+          const hasActivePlan = !planExpired && !!planInfo.planName;
+          const availableTokens = Math.max(0, planInfo.totalTokens - planInfo.usedTokens);
+          const hasAvailableTokens = hasActivePlan && availableTokens > 0;
+
+          setCanCreateNewListing(hasAvailableTokens);
+          
+          if (!hasAvailableTokens) {
+            let reason = 'no_plan';
+            if (planExpired) reason = 'plan_expired';
+            else if (hasActivePlan && availableTokens === 0) reason = 'no_tokens';
+            
+            const errorMessage = getTokenErrorMessage(reason);
+            setTokenCheckError(errorMessage);
+          } else {
+            setTokenCheckError("");
+          }
+        } else {
+          setCanCreateNewListing(false);
+          setTokenCheckError('You need an active plan to create listings. Please choose a plan to get started.');
+        }
+      } catch (error) {
+        console.error('Error checking token availability:', error)
+        setTokenCheckError('Unable to verify listing permissions')
+        setCanCreateNewListing(false)
+      }
+    }
+
+    if (!loading) {
+      checkTokenAvailability()
+    }
+  }, [user, loading])
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {}
@@ -534,6 +595,13 @@ export default function AddVehicleForm() {
       toast.error("You must be logged in to create a listing")
       return
     }
+
+    // Check token availability before proceeding
+    if (!canCreateNewListing) {
+      toast.error(tokenCheckError || "Cannot create listing. Please check your plan.")
+      return
+    }
+
     if (!validateForm()) {
       toast.error("Please fix the form errors")
       return
@@ -541,6 +609,42 @@ export default function AddVehicleForm() {
     setIsLoading(true)
 
     try {
+      // Double-check token availability at submission time
+      const response = await fetch('/api/plan-info?userType=dealer', {
+        headers: {
+          'Authorization': `Bearer ${await user.getIdToken()}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch plan information');
+      }
+
+      const planData = await response.json();
+      
+      if (!planData.success || !planData.planInfo) {
+        toast.error('You need an active plan to create listings. Please choose a plan to get started.');
+        setIsLoading(false);
+        return;
+      }
+
+      const planInfo = planData.planInfo;
+      const now = new Date();
+      const planEndDate = new Date(planInfo.planEndDate);
+      const planExpired = planEndDate < now;
+      const hasActivePlan = !planExpired && !!planInfo.planName;
+      const availableTokens = Math.max(0, planInfo.totalTokens - planInfo.usedTokens);
+      const hasAvailableTokens = hasActivePlan && availableTokens > 0;
+
+      if (!hasAvailableTokens) {
+        let reason = 'no_plan';
+        if (planExpired) reason = 'plan_expired';
+        else if (hasActivePlan && availableTokens === 0) reason = 'no_tokens';
+        
+        toast.error(getTokenErrorMessage(reason));
+        setIsLoading(false);
+        return;
+      }
       // Get coordinates from pincode (optional - don't fail if this doesn't work)
       let coordinates = { latitude: "0", longitude: "0" }
       try {
@@ -681,9 +785,40 @@ export default function AddVehicleForm() {
       }
 
       console.log("Creating vehicle data in Firestore:", vehicleToSubmit)
-      await setDoc(doc(db, "vehicles", vehicleId), vehicleToSubmit)
-      toast.success("Listing created successfully")
-      router.push("/dealer/dashboard")
+      
+      // Add token status to vehicle data
+      const vehicleWithTokenData = {
+        ...vehicleToSubmit,
+        tokenStatus: 'inactive', // Default to inactive until token is activated
+        tokenActivatedDate: null,
+        tokenExpiryDate: null
+      }
+
+      // Save the vehicle to Firestore
+      await setDoc(doc(db, "vehicles", vehicleId), vehicleWithTokenData)
+
+      // Activate the token for this vehicle using the API
+      const activateResponse = await fetch('/api/activate-vehicle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await user.getIdToken()}`
+        },
+        body: JSON.stringify({
+          vehicleId,
+          action: 'activate'
+        })
+      });
+
+      const tokenResult = await activateResponse.json();
+      
+      if (tokenResult.success) {
+        toast.success("Listing created and activated successfully")
+      } else {
+        toast.warning(`Listing created but token activation failed: ${tokenResult.error}`)
+      }
+
+      router.push("/dashboard")
     } catch (error) {
       console.error("Error creating listing:", error)
       let errorMessage = "Failed to create listing."
@@ -786,6 +921,37 @@ export default function AddVehicleForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Token Availability Alert */}
+      {loading ? (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Checking your plan and token availability...</AlertDescription>
+        </Alert>
+      ) : !canCreateNewListing ? (
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertTitle className="text-red-800">Cannot Create Listing</AlertTitle>
+          <AlertDescription className="text-red-700">
+            {tokenCheckError}
+            <Button
+              type="button"
+              variant="link"
+              className="p-0 h-auto ml-2 text-red-600 underline"
+              onClick={() => router.push('/payment-plans')}
+            >
+              Upgrade Plan
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Alert className="border-green-200 bg-green-50">
+          <AlertCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-700">
+            ✓ You can create new listings. This listing will use 1 token when activated.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* VIN Lookup Section */}
       <div className="space-y-4">
         <div className="flex items-end gap-4">
@@ -1502,9 +1668,13 @@ export default function AddVehicleForm() {
       </div>
 
       <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline" onClick={() => router.push("/dealer/dashboard")}>Cancel</Button>
-        <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
-          {isLoading ? "Creating..." : "Create Listing"}
+        <Button type="button" variant="outline" onClick={() => router.push("/dashboard")}>Cancel</Button>
+        <Button 
+          type="submit" 
+          disabled={isLoading || !canCreateNewListing} 
+          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+        >
+          {isLoading ? "Creating..." : !canCreateNewListing ? "Cannot Create Listing" : "Create Listing"}
         </Button>
       </div>
     </form>
