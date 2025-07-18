@@ -18,13 +18,16 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/hooks/useAuth"
 import { auth } from "@/lib/firebase"
 import { DealerProfileSection } from "@/components/dealer/profile"
 import { PlanInfoSection } from "@/components/dashboard/PlanInfoSection"
 import { TokenizedVehicleCard } from "@/components/dashboard/TokenizedVehicleCard"
+import { getDealerProfile } from "@/lib/dealer/profile"
+import { doc, getDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 interface UserPlanInfo {
   planName: string
@@ -129,11 +132,16 @@ export default function DealerDashboard() {
   const [isUploading, setIsUploading] = useState(false)
   const [selectedAPI, setSelectedAPI] = useState<string>("")
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [listingToDelete, setListingToDelete] = useState<string | null>(null);
+  const [dealerName, setDealerName] = useState<string | null>(null);
+  const [isDealerNameLoading, setIsDealerNameLoading] = useState(false);
 
   // Load all vehicle data and plan info
   useEffect(() => {
     if (user) {
       loadDashboardData()
+      fetchDealerName()
     } else {
       setIsLoading(false)
     }
@@ -227,6 +235,36 @@ export default function DealerDashboard() {
       toast.error("Failed to load dashboard data")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchDealerName = async () => {
+    if (!user) return;
+    setIsDealerNameLoading(true);
+    try {
+      // 1. Try dealer profile business name
+      const profile = await getDealerProfile(user.uid);
+      if (profile && profile.businessName) {
+        setDealerName(profile.businessName);
+        setIsDealerNameLoading(false);
+        return;
+      }
+      // 2. Try user profile (Firestore) firstName + lastName
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.firstName || userData.lastName) {
+          setDealerName(`${userData.firstName || ""} ${userData.lastName || ""}`.trim());
+          setIsDealerNameLoading(false);
+          return;
+        }
+      }
+      // 3. Fallback to user object displayName or email
+      setDealerName(user.displayName || user.email?.split("@")[0] || "Dealer");
+    } catch (error) {
+      setDealerName(user.displayName || user.email?.split("@")[0] || "Dealer");
+    } finally {
+      setIsDealerNameLoading(false);
     }
   }
 
@@ -354,7 +392,9 @@ export default function DealerDashboard() {
       <main className="container mx-auto px-2 sm:px-4 py-6 sm:py-8 max-w-7xl">
         {/* Welcome Section */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">Welcome back, Dealer</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">
+            Welcome back, {isDealerNameLoading ? "..." : dealerName || "Dealer"}
+          </h1>
           <p className="text-gray-600 text-sm sm:text-base">Manage your dealership and listings</p>
         </div>
 
@@ -399,6 +439,7 @@ export default function DealerDashboard() {
               </div>
             </CardContent>
           </Card>
+          {/*
           <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -425,6 +466,7 @@ export default function DealerDashboard() {
               </div>
             </CardContent>
           </Card>
+          */}
         </div>
 
         {/* Plan Information Section */}
@@ -442,8 +484,10 @@ export default function DealerDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
             <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-lg shadow-sm w-full sm:w-auto">
               <TabsTrigger value="listings" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Listings</TabsTrigger>
+              {/*
               <TabsTrigger value="analytics" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Analytics</TabsTrigger>
               <TabsTrigger value="inquiries" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Inquiries</TabsTrigger>
+              */}
               <TabsTrigger value="profile" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Profile</TabsTrigger>
             </TabsList>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
@@ -475,8 +519,9 @@ export default function DealerDashboard() {
                       className="pl-10 bg-gray-50/50 border-gray-200 focus:border-blue-200 focus:ring-blue-200 text-sm"
                     />
                   </div>
+                  {/* Status Filters */}
+                  {/*
                   <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                    {/* Status Filters */}
                     <Button
                       variant={statusFilter === "all" ? "default" : "outline"}
                       onClick={() => setStatusFilter("all")}
@@ -499,6 +544,7 @@ export default function DealerDashboard() {
                       Sold
                     </Button>
                   </div>
+                  */}
                 </div>
                 
                 {/* Token Filters */}
@@ -577,7 +623,10 @@ export default function DealerDashboard() {
                         userType="dealer"
                         availableTokens={stats.availableTokens}
                         onEdit={handleEditListing}
-                        onDelete={handleDeleteListing}
+                        onDelete={(id) => {
+                          setListingToDelete(id);
+                          setDeleteDialogOpen(true);
+                        }}
                         onTokenStatusChange={handleTokenStatusChange}
                       />
                     ))}
@@ -585,8 +634,38 @@ export default function DealerDashboard() {
                 )}
               </CardContent>
             </Card>
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete Listing?</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this listing? This action cannot be undone.<br />
+                    <span className="text-red-600 font-semibold">Your token for this listing will be lost.</span>
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={async () => {
+                      if (listingToDelete) {
+                        await handleDeleteListing(listingToDelete);
+                        setDeleteDialogOpen(false);
+                        setListingToDelete(null);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
+          {/*
           <TabsContent value="analytics">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
               <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm">
@@ -611,7 +690,9 @@ export default function DealerDashboard() {
               </Card>
             </div>
           </TabsContent>
+          */}
 
+          {/*
           <TabsContent value="inquiries">
             <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm">
               <CardHeader>
@@ -665,6 +746,7 @@ export default function DealerDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          */}
 
           <TabsContent value="profile">
             <DealerProfileSection />

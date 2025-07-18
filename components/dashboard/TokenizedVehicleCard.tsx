@@ -58,6 +58,16 @@ export function TokenizedVehicleCard({
   const tokenStatus = vehicle.tokenStatus || 'inactive';
   const statusIndicator = getTokenStatusIndicator(tokenStatus, vehicle.tokenExpiryDate);
 
+  // Fallbacks for vehicle name and image
+  const vehicleName = vehicle.title && vehicle.title.trim().length > 0
+    ? vehicle.title
+    : `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim() || 'Unnamed Vehicle';
+  const vehicleImage = vehicle.image && vehicle.image.trim().length > 0
+    ? vehicle.image
+    : (Array.isArray((vehicle as any).images) && (vehicle as any).images.length > 0
+        ? (vehicle as any).images[0]
+        : '/placeholder.jpg');
+
   const handleTokenToggle = async () => {
     if (isToggling) return;
 
@@ -152,8 +162,8 @@ export function TokenizedVehicleCard({
           tokenStatus === 'inactive' ? 'grayscale' : ''
         }`}>
           <img
-            src={vehicle.image}
-            alt={vehicle.title}
+            src={vehicleImage}
+            alt={vehicleName}
             className="object-cover w-full h-full"
           />
           {/* Token Status Overlay */}
@@ -177,7 +187,7 @@ export function TokenizedVehicleCard({
         {/* Vehicle Info */}
         <div className="flex-1 w-full text-center sm:text-left">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-gray-900">{vehicle.title}</h3>
+            <h3 className="font-semibold text-gray-900">{vehicleName}</h3>
             {tokenStatus === 'inactive' && (
               <AlertCircle className="w-4 h-4 text-gray-400" />
             )}

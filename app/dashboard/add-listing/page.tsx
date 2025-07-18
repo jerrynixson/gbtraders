@@ -34,20 +34,18 @@ export default function AddListing() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="single" className="space-y-6">
+            {/* Hide the TabsList so only the Single Listing form is visible */}
+            {/* <Tabs defaultValue="single" className="space-y-6">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="single">Single Listing</TabsTrigger>
-                <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
+                // <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
               </TabsList>
 
               <TabsContent value="single">
                 <AddVehicleForm />
               </TabsContent>
-
-              <TabsContent value="bulk">
-                <BulkListing />
-              </TabsContent>
-            </Tabs>
+            </Tabs> */}
+            <AddVehicleForm />
           </CardContent>
         </Card>
       </main>
