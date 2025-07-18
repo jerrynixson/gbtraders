@@ -73,6 +73,32 @@ env:
       - BUILD
       - RUNTIME
 
+  # Stripe Configuration
+  - variable: STRIPE_SECRET_KEY
+    secret: STRIPE_SECRET_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: STRIPE_PUBLISHABLE_KEY
+    secret: STRIPE_PUBLISHABLE_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: STRIPE_WEBHOOK_SECRET
+    secret: STRIPE_WEBHOOK_SECRET
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # OneAuto API Key
+  - variable: key
+    secret: key
+    availability:
+      - BUILD
+      - RUNTIME
+
 # Environment variables and secrets.
 # env:
   # Configure environment variables.
