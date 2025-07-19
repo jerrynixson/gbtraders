@@ -167,8 +167,12 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'payment',
-      success_url: `${request.nextUrl.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${request.nextUrl.origin}/payment-plans?cancelled=true`,
+      success_url: process.env.NODE_ENV === 'production'
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`
+        : `${request.nextUrl.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: process.env.NODE_ENV === 'production'
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/payment-plans?cancelled=true`
+        : `${request.nextUrl.origin}/payment-plans?cancelled=true`,
       allow_promotion_codes: false, // Disable since we're applying discount directly
       metadata: {
         userId: userId,
