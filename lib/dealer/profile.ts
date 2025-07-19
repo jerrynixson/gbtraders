@@ -30,6 +30,17 @@ export interface DealerProfile {
  * Fetches existing dealer profile if it exists
  */
 export async function getDealerProfile(uid: string): Promise<DealerProfile | null> {
+  // Static cache to avoid duplicate requests in the same session
+  if (typeof window !== 'undefined') {
+    const cachedProfile = (window as any).__dealerProfiles?.[uid];
+    const cachedTime = (window as any).__dealerProfileTimes?.[uid];
+    
+    // Use cache if less than 5 minutes old
+    if (cachedProfile && cachedTime && (Date.now() - cachedTime) < 300000) {
+      return cachedProfile === 'NOT_FOUND' ? null : cachedProfile;
+    }
+  }
+  
   try {
     // Get the ID token
     const idToken = await auth.currentUser?.getIdToken();
@@ -46,15 +57,48 @@ export async function getDealerProfile(uid: string): Promise<DealerProfile | nul
 
     if (!response.ok) {
       if (response.status === 404) {
+        // Profile doesn't exist yet, which is an expected case - return null
+        // Cache the "not found" result to avoid future API calls
+        if (typeof window !== 'undefined') {
+          if (!(window as any).__dealerProfiles) (window as any).__dealerProfiles = {};
+          if (!(window as any).__dealerProfileTimes) (window as any).__dealerProfileTimes = {};
+          (window as any).__dealerProfiles[uid] = 'NOT_FOUND';
+          (window as any).__dealerProfileTimes[uid] = Date.now();
+        }
         return null;
       }
       throw new Error('Failed to fetch dealer profile');
     }
 
-    return await response.json();
+    const profileData = await response.json();
+    
+    // Cache the result to avoid future API calls
+    if (typeof window !== 'undefined') {
+      if (!(window as any).__dealerProfiles) (window as any).__dealerProfiles = {};
+      if (!(window as any).__dealerProfileTimes) (window as any).__dealerProfileTimes = {};
+      (window as any).__dealerProfiles[uid] = profileData;
+      (window as any).__dealerProfileTimes[uid] = Date.now();
+    }
+    
+    return profileData;
   } catch (error) {
-    console.error('Error fetching dealer profile:', error);
-    throw new Error('Failed to fetch dealer profile');
+    // Only log real errors, not 404s which are expected for new users
+    if (!(error instanceof Error && error.message.includes('404'))) {
+      // Suppress console errors in production
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Error fetching dealer profile:', error);
+      }
+    }
+    
+    // Cache the error to avoid future API calls
+    if (typeof window !== 'undefined') {
+      if (!(window as any).__dealerProfiles) (window as any).__dealerProfiles = {};
+      if (!(window as any).__dealerProfileTimes) (window as any).__dealerProfileTimes = {};
+      (window as any).__dealerProfiles[uid] = 'NOT_FOUND';
+      (window as any).__dealerProfileTimes[uid] = Date.now();
+    }
+    
+    return null;
   }
 }
 

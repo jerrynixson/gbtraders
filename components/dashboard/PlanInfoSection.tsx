@@ -119,8 +119,11 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
 
       setPlanInfo(planInfo);
       setError(null);
-      console.log('Plan info loaded:', planInfo); // Debug log
-      console.log('User type:', userType, 'User ID:', userId); // Debug log
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development' && false) { // Disabled logs
+        console.log('Plan info loaded:', planInfo);
+        console.log('User type:', userType, 'User ID:', userId);
+      }
     } catch (err) {
       console.error('Error loading plan info:', err);
       setError('Failed to load plan information');
@@ -379,15 +382,22 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
 
               {/* Action Buttons */}
               <div className="flex gap-2 pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleRenewPlan}
-                  className="flex items-center gap-1"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  {status === 'expired' ? 'Renew Plan' : 'Upgrade Plan'}
-                </Button>
+                {status === 'active' ? (
+                  <div className="text-green-600 text-sm flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    You have an active plan
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleRenewPlan}
+                    className="flex items-center gap-1"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    {status === 'expired' ? 'Renew Plan' : 'Choose Plan'}
+                  </Button>
+                )}
                 <Button 
                   variant="ghost" 
                   size="sm"

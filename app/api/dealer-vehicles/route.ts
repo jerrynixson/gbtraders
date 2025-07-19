@@ -61,7 +61,10 @@ export async function GET(request: NextRequest) {
       tokenDeactivatedDate: doc.data().tokenDeactivatedDate?.toDate().toISOString()
     }));
 
-    console.log(`Vehicle data retrieved for dealer ${userId}: ${activeVehicles.length} active, ${inactiveVehicles.length} inactive`);
+    // Only log in development when debugging
+    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_LOGS === 'true') {
+      console.log(`Vehicle data retrieved for dealer ${userId}: ${activeVehicles.length} active, ${inactiveVehicles.length} inactive`);
+    }
 
     return NextResponse.json({
       success: true,

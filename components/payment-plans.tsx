@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { useRouter } from "next/navigation"
 import { auth } from "@/lib/firebase"
-import { Check, Star, Zap, Crown, TrendingUp, Shield, Loader2 } from "lucide-react"
+import { Check, Star, Zap, Crown, TrendingUp, Shield, Loader2, CheckCircle } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -155,11 +155,58 @@ export function PaymentPlans() {
   const router = useRouter()
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null)
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const [hasActivePlan, setHasActivePlan] = useState(false)
+  const [checkingPlan, setCheckingPlan] = useState(true)
   const { toast } = useToast()
+
+  useEffect(() => {
+    // Check if the user has an active plan
+    if (user) {
+      checkActivePlan()
+    } else {
+      setCheckingPlan(false)
+    }
+  }, [user])
+
+  const checkActivePlan = async () => {
+    try {
+      setCheckingPlan(true)
+      const currentUser = auth.currentUser
+      if (!currentUser) {
+        return
+      }
+
+      const token = await currentUser.getIdToken(false)
+      const response = await fetch(`/api/plan-info?userType=dealer`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.planInfo) {
+          const planEndDate = new Date(data.planInfo.planEndDate)
+          const now = new Date()
+          // Check if plan is active (not expired)
+          if (planEndDate > now) {
+            setHasActivePlan(true)
+          } else {
+            setHasActivePlan(false)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking plan status:', error)
+    } finally {
+      setCheckingPlan(false)
+    }
+  }
 
   const handlePlanSelection = async (planName: string) => {
     // Quick authentication check
-    if (loading) {
+    if (loading || checkingPlan) {
       toast({
         title: "Please wait",
         description: "Checking authentication status...",
@@ -174,6 +221,16 @@ export function PaymentPlans() {
         variant: "destructive",
       })
       router.push('/signin')
+      return
+    }
+
+    // Check if user has an active plan
+    if (hasActivePlan) {
+      toast({
+        title: "Active plan detected",
+        description: "You already have an active plan. Please wait until your current plan expires to purchase a new one.",
+        variant: "destructive",
+      })
       return
     }
 
@@ -246,6 +303,26 @@ export function PaymentPlans() {
   return (
     <section className="w-full py-16">
       <div className="max-w-7xl mx-auto px-4">
+        {/* Active Plan Alert */}
+        {hasActivePlan && (
+          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+            <div>
+              <h3 className="font-medium text-blue-800">You have an active plan</h3>
+              <p className="text-blue-600 text-sm">
+                You cannot purchase another plan until your current plan expires. Go to your dashboard to view your plan details.
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="ml-auto border-blue-300 text-blue-700 hover:bg-blue-100"
+              onClick={() => router.push('/dashboard')}
+            >
+              Go to Dashboard
+            </Button>
+          </div>
+        )}
+
         {/* Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {plans.map((plan) => {
@@ -318,7 +395,7 @@ export function PaymentPlans() {
                 <CardFooter className="px-6 pb-6">
                   <Button 
                     onClick={() => handlePlanSelection(plan.name)}
-                    disabled={loadingPlan === plan.name}
+                    disabled={loadingPlan === plan.name || hasActivePlan || checkingPlan}
                     className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
                     size="lg"
                   >
@@ -327,6 +404,8 @@ export function PaymentPlans() {
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Processing...
                       </>
+                    ) : hasActivePlan ? (
+                      "Active Plan in Progress"
                     ) : (
                       plan.buttonText
                     )}

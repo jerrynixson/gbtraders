@@ -139,17 +139,41 @@ export default function DealerDashboard() {
 
   // Load all vehicle data and plan info
   useEffect(() => {
-    if (user) {
-      loadDashboardData()
-      fetchDealerName()
+    // Check if we already fetched data this session to avoid multiple fetches
+    const hasLoadedData = typeof window !== 'undefined' && (window as any)._dashboardDataLoaded;
+    
+    if (user && !hasLoadedData) {
+      // Set a flag to prevent duplicate loading during development with StrictMode
+      if (typeof window !== 'undefined') {
+        (window as any)._dashboardDataLoaded = true;
+        
+        // Reset the flag after navigation to ensure data reloads on actual page revisits
+        const cleanup = () => {
+          setTimeout(() => {
+            (window as any)._dashboardDataLoaded = false;
+          }, 500);
+        };
+        
+        // Attach to router events if available
+        try {
+          // For Next.js App Router, events aren't available, so we'll use a timeout
+          setTimeout(cleanup, 5000);
+        } catch (e) {
+          // Fallback
+          setTimeout(cleanup, 5000);
+        }
+      }
+      
+      loadDashboardData();
+      fetchDealerName();
     } else {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [user])
+  }, [user, router]);
 
   const loadDashboardData = async () => {
     if (!user) {
-      console.log("No authenticated user found")
+      // Removed console log
       setIsLoading(false)
       return
     }
@@ -229,9 +253,12 @@ export default function DealerDashboard() {
         setAllVehicles([...activeVehicles, ...inactiveVehicles]);
       }
 
-      console.log("Dashboard data loaded successfully");
+      // Removed success log
     } catch (error) {
-      console.error("Error loading dashboard data:", error)
+      // Only log errors in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error loading dashboard data:", error)
+      }
       toast.error("Failed to load dashboard data")
     } finally {
       setIsLoading(false)
@@ -241,30 +268,98 @@ export default function DealerDashboard() {
   const fetchDealerName = async () => {
     if (!user) return;
     setIsDealerNameLoading(true);
+    
+    // Use a flag to avoid duplicate API calls during this render cycle
+    if (typeof window !== 'undefined' && (window as any)._dealerProfileFetchInProgress) {
+      // Removed console log for duplicate requests
+      setIsDealerNameLoading(false);
+      return;
+    }
+    
+    if (typeof window !== 'undefined') {
+      (window as any)._dealerProfileFetchInProgress = true;
+    }
+    
     try {
-      // 1. Try dealer profile business name
-      const profile = await getDealerProfile(user.uid);
-      if (profile && profile.businessName) {
-        setDealerName(profile.businessName);
+      // First try to get name from localStorage to avoid any API calls
+      const cachedName = localStorage.getItem(`dealerName_${user.uid}`);
+      const lastFetchTime = localStorage.getItem(`dealerNameFetchTime_${user.uid}`);
+      const isCacheValid = lastFetchTime && (Date.now() - parseInt(lastFetchTime)) < 3600000; // Cache valid for 1 hour
+      
+      if (cachedName && isCacheValid) {
+        setDealerName(cachedName);
         setIsDealerNameLoading(false);
+        if (typeof window !== 'undefined') {
+          (window as any)._dealerProfileFetchInProgress = false;
+        }
         return;
       }
-      // 2. Try user profile (Firestore) firstName + lastName
+      
+      // Skip dealer profile check if user is not marked as dealer in localStorage
+      const isKnownDealer = localStorage.getItem(`dealer_${user.uid}`);
+      
+      // 1. Try user profile (Firestore) firstName + lastName first to avoid unnecessary dealer profile requests
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
+        
+        // Check and save dealer status to localStorage for future checks
+        if (userData.role === 'dealer') {
+          localStorage.setItem(`dealer_${user.uid}`, "true");
+          
+          // Only try to get dealer profile if the user is a dealer
+          if (isKnownDealer !== "false") {
+            try {
+              const profile = await getDealerProfile(user.uid);
+              if (profile && profile.businessName) {
+                setDealerName(profile.businessName);
+                localStorage.setItem(`dealerName_${user.uid}`, profile.businessName);
+                localStorage.setItem(`dealerNameFetchTime_${user.uid}`, Date.now().toString());
+                setIsDealerNameLoading(false);
+                if (typeof window !== 'undefined') {
+                  (window as any)._dealerProfileFetchInProgress = false;
+                }
+                return;
+              }
+            } catch (profileError) {
+              // Silently fail and continue with other name options
+              // Removed console log
+            }
+          }
+        } else {
+          localStorage.setItem(`dealer_${user.uid}`, "false");
+        }
+        
         if (userData.firstName || userData.lastName) {
-          setDealerName(`${userData.firstName || ""} ${userData.lastName || ""}`.trim());
+          const fullName = `${userData.firstName || ""} ${userData.lastName || ""}`.trim();
+          setDealerName(fullName);
+          localStorage.setItem(`dealerName_${user.uid}`, fullName);
+          localStorage.setItem(`dealerNameFetchTime_${user.uid}`, Date.now().toString());
           setIsDealerNameLoading(false);
+          if (typeof window !== 'undefined') {
+            (window as any)._dealerProfileFetchInProgress = false;
+          }
           return;
         }
       }
       // 3. Fallback to user object displayName or email
-      setDealerName(user.displayName || user.email?.split("@")[0] || "Dealer");
+      const fallbackName = user.displayName || user.email?.split("@")[0] || "Dealer";
+      setDealerName(fallbackName);
+      localStorage.setItem(`dealerName_${user.uid}`, fallbackName);
+      localStorage.setItem(`dealerNameFetchTime_${user.uid}`, Date.now().toString());
     } catch (error) {
-      setDealerName(user.displayName || user.email?.split("@")[0] || "Dealer");
+      const fallbackName = user.displayName || user.email?.split("@")[0] || "Dealer";
+      setDealerName(fallbackName);
+      localStorage.setItem(`dealerName_${user.uid}`, fallbackName);
+      localStorage.setItem(`dealerNameFetchTime_${user.uid}`, Date.now().toString());
     } finally {
       setIsDealerNameLoading(false);
+      // Reset the flag after a short timeout to prevent race conditions
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          (window as any)._dealerProfileFetchInProgress = false;
+        }
+      }, 500);
     }
   }
 
