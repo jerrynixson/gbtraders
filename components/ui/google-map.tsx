@@ -38,19 +38,39 @@ export function GoogleMapComponent({
   width = "100%",
   markers = [],
 }: GoogleMapComponentProps) {
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyC2ZcchDTnVTUMSnCXUSdQo7YgdcmVV8DY",
+    // Using a fallback API key for development - in production, use proper env variables
   });
 
   const mapOptions = useMemo<google.maps.MapOptions>(
     () => ({
-      disableDefaultUI: true,
+      disableDefaultUI: false, // Show UI controls
       clickableIcons: true,
       scrollwheel: true,
+      zoomControl: true,
+      streetViewControl: true,
     }),
     []
   );
 
+  // Handle loading error
+  if (loadError) {
+    console.error("Error loading Google Maps API:", loadError);
+    return (
+      <div
+        style={{ height, width }}
+        className="bg-gray-100 rounded-xl flex items-center justify-center"
+      >
+        <div className="text-center">
+          <p className="text-red-600">Error loading map</p>
+          <p className="text-gray-500 text-sm mt-2">Please check your API key configuration</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle loading state
   if (!isLoaded) {
     return (
       <div

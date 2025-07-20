@@ -42,7 +42,10 @@ type DealerData = {
 };
 
 // Dynamically import GoogleMap component (if you have one, else fallback to static map)
-const GoogleMapComponent = dynamic(() => import("@/components/ui/google-map").then(mod => mod.GoogleMapComponent), { ssr: false, loading: () => <div className="w-full h-48 flex items-center justify-center text-blue-400">Loading map...</div> });
+const GoogleMapComponent = dynamic(() => import("@/components/ui/google-map").then(mod => mod.GoogleMapComponent), { 
+  ssr: false, 
+  loading: () => <div className="w-full h-48 flex items-center justify-center text-blue-400">Loading map...</div> 
+});
 
 // Copy DealerCard from dealers list page
 function DealerCard({ id, businessName, dealerBanner, dealerBannerUrl, contact, location }: any) {
@@ -91,6 +94,7 @@ export default function DealerInfoPage() {
   const [moreDealers, setMoreDealers] = useState<any[]>([]);
   const [dealerVehicles, setDealerVehicles] = useState<any[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     const fetchDealer = async () => {
@@ -168,6 +172,41 @@ export default function DealerInfoPage() {
     }
   }, [params.id]);
 
+  // Get user's current location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error getting user location:", error);
+        }
+      );
+    }
+  }, []);
+  
+  // Debug map coordinates
+  useEffect(() => {
+    if (dealer?.location) {
+      console.log("Dealer coordinates:", {
+        lat: dealer.location.lat,
+        lng: dealer.location.long,
+        type: {
+          lat: typeof dealer.location.lat,
+          long: typeof dealer.location.long
+        }
+      });
+    }
+    
+    // Check for Google Maps API Key
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    console.log("Google Maps API Key available:", !!apiKey);
+  }, [dealer]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -208,6 +247,38 @@ export default function DealerInfoPage() {
     if (url.includes("instagram")) return <Instagram className="h-6 w-6" />;
     if (url.includes("linkedin")) return <Linkedin className="h-6 w-6" />;
     return <Globe className="h-6 w-6" />;
+  };
+  
+  // Helper to extract domain name from URL for displaying as label
+  const getSocialDomain = (url: string): string => {
+    try {
+      // Check for common social media platforms first
+      if (url.includes("facebook")) return "Facebook";
+      if (url.includes("twitter") || url.includes("x.com")) return "Twitter";
+      if (url.includes("instagram")) return "Instagram";
+      if (url.includes("linkedin")) return "LinkedIn";
+      if (url.includes("youtube")) return "YouTube";
+      if (url.includes("tiktok")) return "TikTok";
+      if (url.includes("pinterest")) return "Pinterest";
+      
+      // Remove protocol if it exists
+      let domain = url.replace(/^(https?:\/\/)?(www\.)?/i, '');
+      
+      // Split by first slash to get just the domain part
+      domain = domain.split('/')[0];
+      
+      // For other domains, try to get the second-level domain
+      const parts = domain.split('.');
+      if (parts.length >= 2) {
+        const sld = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+        return sld || "Website";
+      }
+      
+      // If we couldn't extract a proper domain name, return "Website"
+      return domain || "Website";
+    } catch (e) {
+      return "Website";
+    }
   };
 
   return (
@@ -299,28 +370,73 @@ export default function DealerInfoPage() {
             )}
           </div>
           <div className="bg-white/80 rounded-3xl shadow-lg p-4">
-            {dealer.location.lat && dealer.location.long ? (
-              <GoogleMapComponent
-                center={{ lat: dealer.location.lat, lng: dealer.location.long }}
-                zoom={13}
-                height="200px"
-                markers={[{ position: { lat: dealer.location.lat, lng: dealer.location.long }, title: dealer.businessName }]}
-              />
+            {dealer.location && typeof dealer.location.lat === 'number' && typeof dealer.location.long === 'number' ? (
+              <>
+                <div className="relative">
+                  <GoogleMapComponent
+                    center={{ lat: dealer.location.lat, lng: dealer.location.long }}
+                    zoom={13}
+                    height="250px"
+                    markers={[
+                      // Dealer location marker
+                      { 
+                        position: { lat: dealer.location.lat, lng: dealer.location.long }, 
+                        title: dealer.businessName,
+                        icon: { url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' }
+                      },
+                      // User location marker (if available)
+                      ...(userLocation ? [{
+                        position: userLocation,
+                        title: "Your Location",
+                        icon: { url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' }
+                      }] : [])
+                    ]}
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between text-sm">
+                  <div className="flex items-center">
+                    <div className="h-3 w-3 rounded-full bg-red-500 mr-1"></div>
+                    <span className="text-gray-600">Dealer Location</span>
+                  </div>
+                  {userLocation && (
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full bg-blue-500 mr-1"></div>
+                      <span className="text-gray-600">Your Location</span>
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
               <div className="w-full h-48 bg-gray-200 rounded-2xl flex items-center justify-center text-blue-400">
-                Map not available
+                <span>Map not available</span>
               </div>
             )}
           </div>
           {dealer.socialMedia && dealer.socialMedia.length > 0 && (
             <div className="bg-white/80 rounded-3xl shadow-lg p-6">
               <h2 className="font-semibold text-blue-800 mb-4 text-center">Connect with us</h2>
-              <div className="flex justify-center gap-4">
-                {dealer.socialMedia.map((url, i) => (
-                  <Link key={i} href={getWebsiteUrl(url) || "#"} target="_blank" rel="noopener noreferrer" aria-label={url} className="text-3xl hover:scale-110 transition-transform">
-                    {getSocialIcon(url)}
-                  </Link>
-                ))}
+              <div className="flex flex-wrap justify-center gap-6">
+                {dealer.socialMedia.map((url, i) => {
+                  const socialName = getSocialDomain(url);
+                  return (
+                    <div key={i} className="flex flex-col items-center">
+                      <Link 
+                        href={getWebsiteUrl(url) || "#"} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        aria-label={socialName}
+                        className="group flex flex-col items-center"
+                      >
+                        <div className="p-2 rounded-full bg-blue-50 mb-2 hover:bg-blue-100 transition-colors">
+                          {getSocialIcon(url)}
+                        </div>
+                        <span className="text-xs font-medium text-blue-700">
+                          {socialName || "Website"}
+                        </span>
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
