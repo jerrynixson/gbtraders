@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -60,6 +60,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showSignOutDialog, setShowSignOutDialog] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { user, logout } = useAuth()
   const { isAdmin } = useAdmin()
   const { toast } = useToast()
@@ -74,6 +75,7 @@ export function Header() {
         description: "You have been signed out successfully.",
         variant: "default",
       })
+      router.push('/')
     } catch (error) {
       toast({
         title: "Error",

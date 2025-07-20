@@ -388,13 +388,6 @@ export function ProfilePage() {
                   <CardTitle className="text-xl font-bold text-gray-900">Quick Stats</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Car className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Active Listings</p>
-                      <p className="text-lg font-bold text-gray-900">{vehicles.length}</p>
-                    </div>
-                  </div>
                   <div 
                     className="group cursor-pointer flex items-center justify-between hover:text-blue-600 transition-colors p-1 -m-1 rounded hover:bg-blue-50"
                     onClick={() => router.push('/favourites')}
@@ -435,14 +428,10 @@ export function ProfilePage() {
             {/* Main Content */}
             <div className="lg:col-span-3">
               <Tabs defaultValue="profile" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-8 bg-gray-100">
+                <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100">
                   <TabsTrigger value="profile" className="flex items-center gap-2 font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600">
                     <User className="h-4 w-4" />
                     Profile
-                  </TabsTrigger>
-                  <TabsTrigger value="listings" className="flex items-center gap-2 font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600">
-                    <Car className="h-4 w-4" />
-                    My Listings
                   </TabsTrigger>
                   <TabsTrigger value="settings" className="flex items-center gap-2 font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600">
                     <Settings className="h-4 w-4" />
@@ -567,71 +556,6 @@ export function ProfilePage() {
                           <Edit2 className="h-4 w-4 mr-2" />
                           Edit Profile
                         </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="listings">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-xl font-bold text-gray-900">My Vehicle Listings</CardTitle>
-                      <CardDescription className="text-base text-gray-700">Manage your vehicle listings</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {vehicles.length === 0 ? (
-                        <div className="text-center py-12">
-                          <Car className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                          <p className="text-xl font-bold text-gray-900 mb-2">No active listings found</p>
-                          <p className="text-base text-gray-700 mb-4">Start by adding your first vehicle listing</p>
-                          <Button variant="outline" className="gap-2 font-medium" onClick={() => router.push('/dashboard/add-listing')}>
-                            <Car className="h-4 w-4" />
-                            Add New Listing
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {vehicles.map((vehicle) => (
-                            <Card key={vehicle.id} className="p-4">
-                              <div className="flex items-center gap-4">
-                                <div className="w-24 h-24 relative rounded-lg overflow-hidden">
-                                  <img 
-                                    src={vehicle.image} 
-                                    alt={vehicle.title}
-                                    className="object-cover w-full h-full"
-                                  />
-                                </div>
-                                <div className="flex-1">
-                                  <h3 className="text-lg font-semibold text-gray-900">{vehicle.title}</h3>
-                                  <div className="grid grid-cols-2 gap-2 mt-2">
-                                    <div className="text-sm text-gray-600">
-                                      <span className="font-medium">Price:</span> £{vehicle.price.toLocaleString()}
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                      <span className="font-medium">Status:</span> {vehicle.status}
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                      <span className="font-medium">Views:</span> {vehicle.views}
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                      <span className="font-medium">Inquiries:</span> {vehicle.inquiries}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button variant="outline" size="sm" className="gap-1">
-                                    <Edit2 className="h-4 w-4" />
-                                    Edit
-                                  </Button>
-                                  <Button variant="destructive" size="sm" className="gap-1">
-                                    <Trash2 className="h-4 w-4" />
-                                    Delete
-                                  </Button>
-                                </div>
-                              </div>
-                            </Card>
-                          ))}
-                        </div>
                       )}
                     </CardContent>
                   </Card>
