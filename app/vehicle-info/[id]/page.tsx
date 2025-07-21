@@ -188,39 +188,8 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
   return (
     <>
-      {/* CarImageSection for mobile - appears first */}
-      <div className="lg:hidden mb-6">
-        <Suspense fallback={<div>Loading images...</div>}>
-          <CarImageSection images={vehicle.images} />
-        </Suspense>
-      </div>
-
-      {/* CarDetailsPayment for mobile - appears second */}
-      <div className="lg:hidden mb-6">
-        <CarDetailsPayment {...carDetails} />
-      </div>
-
-      {/* Other details for mobile - appears third */}
-      <div className="lg:hidden">
-        <CommonVehicleDetails vehicle={vehicle} />
-        <VehicleDocumentation vehicle={vehicle} />
-        <VehicleSpecificDetails vehicle={vehicle} />
-
-        {/* Features Section */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Features</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {vehicle.features.map((feature, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
-                <span className="text-gray-700">{feature}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      {/* Add to Favorites, Report Listing, and Make Offer Buttons */}
-      <div className="flex flex-col gap-2 mb-4 mt-6">
+      {/* Add to Favorites, Report Listing, and Make Offer Buttons (Mobile) */}
+      <div className="lg:hidden flex flex-col gap-2 mb-4">
         <div className="flex justify-between items-center">
           <button 
             className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -283,6 +252,37 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
         </Dialog>
       </div>
 
+      {/* CarImageSection for mobile */}
+      <div className="lg:hidden mb-6">
+        <Suspense fallback={<div>Loading images...</div>}>
+          <CarImageSection images={vehicle.images} />
+        </Suspense>
+      </div>
+
+      {/* CarDetailsPayment for mobile */}
+      <div className="lg:hidden mb-6">
+        <CarDetailsPayment {...carDetails} />
+      </div>
+
+      {/* Other details for mobile */}
+      <div className="lg:hidden">
+        <CommonVehicleDetails vehicle={vehicle} />
+        <VehicleDocumentation vehicle={vehicle} />
+        <VehicleSpecificDetails vehicle={vehicle} />
+
+        {/* Features Section */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">Features</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {vehicle.features.map((feature, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
+                <span className="text-gray-700">{feature}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        
         <DealerInformation {...dealerInfo} />
         
         {/* Vehicle Location Map */}
