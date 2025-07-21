@@ -198,13 +198,13 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
             <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : ''}`} />
             <span>{isFavorite ? 'Saved' : 'Save'}</span>
           </button>
-          <button 
+          {/* <button 
             className="inline-flex items-center justify-center rounded-md bg-muted p-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            onClick={() => {/* TODO: Implement report functionality */}}
+            onClick={() => {}} // TODO: Implement report functionality
             title="Report listing"
           >
             <Flag className="h-4 w-4" />
-          </button>
+          </button> */}
         </div>
         <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
           <DialogTrigger asChild>
@@ -353,13 +353,13 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
               <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : ''}`} />
               <span>{isFavorite ? 'Saved' : 'Save'}</span>
             </button>
-            <button 
+            {/* <button 
               className="inline-flex items-center justify-center rounded-md bg-muted p-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              onClick={() => {/* TODO: Implement report functionality */}}
+              onClick={() => {}} // TODO: Implement report functionality
               title="Report listing"
             >
               <Flag className="h-4 w-4" />
-            </button>
+            </button> */}
           </div>
           <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
             <DialogTrigger asChild>
