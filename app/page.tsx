@@ -23,21 +23,21 @@ const categories = [
     href: "/categories/vehicles",
     image: "/car.jpg",
   },
-  {
-    title: "Breakdown Services",
-    href: "/breakdown-services",
-    image: "/breakdown.png",
-  },
-  {
-    title: "Shop",
-    href: "/car-parts",
-    image: "/car-parts.jpg",
-  },
-  {
-    title: "Garages",
-    href: "/garages",
-    image: "garages.jpg",
-  },
+  // {
+  //   title: "Breakdown Services",
+  //   href: "/breakdown-services",
+  //   image: "/breakdown.png",
+  // },
+  // {
+  //   title: "Shop",
+  //   href: "/car-parts",
+  //   image: "/car-parts.jpg",
+  // },
+  // {
+  //   title: "Garages",
+  //   href: "/garages",
+  //   image: "garages.jpg",
+  // },
   {
     title: "Dealers",
     href: "/dealers",

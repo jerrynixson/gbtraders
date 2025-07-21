@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { headers } from 'next/headers'
 import { LoadingIndicator } from "@/components/loading"
 import { Inter } from "next/font/google"
+import { CookieBanner } from "@/components/cookie-banner"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -57,6 +58,7 @@ export default function RootLayout({
           <LoadingIndicator />
           {children}
           <Toaster />
+          <CookieBanner />
         </AuthProvider>
       </body>
     </html>

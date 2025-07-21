@@ -66,7 +66,7 @@ export function Hero() {
   const autoAdvanceRef = useRef<NodeJS.Timeout | null>(null)
   const dragData = useRef({ startX: 0, lastX: 0, dragging: false, moved: false })
 
-  const categories = ["Vehicles", "Breakdown Services", "Shop", "Garages", "Dealers"]
+  const categories = ["Vehicles", "Dealers"] // commented out 'Breakdown Services', 'Shop', 'Garages'
   const vehicleTypes = [
     "Cars",
     "Vans",
@@ -204,11 +204,8 @@ export function Hero() {
       // Map category to route
       const categoryToRoute: Record<string, string> = {
         'Vehicles': '/search',
-        'Breakdown Services': '/categories/breakdown-services',
-        'Shop': '/categories/shop',
-        'Garages': '/categories/garages',
         'Dealers': '/categories/dealers'
-      };
+      } // commented out 'Breakdown Services', 'Shop', 'Garages'
       
       const route = categoryToRoute[selectedDropdownCategory];
       if (route) {

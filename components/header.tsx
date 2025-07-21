@@ -114,10 +114,10 @@ export function Header() {
       label: "Vehicles", 
       items: vehicleNavItems 
     },
-    { href: "/categories/garages", label: "Garages" },
+    // { href: "/categories/garages", label: "Garages" },
     { href: "/categories/dealers", label: "Dealers" },
-    { href: "/categories/breakdown-services", label: "Breakdown Services" },
-    { href: "/categories/shop", label: "Shop" },
+    // { href: "/categories/breakdown-services", label: "Breakdown Services" },
+    // { href: "/categories/shop", label: "Shop" },
   ]
 
   const bottomNavItems: NavItem[] = [
