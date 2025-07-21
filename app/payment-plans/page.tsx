@@ -22,10 +22,6 @@ export default function PaymentPlansPage() {
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative container mx-auto px-4 py-20">
           <div className="text-center max-w-4xl mx-auto">
-            <Badge variant="secondary" className="mb-6 bg-white/20 text-white border-white/30">
-              <Star className="w-4 h-4 mr-2" />
-              Most Popular Choice
-            </Badge>
             <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
               Choose Your Perfect Plan
             </h1>
@@ -37,14 +33,6 @@ export default function PaymentPlansPage() {
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 <span>Secure & Reliable</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span>24/7 Support</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span>10,000+ Users</span>
               </div>
             </div>
           </div>

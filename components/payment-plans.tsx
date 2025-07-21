@@ -41,9 +41,8 @@ const plans = [
     features: [
       "One Listing",
       "30 Days Listing period",
-      "Listings featured",
       "Priority support",
-      "Analytics dashboard"
+      "Advanced dashboard"
     ],
     isFeatured: true,
     buttonText: "Get for £5.00",
@@ -62,8 +61,6 @@ const plans = [
     features: [
       "Up to Five Listings",
       "10 Days Period",
-      "Featured listings",
-      "Advanced analytics",
       "Email support"
     ],
     isFeatured: false,
@@ -83,10 +80,8 @@ const plans = [
     features: [
       "Up to 15 Listings",
       "30 days period",
-      "Listings featured",
       "Priority support",
-      "Advanced analytics",
-      "Custom branding"
+      "Advanced dashboard"
     ],
     isFeatured: true,
     buttonText: "Get for £50.00",
@@ -105,11 +100,8 @@ const plans = [
     features: [
       "Up to 30 Listings",
       "30 Days period",
-      "Listings featured",
       "24/7 Priority support",
-      "Advanced analytics",
-      "Custom branding",
-      "API access"
+      "Advanced dashboard"
     ],
     isFeatured: true,
     buttonText: "Get for £100.00",
@@ -305,9 +297,9 @@ export function PaymentPlans() {
       <div className="max-w-7xl mx-auto px-4">
         {/* Active Plan Alert */}
         {hasActivePlan && (
-          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
-            <div>
+          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-3">
+            <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mb-2 sm:mb-0" />
+            <div className="flex-1">
               <h3 className="font-medium text-blue-800">You have an active plan</h3>
               <p className="text-blue-600 text-sm">
                 You cannot purchase another plan until your current plan expires. Go to your dashboard to view your plan details.
@@ -315,7 +307,7 @@ export function PaymentPlans() {
             </div>
             <Button 
               variant="outline" 
-              className="ml-auto border-blue-300 text-blue-700 hover:bg-blue-100"
+              className="w-full sm:w-auto border-blue-300 text-blue-700 hover:bg-blue-100"
               onClick={() => router.push('/dashboard')}
             >
               Go to Dashboard
@@ -332,25 +324,15 @@ export function PaymentPlans() {
             return (
               <Card
                 key={plan.name}
-                className={`relative flex flex-col h-full transition-all duration-300 transform ${
-                  plan.isFeatured 
-                    ? 'border-2 border-red-400 shadow-xl scale-105' 
-                    : 'border border-gray-200 shadow-lg'
-                } ${
-                  hoveredPlan === plan.name ? 'scale-105 shadow-2xl' : ''
-                } bg-white hover:shadow-xl`}
+                className={
+                  `relative flex flex-col h-full transition-all duration-300 transform border border-gray-200 shadow-lg bg-white hover:shadow-xl${
+                    hoveredPlan === plan.name ? ' scale-105 shadow-2xl' : ''
+                  }`
+                }
                 onMouseEnter={() => setHoveredPlan(plan.name)}
                 onMouseLeave={() => setHoveredPlan(null)}
               >
-                {/* Featured Badge */}
-                {plan.isFeatured && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-red-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                      <Star className="w-3 h-3 mr-1" />
-                      Most Popular
-                    </Badge>
-                  </div>
-                )}
+                {/* Featured Badge removed: Most Popular badge was here */}
 
                 <CardHeader className="text-center pb-4 pt-8">
                   {/* Plan Icon */}
@@ -438,7 +420,18 @@ export function PaymentPlans() {
                   <td className="py-4 px-4 text-gray-700">Listings</td>
                   {plans.map((plan) => (
                     <td key={plan.name} className="text-center py-4 px-4">
-                      {plan.features.find(f => f.includes('Listing'))?.split(' ')[0] || '1'}
+                      {(() => {
+                        const feature = plan.features.find(f => f.includes('Listing'));
+                        if (!feature) return '1';
+
+                        if (feature.includes('One')) return '1';
+                        if (feature.includes('Five')) return '5';
+
+                        const numberMatch = feature.match(/\d+/);
+                        if (numberMatch) return numberMatch[0];
+                        
+                        return '1';
+                      })()}
                     </td>
                   ))}
                 </tr>
@@ -447,26 +440,6 @@ export function PaymentPlans() {
                   {plans.map((plan) => (
                     <td key={plan.name} className="text-center py-4 px-4">
                       {plan.features.find(f => f.includes('days') || f.includes('Days'))?.split(' ')[0] || '7 days'}
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-b border-gray-100">
-                  <td className="py-4 px-4 text-gray-700">Featured</td>
-                  {plans.map((plan) => (
-                    <td key={plan.name} className="text-center py-4 px-4">
-                      {plan.features.some(f => f.includes('featured')) ? (
-                        <Check className="w-5 h-5 text-green-500 mx-auto" />
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <td className="py-4 px-4 text-gray-700">Support</td>
-                  {plans.map((plan) => (
-                    <td key={plan.name} className="text-center py-4 px-4">
-                      {plan.features.find(f => f.includes('support'))?.split(' ')[0] || 'Basic'}
                     </td>
                   ))}
                 </tr>
