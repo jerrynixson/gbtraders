@@ -89,10 +89,10 @@ export function Hero() {
   }
 
   const images = [
-    '/banner_prop/ChatGPT Image Jun 9, 2025, 03_47_41 PM.png',
-    '/banner_prop/ChatGPT Image Jun 9, 2025, 03_43_18 PM.png',
-    '/banner_prop/ChatGPT Image Jun 9, 2025, 03_41_50 PM.png',
-    '/banner_prop/ChatGPT Image Jun 9, 2025, 03_39_02 PM.png',
+    '/banner_prop/prop1.png',
+    '/banner_prop/prop2.png',
+    '/banner_prop/prop3.png',
+    '/banner_prop/prop4.png',
   ]
 
   useEffect(() => {

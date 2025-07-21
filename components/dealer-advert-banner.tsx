@@ -4,74 +4,89 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, Phone, MapPin, Star, Info } from "lucide-react"
+import { collection, getDocs, query } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
+import Link from "next/link"
 
-// Define the banner data type
-export interface BannerData {
-  id: number
-  vehicle: string
-  title: string
-  description: string
-  detailedDescription: string
-  dealerInfo: {
-    name: string
-    location: string
-    rating: number
-    specialties: string[]
-  }
-  contactNumber: string
-}
+// DealerData type (copied from app/categories/dealers/page.tsx for local use)
+type DealerData = {
+  id: string;
+  businessName: string;
+  dealerBannerUrl: string;
+  dealerLogoUrl?: string;
+  contact: {
+    phone: string;
+    email?: string;
+    website?: string;
+  };
+  location: {
+    addressLines: string[];
+    lat: number;
+    long: number;
+  };
+  businessHours: {
+    mondayToFriday?: string;
+    saturday?: string;
+    sunday?: string;
+  };
+  description: string;
+  specialties: string[];
+  rating: number;
+  socialMedia: string[];
+};
 
-// Props interface for the component
 interface CarRentalBannerProps {
-  banners?: BannerData[] // Optional prop to allow custom banners
   autoScrollInterval?: number // Optional prop to customize auto-scroll interval
 }
 
-// Default banner data
-const defaultBannerData: BannerData[] = [
-  {
-    id: 1,
-    vehicle: "/Dealers/dealer1.jpg",
-    title: "SPEED INTO SAVINGS!",
-    description: "Velocity Motors",
-    detailedDescription:
-      "At Velocity Motors, we bring you the fastest, most stylish, and performance-packed cars at unmatched prices. Whether you're looking for a muscle car, SUV, or luxury sedan, we've got the perfect ride for you!",
-    dealerInfo: {
-      name: "Velocity Motors",
-      location: "Downtown City Center",
-      rating: 4.5,
-      specialties: ["Luxury Cars", "SUVs", "Weekend Specials"],
-    },
-    contactNumber: "234-342-5645",
-  },
-  {
-    id: 2,
-    vehicle: "/Dealers/dealer2.jpg",
-    title: "BIG CARS. BIGGER DEALS!",
-    description: "Titan Auto Hub",
-    detailedDescription:
-      "Looking for power, durability, and a deal you can't resist? At Titan Auto Hub, we bring you the strongest and most reliable vehicles at the best prices. Whether it's an SUV, truck, or sports car, we make sure you drive away with confidence!",
-    dealerInfo: {
-      name: "Titan Auto Hub",
-      location: "Uptown District",
-      rating: 4.8,
-      specialties: ["Sports Cars", "Convertibles", "Premium Service"],
-    },
-    contactNumber: "234-342-5646",
-  },
-]
-
 const CarRentalBannerMinimal: React.FC<CarRentalBannerProps> = ({
-  banners = defaultBannerData,
   autoScrollInterval = 5000,
 }) => {
+  const [banners, setBanners] = useState<DealerData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentBanner, setCurrentBanner] = useState(0)
-  const [activeTab, setActiveTab] = useState<"info" | "contact">("info")
+  const [activeTab, setActiveTab] = useState<'info' | 'contact'>('info')
   const [isAnimating, setIsAnimating] = useState(false)
+
+  // Fetch dealer data from Firestore
+  useEffect(() => {
+    const fetchDealers = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const dealersRef = collection(db, 'dealers')
+        const q = query(dealersRef)
+        const querySnapshot = await getDocs(q)
+        const dealersData: DealerData[] = querySnapshot.docs.map(doc => {
+          const data = doc.data()
+          return {
+            id: doc.id,
+            businessName: data.businessName || '',
+            dealerBannerUrl: data.dealerBannerUrl || '',
+            dealerLogoUrl: data.dealerLogoUrl || undefined,
+            contact: data.contact || {},
+            location: data.location || { addressLines: [], lat: 0, long: 0 },
+            businessHours: data.businessHours || {},
+            description: data.description || '',
+            specialties: data.specialties || [],
+            rating: data.rating || 0,
+            socialMedia: data.socialMedia || []
+          }
+        })
+        setBanners(dealersData)
+      } catch (err) {
+        setError('Failed to load dealer banners')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDealers()
+  }, [])
 
   // Handle next banner
   const nextBanner = () => {
-    if (isAnimating) return
+    if (isAnimating || banners.length === 0) return
     setIsAnimating(true)
     setCurrentBanner((prev) => (prev + 1) % banners.length)
     setTimeout(() => setIsAnimating(false), 500)
@@ -79,35 +94,76 @@ const CarRentalBannerMinimal: React.FC<CarRentalBannerProps> = ({
 
   // Handle previous banner
   const prevBanner = () => {
-    if (isAnimating) return
+    if (isAnimating || banners.length === 0) return
     setIsAnimating(true)
     setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length)
     setTimeout(() => setIsAnimating(false), 500)
   }
 
-  // Auto-scroll effect
+  // Auto-scroll effect (consistent every 5 seconds)
   useEffect(() => {
-    const intervalId = setInterval(nextBanner, autoScrollInterval)
-    return () => clearInterval(intervalId)
-  }, [currentBanner, autoScrollInterval])
+    if (banners.length === 0) return;
+    const intervalId = setInterval(() => {
+      setCurrentBanner(prev => (prev + 1) % banners.length);
+    }, autoScrollInterval);
+    return () => clearInterval(intervalId);
+  }, [autoScrollInterval, banners.length]);
+
+  if (loading) {
+    return (
+      <div className="w-full flex justify-center items-center h-64">
+        <span className="text-gray-500 dark:text-gray-300">Loading dealer banners...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="w-full flex justify-center items-center h-64">
+        <span className="text-red-500">{error}</span>
+      </div>
+    )
+  }
+
+  if (banners.length === 0) {
+    return (
+      <div className="w-full flex justify-center items-center h-64">
+        <span className="text-gray-500 dark:text-gray-300">No dealer banners available.</span>
+      </div>
+    )
+  }
+
+  const banner = banners[currentBanner]
 
   return (
     <div className="relative w-full max-w-[85rem] mx-auto">
       {/* Banner Container */}
       <div className="relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
         {/* Current Banner */}
-        <div key={banners[currentBanner].id} className="grid grid-cols-1 md:grid-cols-2 h-auto">
+        <div key={banner.id} className="grid grid-cols-1 md:grid-cols-2 h-auto">
           {/* Image Section */}
-          <div className="relative h-64 md:h-auto overflow-hidden">
+          <div className="relative h-64 md:h-auto overflow-hidden rounded-2xl">
             <Image
-              src={banners[currentBanner].vehicle || "/placeholder.svg"}
-              alt="Rental Vehicle"
+              src={banner.dealerBannerUrl || "/placeholder.svg"}
+              alt={banner.businessName}
               fill
               className="object-cover"
               priority
             />
+            {/* Dealer Logo inside banner image */}
+            <div className="absolute top-4 left-4 z-20">
+              <div className="w-32 h-32 bg-white rounded-2xl shadow-xl flex items-center justify-center border border-gray-100 overflow-hidden">
+                <Image
+                  src={banner.dealerLogoUrl || "/placeholder-logo.png"}
+                  alt={banner.businessName + ' logo'}
+                  width={120}
+                  height={120}
+                  className="object-contain w-32 h-32"
+                />
+              </div>
+            </div>
             <div className="absolute top-4 left-4 bg-white dark:bg-gray-900 px-3 py-1 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-              {banners[currentBanner].title}
+              {banner.businessName}
             </div>
           </div>
 
@@ -115,16 +171,11 @@ const CarRentalBannerMinimal: React.FC<CarRentalBannerProps> = ({
           <div className="p-6 md:p-8 flex flex-col">
             <div className="mb-4">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                {banners[currentBanner].description}
+                {banner.businessName}
               </h2>
               <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <MapPin className="h-4 w-4 mr-1" />
-                <span>{banners[currentBanner].dealerInfo.location}</span>
-                <span className="mx-2">•</span>
-                <div className="flex items-center">
-                  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 mr-1" />
-                  <span>{banners[currentBanner].dealerInfo.rating}</span>
-                </div>
+                <span>{banner.location.addressLines[0]}</span>
               </div>
             </div>
 
@@ -153,58 +204,50 @@ const CarRentalBannerMinimal: React.FC<CarRentalBannerProps> = ({
             </div>
 
             {/* Tab Content */}
-            <div className="flex-grow">
+            <div className="flex-grow h-[140px] flex flex-col justify-center">
               {activeTab === "info" && (
-                <div className="space-y-4">
-                  <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    {banners[currentBanner].detailedDescription}
+                <div className="flex flex-col justify-center h-full gap-2 text-base leading-snug">
+                  <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-1">
+                    {banner.description}
                   </p>
-
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Specialties</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {banners[currentBanner].dealerInfo.specialties.map((specialty) => (
+                  {banner.specialties.length > 0 && (
+                    <div className="flex flex-wrap gap-1 items-center">
+                      <span className="text-xs text-gray-500 mr-1">Specialties:</span>
+                      {banner.specialties.map((specialty) => (
                         <span
                           key={specialty}
-                          className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs px-2.5 py-1 rounded"
+                          className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs px-2 py-0.5 rounded"
                         >
                           {specialty}
                         </span>
                       ))}
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
               {activeTab === "contact" && (
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <Phone className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
-                      <a
-                        href={`tel:${banners[currentBanner].contactNumber.replace(/[^0-9]/g, "")}`}
-                        className="text-gray-900 dark:text-white font-medium hover:underline"
-                      >
-                        {banners[currentBanner].contactNumber}
-                      </a>
-                    </div>
+                <div className="flex flex-col justify-center h-full gap-2 text-base leading-snug">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    <a
+                      href={`tel:${banner.contact.phone?.replace(/[^0-9]/g, "")}`}
+                      className="text-gray-900 dark:text-white font-medium hover:underline text-sm"
+                    >
+                      {banner.contact.phone}
+                    </a>
                   </div>
-
-                  <div className="flex items-center">
-                    <MapPin className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Address</p>
-                      <p className="text-gray-900 dark:text-white">{banners[currentBanner].dealerInfo.location}</p>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    <span className="text-gray-900 dark:text-white text-sm truncate">
+                      {banner.location.addressLines.join(", ")}
+                    </span>
                   </div>
-
-                  <div className="flex items-center">
-                    <Info className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Dealer</p>
-                      <p className="text-gray-900 dark:text-white">{banners[currentBanner].dealerInfo.name}</p>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Info className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    <span className="text-gray-900 dark:text-white text-sm">
+                      {banner.businessName}
+                    </span>
                   </div>
                 </div>
               )}
@@ -212,15 +255,14 @@ const CarRentalBannerMinimal: React.FC<CarRentalBannerProps> = ({
 
             {/* Call to Action */}
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
-              <a
-                href={`tel:${banners[currentBanner].contactNumber.replace(/[^0-9]/g, "")}`}
+              <Link
+                href={`/categories/dealers/${banner.id}`}
                 className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 
                           text-white transition-colors duration-300 
                           flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-medium"
               >
-                <Phone size={16} className="mr-2" />
-                Contact Dealer
-              </a>
+                View Dealer Profile
+              </Link>
             </div>
           </div>
         </div>

@@ -30,17 +30,17 @@ const categories: Category[] = [
   },
   {
     title: "Breakdown Services",
-    href: "/breakdown-services",
+    href: "/coming-soon",
     image: "/breakdown.png",
   },
   {
     title: "Car Parts",
-    href: "/car-parts",
+    href: "/coming-soon",
     image: "/car-parts.jpg",
   },
   {
     title: "Garages",
-    href: "/garages",
+    href: "/coming-soon",
     image: "garages.jpg",
   },
   {
