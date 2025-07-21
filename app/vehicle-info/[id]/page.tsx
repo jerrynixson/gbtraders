@@ -277,7 +277,9 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
       {/* Vehicle Details for mobile */}
       <div className="lg:hidden">
         <CommonVehicleDetails vehicle={vehicle} />
-        {/* More Details dropdown directly under Vehicle Details */}
+        <VehicleDocumentation vehicle={vehicle} />
+        <VehicleSpecificDetails vehicle={vehicle} />
+        {/* Show More Details directly under Car Specifications */}
         <div className="mt-2">
           <button
             className="flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -314,17 +316,19 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
         <VehicleSpecificDetails vehicle={vehicle} />
 
         {/* Features Section */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Features</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {vehicle.features.map((feature, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
-                <span className="text-gray-700">{feature}</span>
-              </div>
-            ))}
+        {Array.isArray(vehicle.features) && vehicle.features.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4 shadow-sm">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Features</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {vehicle.features.map((feature, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
+                  <span className="text-gray-700">{feature}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         
         <DealerInformation {...dealerInfo} />
         
@@ -366,7 +370,9 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
             <CarImageSection images={vehicle.images} />
           </Suspense>
           <CommonVehicleDetails vehicle={vehicle} />
-          {/* More Details dropdown directly under Vehicle Details */}
+          <VehicleDocumentation vehicle={vehicle} />
+          <VehicleSpecificDetails vehicle={vehicle} />
+          {/* Show More Details directly under Car Specifications */}
           <div className="mt-2">
             <button
               className="flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -394,20 +400,20 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
               )}
             </div>
           </div>
-          <VehicleDocumentation vehicle={vehicle} />
-          <VehicleSpecificDetails vehicle={vehicle} />
           {/* Features Section */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4 shadow-sm">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Features</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {vehicle.features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
-                  <span className="text-gray-700">{feature}</span>
-                </div>
-              ))}
+          {Array.isArray(vehicle.features) && vehicle.features.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4 shadow-sm">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">Features</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {vehicle.features.map((feature, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>
+                    <span className="text-gray-700">{feature}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right Column */}
