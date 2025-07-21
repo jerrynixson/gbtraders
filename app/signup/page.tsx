@@ -398,7 +398,7 @@ const SignUpPage: React.FC = () => {
               </div>
 
               {/* Additional Roles Selection */}
-              <div className="mt-4 space-y-2">
+              {/* <div className="mt-4 space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Additional Services (Optional)
                 </label>
@@ -429,7 +429,7 @@ const SignUpPage: React.FC = () => {
                 <p className="text-xs text-gray-500">
                   Select additional services if you provide them
                 </p>
-              </div>
+              </div> */}
 
               {/* Sign Up Button */}
               <button

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import {
@@ -13,20 +13,11 @@ import {
   Bike as BikeIcon,
   Zap
 } from 'lucide-react';
+import { VehicleCard } from '@/components/vehicle-card';
+import { VehicleSummary } from '@/types/vehicles';
+import { BrowseByBrand } from '@/components/browse-by-brand';
 
 // Define types for all data structures
-interface VehicleType {
-  id: number;
-  name: string;
-  price: string;
-  image: string;
-  year: string;
-  mileage: string;
-  transmission: string;
-  fuelType: string;
-  location: string;
-}
-
 interface CategoryType {
   name: string;
   image: React.ReactNode;
@@ -41,83 +32,43 @@ interface BrandType {
 interface VehiclesPageProps {
   includeHeader?: boolean;
   includeFooter?: boolean;
-  customCategories?: CategoryType[];
-  customFeaturedVehicles?: VehicleType[];
-  customNewArrivals?: VehicleType[];
-  customBrands?: BrandType[];
 }
-
-// Reusable Vehicle Card component
-const VehicleCard = ({ vehicle }: { vehicle: VehicleType }) => (
-  <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group border border-gray-100">
-    <div className="relative overflow-hidden">
-      <img 
-        src={vehicle.image} 
-        alt={vehicle.name} 
-        className="w-full h-48 object-cover bg-gray-50 group-hover:scale-110 transition-transform duration-500" 
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <button className="p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors duration-200">
-          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </button>
-      </div>
-    </div>
-    <div className="p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-300">{vehicle.name}</h3>
-      <div className="grid grid-cols-2 gap-4 mb-4 text-sm text-gray-600">
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          {vehicle.year}
-        </div>
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          {vehicle.mileage}
-        </div>
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          {vehicle.transmission}
-        </div>
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          {vehicle.fuelType}
-        </div>
-      </div>
-      <div className="flex items-center justify-between">
-        <div className="text-xl font-bold text-blue-600">{vehicle.price}</div>
-        <button className="px-6 py-2 bg-gradient-to-r from-red-500 to-blue-600 text-white font-medium rounded-lg hover:from-red-600 hover:to-blue-700 transition-colors duration-300 shadow-sm hover:shadow-md flex items-center gap-2">
-          View Details
-        </button>
-      </div>
-    </div>
-  </div>
-);
 
 // Main Vehicles component
 export default function VehiclesPage({
   includeHeader = true,
   includeFooter = true,
-  customCategories,
-  customFeaturedVehicles,
-  customNewArrivals,
-  customBrands
 }: VehiclesPageProps) {
+  const [featuredVehicles, setFeaturedVehicles] = useState<VehicleSummary[]>([]);
+  const [newArrivals, setNewArrivals] = useState<VehicleSummary[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [sortOption, setSortOption] = useState('relevance');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/vehicles');
+        if (!response.ok) {
+          throw new Error('Failed to fetch vehicles');
+        }
+        const data = await response.json();
+        setFeaturedVehicles(data.data.featuredVehicles);
+        setNewArrivals(data.data.newArrivals);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVehicles();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -145,193 +96,79 @@ export default function VehiclesPage({
         selectedCategories.includes('Vans') ? 'scale-110 brightness-0 invert' : ''
       }`} size={32} strokeWidth={2} />
     },
-    {
-      name: 'Motorcycles',
-      image: <Bike className={`w-8 h-8 transition-transform duration-300 ${
-        selectedCategories.includes('Motorcycles') ? 'scale-110 brightness-0 invert' : ''
-      }`} size={32} strokeWidth={2} />
-    },
+    // {
+    //   name: 'Motorcycles',
+    //   image: <Bike className={`w-8 h-8 transition-transform duration-300 ${
+    //     selectedCategories.includes('Motorcycles') ? 'scale-110 brightness-0 invert' : ''
+    //   }`} size={32} strokeWidth={2} />
+    // },
     {
       name: 'Trucks',
       image: <Truck className={`w-8 h-8 transition-transform duration-300 ${
         selectedCategories.includes('Trucks') ? 'scale-110 brightness-0 invert' : ''
       }`} size={32} strokeWidth={2} />
     },
-    {
-      name: 'Electric Vehicles',
-      image: <PlugZap className={`w-8 h-8 transition-transform duration-300 ${
-        selectedCategories.includes('Electric Vehicles') ? 'scale-110 brightness-0 invert' : ''
-      }`} size={32} strokeWidth={2} />
-    },
-    {
-      name: 'Caravans',
-      image: <TentTree className={`w-8 h-8 transition-transform duration-300 ${
-        selectedCategories.includes('Caravans') ? 'scale-110 brightness-0 invert' : ''
-      }`} size={32} strokeWidth={2} />
-    },
-    {
-      name: 'E-Bikes',
-      image: (
-        <div className="relative">
-          <BikeIcon className={`w-8 h-8 transition-transform duration-300 ${
-            selectedCategories.includes('E-Bikes') ? 'scale-110 brightness-0 invert' : ''
-          }`} size={32} strokeWidth={2} />
-          <Zap className="w-4 h-4 absolute -top-1 -right-1 text-yellow-500" size={16} strokeWidth={2} />
-        </div>
-      )
-    }
+    // {
+    //   name: 'Electric Vehicles',
+    //   image: <PlugZap className={`w-8 h-8 transition-transform duration-300 ${
+    //     selectedCategories.includes('Electric Vehicles') ? 'scale-110 brightness-0 invert' : ''
+    //   }`} size={32} strokeWidth={2} />
+    // },
+    // {
+    //   name: 'Caravans',
+    //   image: <TentTree className={`w-8 h-8 transition-transform duration-300 ${
+    //     selectedCategories.includes('Caravans') ? 'scale-110 brightness-0 invert' : ''
+    //   }`} size={32} strokeWidth={2} />
+    // },
+    // {
+    //   name: 'E-Bikes',
+    //   image: (
+    //     <div className="relative">
+    //       <BikeIcon className={`w-8 h-8 transition-transform duration-300 ${
+    //         selectedCategories.includes('E-Bikes') ? 'scale-110 brightness-0 invert' : ''
+    //       }`} size={32} strokeWidth={2} />
+    //       <Zap className="w-4 h-4 absolute -top-1 -right-1 text-yellow-500" size={16} strokeWidth={2} />
+    //     </div>
+    //   )
+    // }
   ];
   
-
-  const featuredVehicles: VehicleType[] = customFeaturedVehicles || [
-    {
-      id: 1,
-      name: '2021 BMW 3 Series',
-      price: '£32,999',
-      image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800',
-      year: '2021',
-      mileage: '25,000 mi',
-      transmission: 'Automatic',
-      fuelType: 'Petrol',
-      location: 'London'
-    },
-    {
-      id: 2,
-      name: '2022 Audi Q5',
-      price: '£41,999',
-      image: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800',
-      year: '2022',
-      mileage: '15,000 mi',
-      transmission: 'Automatic',
-      fuelType: 'Diesel',
-      location: 'Manchester'
-    },
-    {
-      id: 3,
-      name: '2020 Mercedes C-Class',
-      price: '£28,999',
-      image: 'https://images.unsplash.com/photo-1617531653332-bd46c24f2068?w=800',
-      year: '2020',
-      mileage: '35,000 mi',
-      transmission: 'Automatic',
-      fuelType: 'Petrol',
-      location: 'Birmingham'
-    },
-    {
-      id: 4,
-      name: '2023 Tesla Model 3',
-      price: '£45,999',
-      image: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800',
-      year: '2023',
-      mileage: '5,000 mi',
-      transmission: 'Automatic',
-      fuelType: 'Electric',
-      location: 'Leeds'
-    }
-  ];
-
-  const newArrivals: VehicleType[] = customNewArrivals || [
-    {
-      id: 5,
-      name: '2023 Porsche Cayenne',
-      price: '£79,999',
-      image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800',
-      year: '2023',
-      mileage: '1,000 mi',
-      transmission: 'Automatic',
-      fuelType: 'Petrol',
-      location: 'London'
-    },
-    {
-      id: 6,
-      name: '2022 Range Rover Sport',
-      price: '£68,999',
-      image: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800',
-      year: '2022',
-      mileage: '12,000 mi',
-      transmission: 'Automatic',
-      fuelType: 'Diesel',
-      location: 'Glasgow'
-    },
-    {
-      id: 7,
-      name: '2023 BMW iX',
-      price: '£72,999',
-      image: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800',
-      year: '2023',
-      mileage: '500 mi',
-      transmission: 'Automatic',
-      fuelType: 'Electric',
-      location: 'Bristol'
-    },
-    {
-      id: 8,
-      name: '2022 Audi e-tron GT',
-      price: '£82,999',
-      image: 'https://images.unsplash.com/photo-1617531653332-bd46c24f2068?w=800',
-      year: '2022',
-      mileage: '8,000 mi',
-      transmission: 'Automatic',
-      fuelType: 'Electric',
-      location: 'Manchester'
-    }
-  ];
-
-  const brands: BrandType[] = customBrands || [
-    { name: 'BMW' },
-    { name: 'Audi' },
-    { name: 'Mercedes' },
-    { name: 'Tesla' },
-    { name: 'Porsche' },
-    { name: 'Land Rover' },
-    { name: 'Volkswagen' },
-    { name: 'Toyota' }
-  ];
-
-  // Sort vehicles based on selected option
-  const sortVehicles = (vehicles: VehicleType[]) => {
+  const sortVehicles = (vehicles: VehicleSummary[]) => {
     switch (sortOption) {
       case 'price-low-high':
-        return [...vehicles].sort((a, b) => {
-          const priceA = parseFloat(a.price.replace(/[^0-9.]/g, ''));
-          const priceB = parseFloat(b.price.replace(/[^0-9.]/g, ''));
-          return priceA - priceB;
-        });
+        return [...vehicles].sort((a, b) => a.price - b.price);
       case 'price-high-low':
-        return [...vehicles].sort((a, b) => {
-          const priceA = parseFloat(a.price.replace(/[^0-9.]/g, ''));
-          const priceB = parseFloat(b.price.replace(/[^0-9.]/g, ''));
-          return priceB - priceA;
-        });
+        return [...vehicles].sort((a, b) => b.price - a.price);
       case 'year-new-old':
-        return [...vehicles].sort((a, b) => parseInt(b.year) - parseInt(a.year));
+        return [...vehicles].sort((a, b) => b.year - a.year);
       case 'year-old-new':
-        return [...vehicles].sort((a, b) => parseInt(a.year) - parseInt(b.year));
+        return [...vehicles].sort((a, b) => a.year - b.year);
       case 'mileage-low-high':
-        return [...vehicles].sort((a, b) => {
-          const mileageA = parseInt(a.mileage.replace(/[^0-9]/g, ''));
-          const mileageB = parseInt(b.mileage.replace(/[^0-9]/g, ''));
-          return mileageA - mileageB;
-        });
+        return [...vehicles].sort((a, b) => a.mileage - b.mileage);
       default:
         return vehicles;
     }
   };
 
-  // Filter vehicles based on search and filters
-  const filterVehicles = (vehicles: VehicleType[]) => {
+  const filterVehicles = (vehicles: VehicleSummary[]) => {
     return vehicles.filter(vehicle => {
-      const matchesSearch = vehicle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          vehicle.location.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch =
+        `${vehicle.year} ${vehicle.make} ${vehicle.model}`
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        vehicle.location.city.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesPrice = (!priceRange.min || parseFloat(vehicle.price.replace(/[^0-9.]/g, '')) >= parseFloat(priceRange.min)) &&
-                          (!priceRange.max || parseFloat(vehicle.price.replace(/[^0-9.]/g, '')) <= parseFloat(priceRange.max));
+      const minPrice = priceRange.min ? parseFloat(priceRange.min) : undefined;
+      const maxPrice = priceRange.max ? parseFloat(priceRange.max) : undefined;
+
+      const matchesPrice = (!minPrice || vehicle.price >= minPrice) &&
+                          (!maxPrice || vehicle.price <= maxPrice);
       
       const matchesCategory = selectedCategories.length === 0 || 
-                            selectedCategories.some(category => vehicle.name.toLowerCase().includes(category.toLowerCase()));
+                            selectedCategories.some(category => vehicle.type.toLowerCase().includes(category.slice(0, -1).toLowerCase()));
       
       const matchesBrand = selectedBrands.length === 0 || 
-                          selectedBrands.some(brand => vehicle.name.toLowerCase().includes(brand.toLowerCase()));
+                          selectedBrands.some(brand => vehicle.make.toLowerCase().includes(brand.toLowerCase()));
       
       return matchesSearch && matchesPrice && matchesCategory && matchesBrand;
     });
@@ -501,53 +338,6 @@ export default function VehiclesPage({
                   </div>
                 </div>
               </div>
-
-              <div className="relative dropdown-container">
-                <button 
-                  className="px-6 py-3 bg-white/10 text-white rounded-lg text-sm flex items-center gap-2 hover:bg-white/20 transition-colors duration-300 backdrop-blur-sm"
-                  onClick={() => setActiveDropdown(activeDropdown === 'brands' ? null : 'brands')}
-                >
-                  Brands
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className={`absolute top-full left-0 mt-2 w-72 bg-white/90 backdrop-blur-xl rounded-lg shadow-xl transform transition-all duration-300 origin-top-left ${
-                  activeDropdown === 'brands' ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95'
-                }`}>
-                  <div className="p-6">
-                    <div className="max-h-60 overflow-y-auto">
-                      <div className="grid grid-cols-1 gap-2">
-                        {brands.map((brand, index) => (
-                          <label key={index} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                              checked={selectedBrands.includes(brand.name)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedBrands([...selectedBrands, brand.name]);
-                                } else {
-                                  setSelectedBrands(selectedBrands.filter(b => b !== brand.name));
-                                }
-                              }}
-                            />
-                            <span className="text-sm text-gray-700">{brand.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <button 
-                        className="w-full py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors duration-300"
-                        onClick={() => setActiveDropdown(null)}
-                      >
-                        Apply
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -555,7 +345,7 @@ export default function VehiclesPage({
 
       <div className="container mx-auto px-4 pb-16">
         {/* Vehicle Types Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-10">
+        <div className="flex flex-wrap justify-center gap-4 mb-10">
           {categories.map((category, index) => (
             <div 
               key={index} 
@@ -601,9 +391,13 @@ export default function VehiclesPage({
             Featured Vehicles
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {sortedAndFilteredFeaturedVehicles.map(vehicle => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} />
-            ))}
+            {loading ? (
+              Array.from({ length: 4 }).map((_, index) => <VehicleCard key={index} vehicle={{} as VehicleSummary} />)
+            ) : (
+              sortedAndFilteredFeaturedVehicles.map(vehicle => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} />
+              ))
+            )}
           </div>
         </div>
 
@@ -635,31 +429,19 @@ export default function VehiclesPage({
             New Arrivals
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {sortedAndFilteredNewArrivals.map(vehicle => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} />
-            ))}
+            {loading ? (
+              Array.from({ length: 4 }).map((_, index) => <VehicleCard key={index} vehicle={{} as VehicleSummary} />)
+            ) : (
+              sortedAndFilteredNewArrivals.map(vehicle => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} />
+              ))
+            )}
           </div>
         </div>
 
         {/* Brands */}
         <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-10 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-red-500 to-blue-600 rounded-lg text-white">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            Shop by Brand
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-6">
-            {brands.map((brand, index) => (
-              <div key={index} className="bg-white rounded-xl p-6 flex items-center justify-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group border border-gray-100">
-                <div className="w-full h-12 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors duration-300">{brand.name}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <BrowseByBrand />
         </div>
       </div>
 
@@ -669,4 +451,4 @@ export default function VehiclesPage({
 }
 
 // Export individual components for flexible use
-export { Footer, VehicleCard }; 
+export { Footer }; 
