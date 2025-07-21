@@ -9,6 +9,7 @@ interface CarDetailsPaymentProps {
   dealerName: string
   dealerLocation: string
   saveButton?: ReactNode
+  makeOfferButton?: ReactNode
 }
 
 export function CarDetailsPayment({
@@ -18,6 +19,7 @@ export function CarDetailsPayment({
   dealerName,
   dealerLocation,
   saveButton,
+  makeOfferButton,
 }: CarDetailsPaymentProps) {
   return (
     <div className="top-4">
@@ -40,6 +42,9 @@ export function CarDetailsPayment({
           <div>
             <div className="text-xs text-muted-foreground">PRICE</div>
             <div className="text-xl font-bold">{price}</div>
+            {makeOfferButton && (
+              <div className="mt-4">{makeOfferButton}</div>
+            )}
           </div>
         </div>
       </div>

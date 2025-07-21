@@ -195,57 +195,73 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
     }
   };
 
+  // Make Offer button and dialog/modal
+  const makeOfferButton = (
+    <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
+      <DialogTrigger asChild>
+        <button className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" onClick={() => setOfferOpen(true)}>
+          Make Offer
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Make an Offer</DialogTitle>
+          <DialogDescription>Submit your offer for this vehicle. The dealer will see your details and offer.</DialogDescription>
+        </DialogHeader>
+        {submitSuccess ? (
+          <div className="text-green-600 py-4">Offer sent successfully!</div>
+        ) : (
+          <form className="space-y-4" onSubmit={handleOfferSubmit}>
+            <div>
+              <label className="block text-sm font-medium mb-1">Name</label>
+              <input type="text" name="name" value={offerForm.name} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Name" placeholder="Your name" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input type="email" name="email" value={offerForm.email} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Email" placeholder="you@email.com" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Phone</label>
+              <input type="tel" name="phone" value={offerForm.phone} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Phone" placeholder="Phone number" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Offer (£)</label>
+              <input type="number" name="offer" value={offerForm.offer} onChange={handleOfferChange} required min="1" className="w-full border rounded px-3 py-2" title="Offer" placeholder="Your offer (£)" />
+            </div>
+            {submitError && <div className="text-red-600 text-sm">{submitError}</div>}
+            <DialogFooter>
+              <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" disabled={submitting}>
+                {submitting ? "Sending..." : "Send Offer"}
+              </button>
+              <DialogClose asChild>
+                <button type="button" className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80">Cancel</button>
+              </DialogClose>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
+
+  // More Details section: show all fields except id, images, and the specified fields
+  const excludedFields = [
+    'id', 'images', 'deactivationReason', 'dateOfLastV5CIssued', 'tokenExpiryDate', 'tokenActivatedDate',
+    'updatedAt', 'tokenStatus', 'createdAt', 'location', 'features', 'dealerUid', 'deactivatedAt', 'mot'
+  ];
+  const moreDetails = Object.entries(vehicle)
+    .filter(([key]) => !excludedFields.includes(key))
+    .map(([key, value]) => (
+      <tr key={key}>
+        <td className="py-1 pr-4 font-mono text-xs text-gray-500 align-top">{key}</td>
+        <td className="py-1 text-sm text-gray-900 align-top">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
+      </tr>
+    ));
+
   return (
     <>
-      {/* Add to Favorites, Report Listing, and Make Offer Buttons (Mobile) */}
-      <div className="lg:hidden flex flex-col gap-2 mb-4">
-        {/* Save button moved to title, so remove from here */}
-        <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
-          <DialogTrigger asChild>
-            <button className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" onClick={() => setOfferOpen(true)}>
-              Make Offer
-            </button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Make an Offer</DialogTitle>
-              <DialogDescription>Submit your offer for this vehicle. The dealer will see your details and offer.</DialogDescription>
-            </DialogHeader>
-            {submitSuccess ? (
-              <div className="text-green-600 py-4">Offer sent successfully!</div>
-            ) : (
-              <form className="space-y-4" onSubmit={handleOfferSubmit}>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Name</label>
-                  <input type="text" name="name" value={offerForm.name} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Name" placeholder="Your name" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
-                  <input type="email" name="email" value={offerForm.email} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Email" placeholder="you@email.com" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Phone</label>
-                  <input type="tel" name="phone" value={offerForm.phone} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Phone" placeholder="Phone number" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Offer (£)</label>
-                  <input type="number" name="offer" value={offerForm.offer} onChange={handleOfferChange} required min="1" className="w-full border rounded px-3 py-2" title="Offer" placeholder="Your offer (£)" />
-                </div>
-                {submitError && <div className="text-red-600 text-sm">{submitError}</div>}
-                <DialogFooter>
-                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" disabled={submitting}>
-                    {submitting ? "Sending..." : "Send Offer"}
-                  </button>
-                  <DialogClose asChild>
-                    <button type="button" className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80">Cancel</button>
-                  </DialogClose>
-                </DialogFooter>
-              </form>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
-
+      {/* Remove old Make Offer button groups (mobile/desktop) */}
       {/* CarImageSection for mobile */}
       <div className="lg:hidden mb-6">
         <Suspense fallback={<div>Loading images...</div>}>
@@ -255,7 +271,40 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
       {/* CarDetailsPayment for mobile */}
       <div className="lg:hidden mb-6">
-        <CarDetailsPayment {...carDetails} />
+        <CarDetailsPayment {...carDetails} makeOfferButton={makeOfferButton} />
+      </div>
+
+      {/* Vehicle Details for mobile */}
+      <div className="lg:hidden">
+        <CommonVehicleDetails vehicle={vehicle} />
+        {/* More Details dropdown directly under Vehicle Details */}
+        <div className="mt-2">
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            onClick={() => setShowMoreDetails((open) => !open)}
+            aria-expanded={showMoreDetails}
+          >
+            {showMoreDetails ? 'Hide' : 'Show'} More Details
+            <span className={`transition-transform ${showMoreDetails ? 'rotate-180' : ''}`}>▼</span>
+          </button>
+          <div
+            className={`transition-all duration-300 overflow-hidden ${showMoreDetails ? 'max-h-[1000px] mt-4' : 'max-h-0'}`}
+            style={{ background: showMoreDetails ? '#fff' : 'transparent' }}
+          >
+            {showMoreDetails && (
+              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800">More Details</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left">
+                    <tbody>
+                      {moreDetails}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Other details for mobile */}
@@ -316,11 +365,37 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           <Suspense fallback={<div>Loading images...</div>}>
             <CarImageSection images={vehicle.images} />
           </Suspense>
-          
           <CommonVehicleDetails vehicle={vehicle} />
+          {/* More Details dropdown directly under Vehicle Details */}
+          <div className="mt-2">
+            <button
+              className="flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onClick={() => setShowMoreDetails((open) => !open)}
+              aria-expanded={showMoreDetails}
+            >
+              {showMoreDetails ? 'Hide' : 'Show'} More Details
+              <span className={`transition-transform ${showMoreDetails ? 'rotate-180' : ''}`}>▼</span>
+            </button>
+            <div
+              className={`transition-all duration-300 overflow-hidden ${showMoreDetails ? 'max-h-[1000px] mt-4' : 'max-h-0'}`}
+              style={{ background: showMoreDetails ? '#fff' : 'transparent' }}
+            >
+              {showMoreDetails && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">More Details</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-left">
+                      <tbody>
+                        {moreDetails}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
           <VehicleDocumentation vehicle={vehicle} />
           <VehicleSpecificDetails vehicle={vehicle} />
-
           {/* Features Section */}
           <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4 shadow-sm">
             <h3 className="text-lg font-semibold mb-4 text-gray-800">Features</h3>
@@ -337,58 +412,9 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
         {/* Right Column */}
         <div className="lg:col-span-5">
-        {/* Add to Favorites, Report Listing, and Make Offer Buttons (desktop) */}
-        <div className="flex flex-col gap-2 mb-4">
-          {/* Save button moved to title, so remove from here */}
-          <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
-            <DialogTrigger asChild>
-              <button className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" onClick={() => setOfferOpen(true)}>
-                Make Offer
-              </button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Make an Offer</DialogTitle>
-                <DialogDescription>Submit your offer for this vehicle. The dealer will see your details and offer.</DialogDescription>
-              </DialogHeader>
-              {submitSuccess ? (
-                <div className="text-green-600 py-4">Offer sent successfully!</div>
-              ) : (
-                <form className="space-y-4" onSubmit={handleOfferSubmit}>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Name</label>
-                    <input type="text" name="name" value={offerForm.name} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Name" placeholder="Your name" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Email</label>
-                    <input type="email" name="email" value={offerForm.email} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Email" placeholder="you@email.com" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Phone</label>
-                    <input type="tel" name="phone" value={offerForm.phone} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Phone" placeholder="Phone number" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Offer (£)</label>
-                    <input type="number" name="offer" value={offerForm.offer} onChange={handleOfferChange} required min="1" className="w-full border rounded px-3 py-2" title="Offer" placeholder="Your offer (£)" />
-                  </div>
-                  {submitError && <div className="text-red-600 text-sm">{submitError}</div>}
-                  <DialogFooter>
-                    <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" disabled={submitting}>
-                      {submitting ? "Sending..." : "Send Offer"}
-                    </button>
-                    <DialogClose asChild>
-                      <button type="button" className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80">Cancel</button>
-                    </DialogClose>
-                  </DialogFooter>
-                </form>
-              )}
-            </DialogContent>
-          </Dialog>
-        </div>
-
-          {/* CarDetailsPayment for desktop - remains in right column */}
+          {/* CarDetailsPayment for desktop - remains in right column, now with makeOfferButton */}
           <div className="hidden lg:block">
-             <CarDetailsPayment {...carDetails} />
+            <CarDetailsPayment {...carDetails} makeOfferButton={makeOfferButton} />
           </div>
 
           <DealerInformation {...dealerInfo} />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
@@ -11,6 +11,9 @@ interface CarImageSectionProps {
 
 export function CarImageSection({ images }: CarImageSectionProps) { 
   const [mainImageIndex, setMainImageIndex] = useState(0)
+  const dragStartX = useRef<number | null>(null)
+  const dragDelta = useRef<number>(0)
+  const dragActive = useRef<boolean>(false)
 
   const handleImagePreviewClick = (index: number) => {
     setMainImageIndex(index)
@@ -23,6 +26,45 @@ export function CarImageSection({ images }: CarImageSectionProps) {
   const handleNextImage = () => {
     setMainImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
   }
+
+  // Drag handlers for main image
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    dragActive.current = true;
+    dragDelta.current = 0;
+    if ('touches' in e) {
+      dragStartX.current = e.touches[0].clientX;
+    } else {
+      dragStartX.current = e.clientX;
+    }
+  };
+
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!dragActive.current || dragStartX.current === null) return;
+    let clientX = 0;
+    if ('touches' in e) {
+      if (e.touches.length === 0) return;
+      clientX = e.touches[0].clientX;
+    } else {
+      clientX = e.clientX;
+    }
+    dragDelta.current = clientX - dragStartX.current;
+  };
+
+  const handleDragEnd = () => {
+    if (!dragActive.current) return;
+    dragActive.current = false;
+    if (Math.abs(dragDelta.current) > 50) {
+      if (dragDelta.current < 0) {
+        // Dragged left, next image
+        setMainImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+      } else {
+        // Dragged right, prev image
+        setMainImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+      }
+    }
+    dragStartX.current = null;
+    dragDelta.current = 0;
+  };
 
   if (!images || images.length === 0) {
     return (
@@ -39,7 +81,18 @@ export function CarImageSection({ images }: CarImageSectionProps) {
   return (
     <div className="relative rounded-lg border bg-card text-card-foreground shadow-sm group">
       {/* Main Image Container */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden">
+      <div
+        className="relative aspect-[16/10] w-full overflow-hidden select-none"
+        onMouseDown={handleDragStart}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+        onTouchStart={handleDragStart}
+        onTouchMove={handleDragMove}
+        onTouchEnd={handleDragEnd}
+        role="presentation"
+        tabIndex={-1}
+      >
         <Image
           src={images[mainImageIndex]}
           alt="Car view"
