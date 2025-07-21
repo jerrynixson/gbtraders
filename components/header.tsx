@@ -89,11 +89,11 @@ export function Header() {
   const vehicleNavItems: NavItem[] = [
     { href: "/categories/cars", label: "Cars" },
     { href: "/categories/vans", label: "Vans" },
-    { href: "/categories/motorcycles", label: "Motorcycles" },
+    // { href: "/categories/motorcycles", label: "Motorcycles" },
     { href: "/categories/trucks", label: "Trucks" },
-    { href: "/categories/electric-vehicles", label: "Electric Vehicles" },
-    { href: "/categories/caravans", label: "Caravans" },
-    { href: "/categories/e-bikes", label: "E-Bikes" }
+    // { href: "/categories/electric-vehicles", label: "Electric Vehicles" },
+    // { href: "/categories/caravans", label: "Caravans" },
+    // { href: "/categories/e-bikes", label: "E-Bikes" }
   ]
 
   const dealerNavItems: NavItem[] = [

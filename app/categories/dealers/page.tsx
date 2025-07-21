@@ -327,7 +327,7 @@ export default function SearchDealerPage() {
                       variant={viewMode === "list" ? "default" : "outline"}
                       size="sm"
                       onClick={() => setViewMode("list")}
-                      className={`flex items-center transition-all duration-200 hover:scale-105 ${viewMode === "list" ? "bg-gradient-to-r from-blue-800 to-blue-600 hover:from-blue-900 hover:to-blue-700" : ""}`}
+                      className={`hidden md:flex items-center transition-all duration-200 hover:scale-105 ${viewMode === "list" ? "bg-gradient-to-r from-blue-800 to-blue-600 hover:from-blue-900 hover:to-blue-700" : ""}`}
                     >
                       <List className="h-4 w-4 mr-2" />
                       List
@@ -360,13 +360,13 @@ export default function SearchDealerPage() {
               ) : (
                 <div className="flex flex-col gap-4">
                   {dealers.map((dealer) => (
-                    <div key={dealer.id} className="flex bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-                      <div className="w-64 h-48 flex-shrink-0 relative">
+                    <div key={dealer.id} className="flex flex-col md:flex-row bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className="w-full md:w-64 h-48 flex-shrink-0 relative">
                         <Image 
                           src={dealer.dealerBannerUrl || "/placeholder.svg"} 
                           alt={dealer.businessName} 
                           fill 
-                          className="object-contain bg-white rounded-l-xl" 
+                          className="object-contain bg-white" 
                         />
                       </div>
                       <div className="flex-1 p-6">

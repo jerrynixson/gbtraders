@@ -70,22 +70,22 @@ export function Hero() {
   const vehicleTypes = [
     "Cars",
     "Vans",
-    "Motorcycles",
+    // "Motorcycles",
     "Trucks",
-    "Electric Vehicles",
-    "Caravans",
-    "E-Bikes"
+    // "Electric Vehicles",
+    // "Caravans",
+    // "E-Bikes"
   ]
 
   // Mapping vehicle types to their category pages
   const vehicleTypeToPageMap: Record<string, string> = {
     "Cars": "/categories/cars",
     "Vans": "/categories/vans",
-    "Motorcycles": "/categories/motorcycles",
+    // "Motorcycles": "/categories/motorcycles",
     "Trucks": "/categories/trucks",
-    "Electric Vehicles": "/categories/electric-vehicles",
-    "Caravans": "/categories/caravans",
-    "E-Bikes": "/categories/e-bikes"
+    // "Electric Vehicles": "/categories/electric-vehicles",
+    // "Caravans": "/categories/caravans",
+    // "E-Bikes": "/categories/e-bikes"
   }
 
   const images = [

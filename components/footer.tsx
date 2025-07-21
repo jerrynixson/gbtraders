@@ -12,9 +12,9 @@ export function Footer() {
               GB Trader offers new and used cars right across the United Kingdom. Join our site and start buying and
               selling used cars like many other traders just like you have..
             </p>
-            <Link href="/about" className="text-gray-300 hover:text-white">
+            {/* <Link href="/about" className="text-gray-300 hover:text-white">
               More about us
-            </Link>
+            </Link> */}
           </div>
 
           {/* Column 2 - Get in Touch */}
