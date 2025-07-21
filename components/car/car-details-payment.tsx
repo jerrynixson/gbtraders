@@ -1,5 +1,6 @@
 import Image from "next/image"
 import { MessageCircle, Phone } from "lucide-react"
+import { ReactNode } from "react"
 
 interface CarDetailsPaymentProps {
   carName: string
@@ -7,6 +8,7 @@ interface CarDetailsPaymentProps {
   price: string
   dealerName: string
   dealerLocation: string
+  saveButton?: ReactNode
 }
 
 export function CarDetailsPayment({
@@ -15,11 +17,15 @@ export function CarDetailsPayment({
   price,
   dealerName,
   dealerLocation,
+  saveButton,
 }: CarDetailsPaymentProps) {
   return (
     <div className="top-4">
       <div className="bg-background border border-border rounded-md p-4 mb-6">
-        <h1 className="text-xl font-bold mb-1">{carName}</h1>
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-xl font-bold">{carName}</h1>
+          {saveButton && <div>{saveButton}</div>}
+        </div>
         <p className="text-sm text-muted-foreground mb-4">{carDescription}</p>
         <div className="hidden grid grid-cols-2 gap-4 mb-4">
           <button className="bg-primary text-primary-foreground text-sm font-semibold py-2 px-4 rounded-md">

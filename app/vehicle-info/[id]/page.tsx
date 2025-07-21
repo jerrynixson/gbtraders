@@ -152,6 +152,15 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
     price: `£${vehicle.price.toLocaleString()}`,
     dealerName: dealerInfo.name,
     dealerLocation: vehicle.location.city,
+    saveButton: (
+      <button 
+        className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ml-2"
+        onClick={onFavoriteClick}
+        title={isFavorite ? 'Remove from favorites' : 'Save to favorites'}
+      >
+        <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : ''}`} />
+      </button>
+    )
   };
 
   // Offer modal state
@@ -190,22 +199,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
     <>
       {/* Add to Favorites, Report Listing, and Make Offer Buttons (Mobile) */}
       <div className="lg:hidden flex flex-col gap-2 mb-4">
-        <div className="flex justify-between items-center">
-          <button 
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            onClick={onFavoriteClick}
-          >
-            <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : ''}`} />
-            <span>{isFavorite ? 'Saved' : 'Save'}</span>
-          </button>
-          {/* <button 
-            className="inline-flex items-center justify-center rounded-md bg-muted p-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            onClick={() => {}} // TODO: Implement report functionality
-            title="Report listing"
-          >
-            <Flag className="h-4 w-4" />
-          </button> */}
-        </div>
+        {/* Save button moved to title, so remove from here */}
         <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
           <DialogTrigger asChild>
             <button className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" onClick={() => setOfferOpen(true)}>
@@ -345,22 +339,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
         <div className="lg:col-span-5">
         {/* Add to Favorites, Report Listing, and Make Offer Buttons (desktop) */}
         <div className="flex flex-col gap-2 mb-4">
-          <div className="flex justify-between items-center">
-            <button 
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              onClick={onFavoriteClick}
-            >
-              <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : ''}`} />
-              <span>{isFavorite ? 'Saved' : 'Save'}</span>
-            </button>
-            {/* <button 
-              className="inline-flex items-center justify-center rounded-md bg-muted p-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              onClick={() => {}} // TODO: Implement report functionality
-              title="Report listing"
-            >
-              <Flag className="h-4 w-4" />
-            </button> */}
-          </div>
+          {/* Save button moved to title, so remove from here */}
           <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
             <DialogTrigger asChild>
               <button className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" onClick={() => setOfferOpen(true)}>
