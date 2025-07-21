@@ -121,9 +121,9 @@ export function Header() {
   ]
 
   const bottomNavItems: NavItem[] = [
-    { href: "/news", label: "News & Blogs", icon: <Newspaper className="h-4 w-4" /> },
-    { href: "/for-dealers", label: "For Dealers", icon: <Store className="h-4 w-4" /> },
-    { href: "/search", label: "Search", icon: <Search className="h-4 w-4" /> },
+    // { href: "/news", label: "News & Blogs", icon: <Newspaper className="h-4 w-4" /> },
+    // { href: "/for-dealers", label: "For Dealers", icon: <Store className="h-4 w-4" /> },
+    // { href: "/search", label: "Search", icon: <Search className="h-4 w-4" /> },
   ]
 
   // Type guard to check if an item is a dropdown
@@ -187,19 +187,34 @@ export function Header() {
                     )
                   )
                 )}
+                {/* Simple 'Search' text link with small icon after Dealers link */}
+                <Link href="/search" className="text-sm font-medium hover:text-primary ml-2 flex items-center gap-1">
+                  <Search className="h-4 w-4" />
+                  Search
+                </Link>
               </nav>
             </div>
             <nav className="flex items-center space-x-8">
               {bottomNavItems.map((item) => (
                 item.href && (
-                  <Link 
-                    key={item.href} 
-                    href={item.href} 
-                    className="text-sm font-medium flex items-center space-x-2 hover:text-primary"
-                  >
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </Link>
+                  // <Link 
+                  //   key={item.href} 
+                  //   href={item.href} 
+                  //   className="text-sm font-medium flex items-center space-x-2 hover:text-primary"
+                  // >
+                  //   {item.icon}
+                  //   <span>{item.label}</span>
+                  // </Link>
+                  item.href === "/search" && (
+                    <Link 
+                      key={item.href} 
+                      href={item.href} 
+                      className="text-sm font-medium flex items-center space-x-2 hover:text-primary"
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </Link>
+                  )
                 )
               ))}
             </nav>
@@ -354,15 +369,26 @@ export function Header() {
                   <nav className="flex flex-col space-y-3">
                     {bottomNavItems.map((item) => (
                       item.href && (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className="text-sm font-medium py-2 border-b border-gray-100 flex items-center space-x-2 hover:text-primary"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          {item.icon}
-                          <span>{item.label}</span>
-                        </Link>
+                        // <Link
+                        //   key={item.href}
+                        //   href={item.href}
+                        //   className="text-sm font-medium py-2 border-b border-gray-100 flex items-center space-x-2 hover:text-primary"
+                        //   onClick={() => setMobileMenuOpen(false)}
+                        // >
+                        //   {item.icon}
+                        //   <span>{item.label}</span>
+                        // </Link>
+                        item.href === "/search" && (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="text-sm font-medium py-2 border-b border-gray-100 flex items-center space-x-2 hover:text-primary"
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            {item.icon}
+                            <span>{item.label}</span>
+                          </Link>
+                        )
                       )
                     ))}
                   </nav>
