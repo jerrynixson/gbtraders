@@ -9,6 +9,8 @@ import { FileSearch, Calendar, Clock, MapPin, Tag, Car, Truck } from "lucide-rea
 import { Heart, Flag } from "lucide-react"
 import { useParams } from "next/navigation"
 import { useEffect, useState, useCallback, Suspense } from "react"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
+import { submitOffer } from "@/lib/offers"
 import { GoogleMapComponent } from "@/components/ui/google-map"
 import { Vehicle, Car as CarType, UsedCar, Van as VanType, Truck as TruckType, VehicleStatus, VehicleType } from "@/types/vehicles"
 import { VehicleRepository } from "@/lib/db/repositories/vehicleRepository"
@@ -129,11 +131,12 @@ const ErrorState = ({ message }: { message: string }) => (
 );
 
 // Vehicle content component
-const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick }: { 
+const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, user }: { 
   vehicle: Vehicle; 
   userLocation: { lat: number; lng: number } | null;
   isFavorite: boolean;
   onFavoriteClick: () => void;
+  user: any;
 }) => {
   const dealerInfo = {
     name: "Dealer information not available",
@@ -149,6 +152,38 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick }: 
     price: `£${vehicle.price.toLocaleString()}`,
     dealerName: dealerInfo.name,
     dealerLocation: vehicle.location.city,
+  };
+
+  // Offer modal state
+  const [offerOpen, setOfferOpen] = useState(false);
+  const [offerForm, setOfferForm] = useState({ name: user?.displayName || "", email: user?.email || "", phone: "", offer: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const handleOfferChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setOfferForm({ ...offerForm, [e.target.name]: e.target.value });
+  };
+
+  const handleOfferSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await submitOffer(vehicle.id, {
+        name: offerForm.name,
+        email: offerForm.email,
+        phone: offerForm.phone,
+        offer: Number(offerForm.offer),
+        uid: user?.uid || "",
+      });
+      setSubmitSuccess(true);
+      setOfferForm({ name: user?.displayName || "", email: user?.email || "", phone: "", offer: "" });
+    } catch (err) {
+      setSubmitError("Failed to send offer. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -184,8 +219,9 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick }: 
           </div>
         </div>
 
-        {/* Add to Favorites and Report Listing Buttons */}
-        <div className="flex justify-between items-center mb-4 mt-6">
+      {/* Add to Favorites, Report Listing, and Make Offer Buttons */}
+      <div className="flex flex-col gap-2 mb-4 mt-6">
+        <div className="flex justify-between items-center">
           <button 
             className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             onClick={onFavoriteClick}
@@ -193,14 +229,59 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick }: 
             <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : ''}`} />
             <span>{isFavorite ? 'Saved' : 'Save'}</span>
           </button>
-
           <button 
             className="inline-flex items-center justify-center rounded-md bg-muted p-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             onClick={() => {/* TODO: Implement report functionality */}}
+            title="Report listing"
           >
             <Flag className="h-4 w-4" />
           </button>
         </div>
+        <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
+          <DialogTrigger asChild>
+            <button className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" onClick={() => setOfferOpen(true)}>
+              Make Offer
+            </button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Make an Offer</DialogTitle>
+              <DialogDescription>Submit your offer for this vehicle. The dealer will see your details and offer.</DialogDescription>
+            </DialogHeader>
+            {submitSuccess ? (
+              <div className="text-green-600 py-4">Offer sent successfully!</div>
+            ) : (
+              <form className="space-y-4" onSubmit={handleOfferSubmit}>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Name</label>
+                  <input type="text" name="name" value={offerForm.name} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Name" placeholder="Your name" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input type="email" name="email" value={offerForm.email} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Email" placeholder="you@email.com" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phone</label>
+                  <input type="tel" name="phone" value={offerForm.phone} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Phone" placeholder="Phone number" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Offer (£)</label>
+                  <input type="number" name="offer" value={offerForm.offer} onChange={handleOfferChange} required min="1" className="w-full border rounded px-3 py-2" title="Offer" placeholder="Your offer (£)" />
+                </div>
+                {submitError && <div className="text-red-600 text-sm">{submitError}</div>}
+                <DialogFooter>
+                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" disabled={submitting}>
+                    {submitting ? "Sending..." : "Send Offer"}
+                  </button>
+                  <DialogClose asChild>
+                    <button type="button" className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80">Cancel</button>
+                  </DialogClose>
+                </DialogFooter>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
 
         <DealerInformation {...dealerInfo} />
         
@@ -262,8 +343,9 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick }: 
 
         {/* Right Column */}
         <div className="lg:col-span-5">
-          {/* Add to Favorites and Report Listing Buttons */}
-          <div className="flex justify-between items-center mb-4">
+        {/* Add to Favorites, Report Listing, and Make Offer Buttons (desktop) */}
+        <div className="flex flex-col gap-2 mb-4">
+          <div className="flex justify-between items-center">
             <button 
               className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               onClick={onFavoriteClick}
@@ -271,14 +353,59 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick }: 
               <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : ''}`} />
               <span>{isFavorite ? 'Saved' : 'Save'}</span>
             </button>
-
             <button 
               className="inline-flex items-center justify-center rounded-md bg-muted p-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               onClick={() => {/* TODO: Implement report functionality */}}
+              title="Report listing"
             >
               <Flag className="h-4 w-4" />
             </button>
           </div>
+          <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
+            <DialogTrigger asChild>
+              <button className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" onClick={() => setOfferOpen(true)}>
+                Make Offer
+              </button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Make an Offer</DialogTitle>
+                <DialogDescription>Submit your offer for this vehicle. The dealer will see your details and offer.</DialogDescription>
+              </DialogHeader>
+              {submitSuccess ? (
+                <div className="text-green-600 py-4">Offer sent successfully!</div>
+              ) : (
+                <form className="space-y-4" onSubmit={handleOfferSubmit}>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Name</label>
+                    <input type="text" name="name" value={offerForm.name} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Name" placeholder="Your name" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email</label>
+                    <input type="email" name="email" value={offerForm.email} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Email" placeholder="you@email.com" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Phone</label>
+                    <input type="tel" name="phone" value={offerForm.phone} onChange={handleOfferChange} required className="w-full border rounded px-3 py-2" title="Phone" placeholder="Phone number" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Offer (£)</label>
+                    <input type="number" name="offer" value={offerForm.offer} onChange={handleOfferChange} required min="1" className="w-full border rounded px-3 py-2" title="Offer" placeholder="Your offer (£)" />
+                  </div>
+                  {submitError && <div className="text-red-600 text-sm">{submitError}</div>}
+                  <DialogFooter>
+                    <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" disabled={submitting}>
+                      {submitting ? "Sending..." : "Send Offer"}
+                    </button>
+                    <DialogClose asChild>
+                      <button type="button" className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80">Cancel</button>
+                    </DialogClose>
+                  </DialogFooter>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
 
           {/* CarDetailsPayment for desktop - remains in right column */}
           <div className="hidden lg:block">
@@ -462,6 +589,7 @@ export default function VehicleDetails() {
             userLocation={state.userLocation}
             isFavorite={state.isFavorite}
             onFavoriteClick={handleFavoriteClick}
+            user={user}
           />
         </Suspense>
       </main>

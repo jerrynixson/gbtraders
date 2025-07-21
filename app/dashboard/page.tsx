@@ -21,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/hooks/useAuth"
+import { fetchOffersForVehicles } from "@/lib/offers"
 import { auth } from "@/lib/firebase"
 import { DealerProfileSection } from "@/components/dealer/profile"
 import { PlanInfoSection } from "@/components/dashboard/PlanInfoSection"
@@ -128,6 +129,8 @@ export default function DealerDashboard() {
   const [tokenFilter, setTokenFilter] = useState<string>("all") // all, active, inactive
   const [isLoading, setIsLoading] = useState(true)
   const [planInfo, setPlanInfo] = useState<UserPlanInfo | null>(null)
+  const [offers, setOffers] = useState<any[]>([]);
+  const [offersLoading, setOffersLoading] = useState(false);
   const [bulkUploadStatus, setBulkUploadStatus] = useState<BulkUploadStatus | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [selectedAPI, setSelectedAPI] = useState<string>("")
@@ -173,7 +176,6 @@ export default function DealerDashboard() {
 
   const loadDashboardData = async () => {
     if (!user) {
-      // Removed console log
       setIsLoading(false)
       return
     }
@@ -233,9 +235,12 @@ export default function DealerDashboard() {
         }
       });
 
+      let activeVehicles: any[] = [];
+      let inactiveVehicles: any[] = [];
+      let allVehicles: any[] = [];
+
       if (vehicleResponse.ok) {
         const vehicleData = await vehicleResponse.json();
-        // Convert date strings back to Date objects
         const processVehicles = (vehicles: any[]) => vehicles.map(vehicle => ({
           ...vehicle,
           createdAt: vehicle.createdAt ? new Date(vehicle.createdAt) : undefined,
@@ -245,12 +250,29 @@ export default function DealerDashboard() {
           tokenDeactivatedDate: vehicle.tokenDeactivatedDate ? new Date(vehicle.tokenDeactivatedDate) : undefined
         }));
 
-        const activeVehicles = processVehicles(vehicleData.data.activeVehicles);
-        const inactiveVehicles = processVehicles(vehicleData.data.inactiveVehicles);
-        
+        activeVehicles = processVehicles(vehicleData.data.activeVehicles);
+        inactiveVehicles = processVehicles(vehicleData.data.inactiveVehicles);
+        allVehicles = [...activeVehicles, ...inactiveVehicles];
+
         setActiveVehicles(activeVehicles);
         setInactiveVehicles(inactiveVehicles);
-        setAllVehicles([...activeVehicles, ...inactiveVehicles]);
+        setAllVehicles(allVehicles);
+      }
+
+      // Fetch offers for this dealer's vehicles AFTER vehicles are loaded
+      setOffersLoading(true);
+      try {
+        const vehicleIds = allVehicles.map(v => v.id);
+        if (vehicleIds.length > 0) {
+          const offersList = await fetchOffersForVehicles(vehicleIds);
+          setOffers(offersList);
+        } else {
+          setOffers([]);
+        }
+      } catch (err) {
+        setOffers([]);
+      } finally {
+        setOffersLoading(false);
       }
 
       // Removed success log
@@ -579,12 +601,66 @@ export default function DealerDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
             <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-lg shadow-sm w-full sm:w-auto">
               <TabsTrigger value="listings" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Listings</TabsTrigger>
+              <TabsTrigger value="offers" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Offers</TabsTrigger>
               {/*
               <TabsTrigger value="analytics" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Analytics</TabsTrigger>
               <TabsTrigger value="inquiries" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Inquiries</TabsTrigger>
               */}
               <TabsTrigger value="profile" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Profile</TabsTrigger>
             </TabsList>
+          <TabsContent value="offers">
+            <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>Offers</CardTitle>
+                <CardDescription>View all offers made on your vehicles.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {offersLoading ? (
+                  <div className="py-8 text-center text-gray-500">Loading offers...</div>
+                ) : offers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <DollarSign className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Offers Yet</h3>
+                    <p className="text-gray-600 text-center mb-6 max-w-md">
+                      When buyers make offers on your vehicles, they will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead>
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Offer (£)</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-100">
+                        {offers.map((offer) => {
+                          const vehicle = allVehicles.find(v => v.id === offer.id);
+                          return (
+                            <tr key={offer.id}>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : offer.id}</td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{offer.name}</td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{offer.email}</td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{offer.phone}</td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">£{offer.offer}</td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{offer.timestamp && offer.timestamp.toDate ? offer.timestamp.toDate().toLocaleString() : ''}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
               <Button 
                 variant="outline" 
@@ -851,4 +927,4 @@ export default function DealerDashboard() {
       <Footer />
     </div>
   )
-} 
+}
