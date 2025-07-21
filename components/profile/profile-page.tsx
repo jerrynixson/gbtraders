@@ -352,13 +352,13 @@ export function ProfilePage() {
                     <Badge variant="outline" className="text-sm font-semibold border-blue-200 text-blue-700">
                       Member since {createdDate}
                     </Badge>
-                    {userProfile.additionalRoles && userProfile.additionalRoles.length > 0 && (
+                    {/* {userProfile.additionalRoles && userProfile.additionalRoles.length > 0 && (
                       userProfile.additionalRoles.map((role) => (
                         <Badge key={role} variant="outline" className="text-sm font-semibold border-green-200 text-green-700">
                           {role.charAt(0).toUpperCase() + role.slice(1)}
                         </Badge>
                       ))
-                    )}
+                    )} */}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -519,7 +519,7 @@ export function ProfilePage() {
                           ) : (
                             <Input id="role" value={userProfile.role} className="text-gray-900 capitalize" disabled />
                           )}
-                          {userProfile.additionalRoles && userProfile.additionalRoles.length > 0 && (
+                          {/* {userProfile.additionalRoles && userProfile.additionalRoles.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               {userProfile.additionalRoles.map((role) => (
                                 <Badge key={role} variant="secondary" className="text-xs font-medium bg-green-100 text-green-700">
@@ -527,7 +527,7 @@ export function ProfilePage() {
                                 </Badge>
                               ))}
                             </div>
-                          )}
+                          )} */}
                         </div>
                       </div>
                       <Separator className="my-4" />
