@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,8 @@ import { TokenizedVehicleCard } from "@/components/dashboard/TokenizedVehicleCar
 import { getDealerProfile } from "@/lib/dealer/profile"
 import { doc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { Avatar } from "@/components/ui/avatar"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface UserPlanInfo {
   planName: string
@@ -116,6 +118,70 @@ const StatusBadge = ({ status }: { status: string }) => {
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   )
+}
+
+// Helper to get initials from name
+function getInitials(name: string | null) {
+  if (!name) return "D";
+  const parts = name.split(" ").filter(Boolean);
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() || "D";
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// StatsCards component
+function StatsCards({ stats, planInfo }: { stats: any, planInfo: any }) {
+  const tokenPercent = planInfo && planInfo.totalTokens > 0
+    ? Math.round(((planInfo.usedTokens || 0) / planInfo.totalTokens) * 100)
+    : 0;
+  return (
+    <div className="flex flex-row gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-5 md:gap-6 mb-8 pb-2 hide-scrollbar">
+      <Card className="min-w-[220px] border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow flex-shrink-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Listings</p>
+              <h3 className="text-3xl font-bold text-gray-900">{stats.totalListings}</h3>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
+              <Car className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card className="min-w-[220px] border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow flex-shrink-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Active Listings</p>
+              <h3 className="text-3xl font-bold text-green-600">{stats.activeListings}</h3>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-green-50 flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card className="min-w-[220px] border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow flex-shrink-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Available Tokens</p>
+              <h3 className="text-3xl font-bold text-blue-600">{stats.availableTokens}</h3>
+              {planInfo && (
+                <div className="mt-2">
+                  <Progress value={100 - tokenPercent} className="h-2" />
+                  <span className="text-xs text-gray-500">{planInfo.usedTokens || 0} used / {planInfo.totalTokens} total</span>
+                </div>
+              )}
+            </div>
+            <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
+              <RefreshCw className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export default function DealerDashboard() {
@@ -470,22 +536,19 @@ export default function DealerDashboard() {
     }
   }
 
-  // Filter vehicles based on search query and filters
-  const filteredVehicles = allVehicles.filter(vehicle => {
+  // Memoize filteredVehicles and stats
+  const filteredVehicles = useMemo(() => allVehicles.filter(vehicle => {
     const matchesSearch = vehicle.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vehicle.make?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vehicle.model?.toLowerCase().includes(searchQuery.toLowerCase())
-    
     const matchesStatus = statusFilter === "all" || vehicle.status === statusFilter
-    
     const matchesTokenFilter = tokenFilter === "all" || 
       (tokenFilter === "active" && vehicle.tokenStatus === "active") ||
       (tokenFilter === "inactive" && vehicle.tokenStatus !== "active")
-    
     return matchesSearch && matchesStatus && matchesTokenFilter
-  })
+  }), [allVehicles, searchQuery, statusFilter, tokenFilter]);
 
-  const stats = {
+  const stats = useMemo(() => ({
     totalListings: allVehicles.length,
     activeListings: activeVehicles.filter(v => v.tokenStatus === 'active').length,
     inactiveListings: allVehicles.filter(v => v.tokenStatus !== 'active').length,
@@ -493,12 +556,19 @@ export default function DealerDashboard() {
     totalInquiries: allVehicles.reduce((sum, v) => sum + (v.inquiries || 0), 0),
     totalValue: allVehicles.reduce((sum, v) => sum + (v.price || 0), 0),
     availableTokens: planInfo ? Math.max(0, planInfo.totalTokens - planInfo.usedTokens) : 0
-  }
+  }), [allVehicles, activeVehicles, planInfo]);
 
   if (isLoading) {
+    // Skeleton loader for dashboard
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-6">
+        <div className="flex gap-4 w-full max-w-4xl">
+          <Skeleton className="h-24 w-1/3 rounded-lg" />
+          <Skeleton className="h-24 w-1/3 rounded-lg" />
+          <Skeleton className="h-24 w-1/3 rounded-lg" />
+        </div>
+        <Skeleton className="h-10 w-1/2 rounded-lg" />
+        <Skeleton className="h-96 w-full max-w-4xl rounded-lg" />
       </div>
     )
   }
@@ -508,83 +578,22 @@ export default function DealerDashboard() {
       <Header />
       <main className="container mx-auto px-2 sm:px-4 py-6 sm:py-8 max-w-7xl">
         {/* Welcome Section */}
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">
-            Welcome back, {isDealerNameLoading ? "..." : dealerName || "Dealer"}
-          </h1>
-          <p className="text-gray-600 text-sm sm:text-base">Manage your dealership and listings</p>
+        <div className="mb-6 sm:mb-8 flex flex-col xs:flex-row xs:items-center gap-3 xs:gap-4">
+          <div className="flex justify-center xs:block">
+            <Avatar className="h-14 w-14 bg-blue-100 text-blue-700 font-bold text-xl flex items-center justify-center">
+              {isDealerNameLoading ? <Skeleton className="h-10 w-10 rounded-full" /> : getInitials(dealerName)}
+            </Avatar>
+          </div>
+          <div className="text-center xs:text-left">
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">
+              Welcome back, {isDealerNameLoading ? "..." : dealerName || "Dealer"}
+            </h1>
+            <p className="text-gray-600 text-sm sm:text-base">Manage your dealership and listings</p>
+          </div>
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Total Listings</p>
-                  <h3 className="text-3xl font-bold text-gray-900">{stats.totalListings}</h3>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Car className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Active Listings</p>
-                  <h3 className="text-3xl font-bold text-green-600">{stats.activeListings}</h3>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-green-50 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Available Tokens</p>
-                  <h3 className="text-3xl font-bold text-blue-600">{stats.availableTokens}</h3>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
-                  <RefreshCw className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          {/*
-          <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Total Views</p>
-                  <h3 className="text-3xl font-bold text-purple-600">{stats.totalViews}</h3>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-purple-50 flex items-center justify-center">
-                  <Eye className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Total Inquiries</p>
-                  <h3 className="text-3xl font-bold text-orange-600">{stats.totalInquiries}</h3>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-orange-50 flex items-center justify-center">
-                  <MessageSquare className="h-6 w-6 text-orange-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          */}
-        </div>
+        <StatsCards stats={stats} planInfo={planInfo} />
 
         {/* Plan Information Section */}
         {user && (
@@ -599,78 +608,25 @@ export default function DealerDashboard() {
 
         <Tabs defaultValue="listings" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
-            <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-lg shadow-sm w-full sm:w-auto">
-              <TabsTrigger value="listings" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Listings</TabsTrigger>
-              <TabsTrigger value="offers" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Offers</TabsTrigger>
+            <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-lg shadow-sm w-full sm:w-auto flex flex-row overflow-x-auto gap-1">
+              <TabsTrigger value="listings" className="rounded-md data-[state=active]:bg-gray-100 w-full min-w-[100px] sm:w-auto">Listings</TabsTrigger>
+              <TabsTrigger value="offers" className="rounded-md data-[state=active]:bg-gray-100 w-full min-w-[100px] sm:w-auto">Offers</TabsTrigger>
               {/*
-              <TabsTrigger value="analytics" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Analytics</TabsTrigger>
-              <TabsTrigger value="inquiries" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Inquiries</TabsTrigger>
+              <TabsTrigger value="analytics" className="rounded-md data-[state=active]:bg-gray-100 w-full min-w-[100px] sm:w-auto">Analytics</TabsTrigger>
+              <TabsTrigger value="inquiries" className="rounded-md data-[state=active]:bg-gray-100 w-full min-w-[100px] sm:w-auto">Inquiries</TabsTrigger>
               */}
-              <TabsTrigger value="profile" className="rounded-md data-[state=active]:bg-gray-100 w-full sm:w-auto">Profile</TabsTrigger>
+              <TabsTrigger value="profile" className="rounded-md data-[state=active]:bg-gray-100 w-full min-w-[100px] sm:w-auto">Profile</TabsTrigger>
             </TabsList>
-          <TabsContent value="offers">
-            <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>Offers</CardTitle>
-                <CardDescription>View all offers made on your vehicles.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {offersLoading ? (
-                  <div className="py-8 text-center text-gray-500">Loading offers...</div>
-                ) : offers.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                      <DollarSign className="w-12 h-12 text-gray-400" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Offers Yet</h3>
-                    <p className="text-gray-600 text-center mb-6 max-w-md">
-                      When buyers make offers on your vehicles, they will appear here.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead>
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Offer (£)</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-100">
-                        {offers.map((offer) => {
-                          const vehicle = allVehicles.find(v => v.id === offer.id);
-                          return (
-                            <tr key={offer.id}>
-                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : offer.id}</td>
-                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{offer.name}</td>
-                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{offer.email}</td>
-                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{offer.phone}</td>
-                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">£{offer.offer}</td>
-                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{offer.timestamp && offer.timestamp.toDate ? offer.timestamp.toDate().toLocaleString() : ''}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
               <Button 
                 variant="outline" 
                 onClick={() => router.push("/payment-plans")}
-                className="border-gray-200 hover:bg-gray-50 w-full sm:w-auto"
+                className="border-gray-200 hover:bg-gray-50 w-full sm:w-auto text-base py-2"
               >
                 <CreditCard className="w-4 h-4 mr-2" />
                 Payment Plans
               </Button>
-              <Button onClick={handleAddListing} className="bg-blue-600 hover:bg-blue-700 shadow-sm w-full sm:w-auto">
+              <Button onClick={handleAddListing} className="bg-blue-600 hover:bg-blue-700 shadow-sm w-full sm:w-auto text-base py-2">
                 <Plus className="w-4 h-4 mr-2" />
                 Add New Listing
               </Button>
@@ -719,12 +675,12 @@ export default function DealerDashboard() {
                 </div>
                 
                 {/* Token Filters */}
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="flex flex-wrap gap-2 mt-3 w-full">
                   <Button
                     variant={tokenFilter === "all" ? "default" : "outline"}
                     onClick={() => setTokenFilter("all")}
                     size="sm"
-                    className={`${tokenFilter === "all" ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-50/50 hover:bg-gray-100'}`}
+                    className={`w-full sm:w-auto ${tokenFilter === "all" ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-50/50 hover:bg-gray-100'}`}
                   >
                     All Listings
                   </Button>
@@ -732,7 +688,7 @@ export default function DealerDashboard() {
                     variant={tokenFilter === "active" ? "default" : "outline"}
                     onClick={() => setTokenFilter("active")}
                     size="sm"
-                    className={`${tokenFilter === "active" ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-50/50 hover:bg-gray-100'}`}
+                    className={`w-full sm:w-auto ${tokenFilter === "active" ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-50/50 hover:bg-gray-100'}`}
                   >
                     ● Active ({stats.activeListings})
                   </Button>
@@ -740,7 +696,7 @@ export default function DealerDashboard() {
                     variant={tokenFilter === "inactive" ? "default" : "outline"}
                     onClick={() => setTokenFilter("inactive")}
                     size="sm"
-                    className={`${tokenFilter === "inactive" ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-gray-50/50 hover:bg-gray-100'}`}
+                    className={`w-full sm:w-auto ${tokenFilter === "inactive" ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-gray-50/50 hover:bg-gray-100'}`}
                   >
                     ○ Inactive ({stats.inactiveListings})
                   </Button>
@@ -834,6 +790,146 @@ export default function DealerDashboard() {
                 </div>
               </DialogContent>
             </Dialog>
+          </TabsContent>
+
+          <TabsContent value="offers">
+            <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center gap-4 pb-2">
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
+                  <DollarSign className="w-7 h-7 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-bold">Offers</CardTitle>
+                  <CardDescription className="text-gray-600">
+                    View and manage all offers made on your vehicles.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {offersLoading ? (
+                  <div className="py-8 text-center text-gray-500">Loading offers...</div>
+                ) : offers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <DollarSign className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Offers Yet</h3>
+                    <p className="text-gray-600 text-center mb-6 max-w-md">
+                      When buyers make offers on your vehicles, they will appear here.
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => router.push("/dashboard/add-listing")}
+                      className="mt-2"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add a Listing
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    {/* Mobile: cards, Desktop: table */}
+                    <div className="block sm:hidden space-y-4">
+                      {offers.map((offer, idx) => {
+                        const vehicle = allVehicles.find(v => v.id === offer.id);
+                        return (
+                          <Card key={offer.id + offer.email} className="p-4">
+                            <div className="flex items-center gap-3 mb-2">
+                              <img
+                                src={vehicle?.image || vehicle?.images?.[0] || "/placeholder.jpg"}
+                                alt={vehicle ? `${vehicle.make} ${vehicle.model}` : "Vehicle"}
+                                className="w-14 h-14 rounded object-cover border"
+                              />
+                              <div>
+                                <div className="font-semibold text-gray-900">
+                                  {vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : offer.id}
+                                </div>
+                                <div className="text-xs text-gray-500">Offer: <span className="font-bold text-blue-700">£{offer.offer}</span></div>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-900 mb-1">Buyer: {offer.name}</div>
+                            <div className="text-xs text-gray-500 mb-1">{offer.email} {offer.phone && <>| {offer.phone}</>}</div>
+                            <div className="text-xs text-gray-500 mb-2">{offer.timestamp && offer.timestamp.toDate ? offer.timestamp.toDate().toLocaleString() : ""}</div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => router.push(`/vehicle-info/${offer.id}`)}
+                            >
+                              View
+                            </Button>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                    <div className="hidden sm:block overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Vehicle</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Buyer</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Contact</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Offer (£)</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
+                            <th className="px-4 py-2"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-100">
+                          {offers.map((offer, idx) => {
+                            const vehicle = allVehicles.find(v => v.id === offer.id);
+                            return (
+                              <tr
+                                key={offer.id + offer.email}
+                                className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                              >
+                                <td className="px-4 py-2 whitespace-nowrap flex items-center gap-2">
+                                  <img
+                                    src={vehicle?.image || vehicle?.images?.[0] || "/placeholder.jpg"}
+                                    alt={vehicle ? `${vehicle.make} ${vehicle.model}` : "Vehicle"}
+                                    className="w-10 h-10 rounded object-cover border"
+                                  />
+                                  <span>
+                                    {vehicle
+                                      ? `${vehicle.make} ${vehicle.model} ${vehicle.year}`
+                                      : offer.id}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                  {offer.name}
+                                </td>
+                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                  <div>{offer.email}</div>
+                                  <div className="text-xs text-gray-500">{offer.phone}</div>
+                                </td>
+                                <td className="px-4 py-2 whitespace-nowrap text-sm text-blue-700 font-bold">
+                                  £{offer.offer}
+                                </td>
+                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">
+                                  {offer.timestamp && offer.timestamp.toDate
+                                    ? offer.timestamp.toDate().toLocaleString()
+                                    : ""}
+                                </td>
+                                <td className="px-4 py-2 whitespace-nowrap">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      router.push(`/vehicle-info/${offer.id}`);
+                                    }}
+                                  >
+                                    View
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/*

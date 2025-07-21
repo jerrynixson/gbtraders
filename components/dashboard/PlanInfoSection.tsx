@@ -383,10 +383,11 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
               {/* Action Buttons */}
               <div className="flex gap-2 pt-2">
                 {status === 'active' ? (
-                  <div className="text-green-600 text-sm flex items-center">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    You have an active plan
-                  </div>
+                  // <div className="text-green-600 text-sm flex items-center">
+                  //   <CheckCircle className="w-4 h-4 mr-2" />
+                  //   You have an active plan
+                  // </div>
+                  null
                 ) : (
                   <Button 
                     variant="outline" 
@@ -398,13 +399,13 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
                     {status === 'expired' ? 'Renew Plan' : 'Choose Plan'}
                   </Button>
                 )}
-                <Button 
+                {/* <Button 
                   variant="ghost" 
                   size="sm"
                   onClick={loadPlanInfo}
                 >
                   Refresh
-                </Button>
+                </Button> */}
               </div>
             </>
           ) : (

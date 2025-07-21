@@ -73,7 +73,7 @@ export default async function VehicleSearchPage({ searchParams }: SearchPageProp
               </p>
               <div className="mt-4">
                 <a
-                  href={`/vehicles/${vehicle.id}`}
+                  href={`/vehicle-info/${vehicle.id}`}
                   className="block w-full text-center bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
                 >
                   View Details
