@@ -51,10 +51,10 @@ export default function Home() {
         <CarListings />
         <CarRentalBanner />
         <AdvertiseWithUs />
-        <LeaseCarListings />
+        {/* <LeaseCarListings /> */}
         <BrowseByBrand />
         <ValueYourCarBanner />
-        <BlogPostsSection />
+        {/*<BlogPostsSection />*/}
         
       </main>
       <BackToTop />

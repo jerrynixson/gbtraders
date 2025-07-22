@@ -52,7 +52,7 @@ export default function Home() {
         <CarRentalBanner />
         <AdvertiseWithUs />
         {/* <LeaseVanListings /> */}
-        <BlogPostsSection />
+        {/*<BlogPostsSection />*/}
         
       </main>
       <BackToTop />

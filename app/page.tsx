@@ -79,9 +79,11 @@ export default function Home() {
           <GBTraderFeatures />
         </AnimatedSection>
 
+        {/*
         <AnimatedSection>
           <BlogPostsSection />
         </AnimatedSection>
+        */}
       </main>
       <BackToTop />
       <Footer />
