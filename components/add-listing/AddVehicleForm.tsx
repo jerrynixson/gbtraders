@@ -218,7 +218,7 @@ const TRANSMISSION_TYPES = [
   { value: "semi-automatic", label: "Semi-Automatic" }
 ] as const
 
-const MAX_IMAGES = 8
+const MAX_IMAGES = 30
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
 export default function AddVehicleForm() {

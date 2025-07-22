@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Filter, Grid, List, Phone } from "lucide-react";
+import { Search, MapPin, Grid, List, Phone, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { useState, useEffect } from "react";
@@ -79,6 +79,10 @@ function DealerCard({ id, businessName, dealerBannerUrl, contact, location }: De
   );
 }
 
+// Cache for dealers data
+const DEALERS_CACHE_KEY = 'cached_dealers';
+const CACHE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
+
 // Add this function to convert address to coordinates
 const getCoordinatesFromAddress = async (addressLines: string[]): Promise<{ lat: number; lng: number }> => {
   try {
@@ -103,10 +107,13 @@ const getCoordinatesFromAddress = async (addressLines: string[]): Promise<{ lat:
 
 export default function SearchDealerPage() {
   const [viewMode, setViewMode] = useState("grid");
-  const [sortBy, setSortBy] = useState("rating");
   const [dealers, setDealers] = useState<DealerData[]>([]);
+  const [filteredDealers, setFilteredDealers] = useState<DealerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const dealersPerPage = 12;
 
   useEffect(() => {
     // Get user's location
@@ -125,10 +132,51 @@ export default function SearchDealerPage() {
     }
   }, []);
 
+  // Search filtering effect
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredDealers(dealers);
+      setCurrentPage(1); // Reset to first page when clearing search
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = dealers.filter(dealer => {
+      const matchesName = dealer.businessName.toLowerCase().includes(query);
+      const matchesLocation = dealer.location.addressLines.some((line: string) => 
+        line.toLowerCase().includes(query)
+      );
+      const matchesSpecialties = dealer.specialties.some((specialty: string) => 
+        specialty.toLowerCase().includes(query)
+      );
+      const matchesDescription = dealer.description.toLowerCase().includes(query);
+
+      return matchesName || matchesLocation || matchesSpecialties || matchesDescription;
+    });
+
+    setFilteredDealers(filtered);
+    setCurrentPage(1); // Reset to first page when searching
+  }, [searchQuery, dealers]);
+
   useEffect(() => {
     const fetchDealers = async () => {
       try {
         setLoading(true);
+        
+        // Check cache first
+        const cachedData = localStorage.getItem(DEALERS_CACHE_KEY);
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData);
+          const isExpired = Date.now() - timestamp > CACHE_EXPIRY_TIME;
+          
+          if (!isExpired) {
+            setDealers(data);
+            setFilteredDealers(data);
+            setLoading(false);
+            return;
+          }
+        }
+        
         const dealersRef = collection(db, 'dealers');
         const q = query(dealersRef);
         const querySnapshot = await getDocs(q);
@@ -149,25 +197,14 @@ export default function SearchDealerPage() {
           };
         });
 
-        // Get search query from URL
-        const searchParams = new URLSearchParams(window.location.search);
-        const searchQuery = searchParams.get('q')?.toLowerCase() || '';
-        const locationQuery = searchParams.get('location')?.toLowerCase() || '';
+        // Cache the data
+        localStorage.setItem(DEALERS_CACHE_KEY, JSON.stringify({
+          data: dealersData,
+          timestamp: Date.now()
+        }));
 
-        // Filter dealers based on search query
-        const filteredDealers = dealersData.filter(dealer => {
-          const matchesSearch = searchQuery ? 
-            dealer.businessName.toLowerCase().includes(searchQuery) ||
-            dealer.specialties.some((specialty: string) => specialty.toLowerCase().includes(searchQuery)) ||
-            dealer.description.toLowerCase().includes(searchQuery) : true;
-
-          const matchesLocation = locationQuery ?
-            dealer.location.addressLines.some((line: string) => line.toLowerCase().includes(locationQuery)) : true;
-
-          return matchesSearch && matchesLocation;
-        });
-
-        setDealers(filteredDealers);
+        setDealers(dealersData);
+        setFilteredDealers(dealersData);
       } catch (error) {
         console.error('Error fetching dealers:', error);
       } finally {
@@ -178,22 +215,40 @@ export default function SearchDealerPage() {
     fetchDealers();
   }, []);
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredDealers.length / dealersPerPage);
+  const startIndex = (currentPage - 1) * dealersPerPage;
+  const endIndex = startIndex + dealersPerPage;
+  const currentDealers = filteredDealers.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of results when page changes
+    document.querySelector('.lg\\:w-2\\/3')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const calculateMapCenter = () => {
     if (userLocation) {
       return userLocation;
     }
 
-    // If no user location, center on first dealer with valid coordinates
-    const validDealer = dealers.find(dealer => dealer.location.lat !== 0 && dealer.location.long !== 0);
+    // If no user location, center on first dealer with valid coordinates from current page
+    const validDealer = currentDealers.find(dealer => dealer.location.lat !== 0 && dealer.location.long !== 0);
     if (validDealer) {
       return { lat: validDealer.location.lat, lng: validDealer.location.long };
+    }
+
+    // Fallback to any dealer with valid coordinates
+    const anyValidDealer = filteredDealers.find(dealer => dealer.location.lat !== 0 && dealer.location.long !== 0);
+    if (anyValidDealer) {
+      return { lat: anyValidDealer.location.lat, lng: anyValidDealer.location.long };
     }
 
     // Default to London if no valid coordinates
     return { lat: 51.5074, lng: -0.1278 };
   };
 
-  // Create markers for map
+  // Create markers for map - show all filtered dealers, not just current page
   const markers = [
     // User location marker
     ...(userLocation ? [{
@@ -201,14 +256,21 @@ export default function SearchDealerPage() {
       icon: { url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' },
       title: 'Your Location'
     }] : []),
-    // Dealer markers
-    ...dealers
+    // Dealer markers - highlight current page dealers differently
+    ...filteredDealers
       .filter(dealer => dealer.location.lat !== 0 && dealer.location.long !== 0)
-      .map(dealer => ({
-        position: { lat: dealer.location.lat, lng: dealer.location.long },
-        icon: { url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' },
-        title: dealer.businessName
-      }))
+      .map(dealer => {
+        const isOnCurrentPage = currentDealers.some(currentDealer => currentDealer.id === dealer.id);
+        return {
+          position: { lat: dealer.location.lat, lng: dealer.location.long },
+          icon: { 
+            url: isOnCurrentPage 
+              ? 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+              : 'http://maps.google.com/mapfiles/ms/icons/pink-dot.png'
+          },
+          title: dealer.businessName
+        };
+      })
   ];
 
   return (
@@ -217,57 +279,31 @@ export default function SearchDealerPage() {
       <main className="space-y-5">
         {/* Search Section */}
         <div className="flex justify-center items-center py-4 mb-2">
-          <div className="w-full max-w-4xl flex rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-blue-200 relative">
+          <div className="w-full max-w-2xl flex rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-blue-200 relative">
             <div className="w-2 h-full bg-gradient-to-b from-blue-400 to-blue-700 rounded-l-3xl"></div>
-            <form className="flex flex-col md:flex-row flex-1 gap-3 md:gap-4 p-4 md:p-6 items-stretch md:items-end">
-              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <label htmlFor="dealer-search" className="block text-xs font-semibold text-blue-900 mb-1 tracking-widest uppercase">Dealer</label>
-                <div className="relative group">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 group-focus-within:text-blue-600 transition-colors duration-200 h-5 w-5" />
-                  <Input
-                    id="dealer-search"
-                    placeholder="e.g. Best Cars Ltd"
-                    className="pl-12 pr-4 py-2.5 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 placeholder-blue-400 h-12"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <label htmlFor="location-search" className="block text-xs font-semibold text-blue-900 mb-1 tracking-widest uppercase">Location</label>
-                <div className="relative group">
-                  <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 group-focus-within:text-blue-600 transition-colors duration-200 h-5 w-5" />
-                  <Input
-                    id="location-search"
-                    placeholder="e.g. Manchester"
-                    className="pl-12 pr-4 py-2.5 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 placeholder-blue-400 h-12"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <label htmlFor="service-filter" className="block text-xs font-semibold text-blue-900 mb-1 tracking-widest uppercase">Service</label>
-                <div className="relative group">
-                  <Filter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 group-focus-within:text-blue-600 transition-colors duration-200 h-5 w-5" />
-                  <select
-                    id="service-filter"
-                    className="w-full pl-12 pr-4 py-2.5 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 h-12"
+            <div className="flex-1 p-4 md:p-6">
+              <label htmlFor="dealer-search" className="block text-xs font-semibold text-blue-900 mb-2 tracking-widest uppercase">Search Dealers</label>
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 group-focus-within:text-blue-600 transition-colors duration-200 h-5 w-5" />
+                <Input
+                  id="dealer-search"
+                  placeholder="Search by dealer name, location, or services..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-12 pr-12 py-3 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 placeholder-blue-400 h-12 text-base"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
+                    aria-label="Clear search"
                   >
-                    <option value="">All Services</option>
-                    <option value="used-cars">Used Cars</option>
-                    <option value="financing">Financing</option>
-                    <option value="warranty">Warranty</option>
-                  </select>
-                </div>
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
-              
-              <Button
-                type="submit"
-                className="rounded-full bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold px-8 h-12 shadow-lg hover:scale-105 transition-transform duration-200 w-full md:w-auto"
-              >
-                <Search className="mr-2 h-5 w-5" />
-                Search
-              </Button>
-            </form>
+            </div>
           </div>
         </div>
 
@@ -297,10 +333,18 @@ export default function SearchDealerPage() {
                   <div className="flex items-center text-sm text-gray-600">
                     <img
                       src="http://maps.google.com/mapfiles/ms/icons/red-dot.png"
-                      alt="Dealer location"
+                      alt="Current page dealers"
                       className="w-4 h-4 mr-2"
                     />
-                    <span>Dealer Location</span>
+                    <span>Current Page Dealers</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <img
+                      src="http://maps.google.com/mapfiles/ms/icons/pink-dot.png"
+                      alt="Other dealers"
+                      className="w-4 h-4 mr-2"
+                    />
+                    <span>Other Dealers</span>
                   </div>
                 </div>
               </div>
@@ -311,7 +355,14 @@ export default function SearchDealerPage() {
               <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                 <div className="flex items-center gap-4">
                   <p className="text-gray-600">
-                    {loading ? 'Loading dealers...' : `Showing ${dealers.length} dealers`}
+                    {loading ? 'Loading dealers...' : 
+                      `Showing ${startIndex + 1}-${Math.min(endIndex, filteredDealers.length)} of ${filteredDealers.length} dealers`
+                    }
+                    {dealers.length !== filteredDealers.length && (
+                      <span className="text-sm text-gray-500 ml-1">
+                        (filtered from {dealers.length} total)
+                      </span>
+                    )}
                   </p>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -334,57 +385,142 @@ export default function SearchDealerPage() {
                     </Button>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium mr-2">Sort by:</span>
-                  <select
-                    value={sortBy}
-                    onChange={e => setSortBy(e.target.value)}
-                    className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 transition-all duration-200 hover:bg-gray-100 min-w-[120px]"
-                  >
-                    <option value="rating">Rating</option>
-                    <option value="distance">Distance</option>
-                    <option value="name">Name</option>
-                  </select>
-                </div>
               </div>
 
               {loading ? (
                 <div className="text-center py-8">Loading dealers...</div>
-              ) : viewMode === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {dealers.map((dealer) => (
-                    <DealerCard key={dealer.id} {...dealer} />
-                  ))}
+              ) : filteredDealers.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  {searchQuery ? `No dealers found matching "${searchQuery}"` : 'No dealers available'}
                 </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {dealers.map((dealer) => (
-                    <div key={dealer.id} className="flex flex-col md:flex-row bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-                      <div className="w-full md:w-64 h-48 flex-shrink-0 relative">
-                        <Image 
-                          src={dealer.dealerBannerUrl || "/placeholder.svg"} 
-                          alt={dealer.businessName} 
-                          fill 
-                          className="object-contain bg-white" 
-                        />
+              ) : viewMode === "grid" ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {currentDealers.map((dealer) => (
+                      <DealerCard key={dealer.id} {...dealer} />
+                    ))}
+                  </div>
+                  
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center items-center mt-8 space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="flex items-center"
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+                      
+                      <div className="flex space-x-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(page)}
+                            className={`min-w-[40px] ${
+                              currentPage === page 
+                                ? "bg-gradient-to-r from-blue-800 to-blue-600 hover:from-blue-900 hover:to-blue-700" 
+                                : ""
+                            }`}
+                          >
+                            {page}
+                          </Button>
+                        ))}
                       </div>
-                      <div className="flex-1 p-6">
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">{dealer.businessName}</h3>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <p className="flex items-center">
-                            <MapPin className="h-4 w-4 mr-2 text-blue-500" />
-                            {dealer.location.addressLines.join(', ')}
-                          </p>
-                          <p className="flex items-center">
-                            <Phone className="h-4 w-4 mr-2 text-blue-500" />
-                            {dealer.contact.phone}
-                          </p>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-4">
+                    {currentDealers.map((dealer) => (
+                      <div key={dealer.id} className="flex flex-col md:flex-row bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="w-full md:w-64 h-48 flex-shrink-0 relative">
+                          <Image 
+                            src={dealer.dealerBannerUrl || "/placeholder.svg"} 
+                            alt={dealer.businessName} 
+                            fill 
+                            className="object-contain bg-white" 
+                          />
+                        </div>
+                        <div className="flex-1 p-6">
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{dealer.businessName}</h3>
+                          <div className="space-y-2 text-sm text-gray-600">
+                            <p className="flex items-center">
+                              <MapPin className="h-4 w-4 mr-2 text-blue-500" />
+                              {dealer.location.addressLines.join(', ')}
+                            </p>
+                            <p className="flex items-center">
+                              <Phone className="h-4 w-4 mr-2 text-blue-500" />
+                              {dealer.contact.phone}
+                            </p>
+                          </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                  
+                  {/* Pagination for List View */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center items-center mt-8 space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="flex items-center"
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+                      
+                      <div className="flex space-x-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(page)}
+                            className={`min-w-[40px] ${
+                              currentPage === page 
+                                ? "bg-gradient-to-r from-blue-800 to-blue-600 hover:from-blue-900 hover:to-blue-700" 
+                                : ""
+                            }`}
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </div>
           </div>
