@@ -1,6 +1,7 @@
 'use client'
 
 import Image from "next/image"
+import Link from "next/link"
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Grid } from 'swiper/modules'
 import 'swiper/css'
@@ -33,9 +34,10 @@ export function BrowseByBrand() {
         {/* Desktop View */}
         <div className="hidden md:grid grid-cols-4 gap-4">
           {brands.map((brand) => (
-            <div 
-              key={brand.name} 
-              className="relative group bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 p-4"
+            <Link 
+              key={brand.name}
+              href={`/search?make=${encodeURIComponent(brand.name)}&type=car`}
+              className="relative group bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 p-4 cursor-pointer"
             >
               <div className="flex items-center justify-center h-20">
                 <Image 
@@ -46,7 +48,7 @@ export function BrowseByBrand() {
                   className="object-contain transition-transform duration-300 group-hover:scale-105" 
                 />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -61,7 +63,10 @@ export function BrowseByBrand() {
           >
             {brands.map((brand) => (
               <SwiperSlide key={brand.name}>
-                <div className="relative group bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 p-4 h-[120px] flex items-center justify-center">
+                <Link
+                  href={`/search?make=${encodeURIComponent(brand.name)}&type=car`}
+                  className="relative group bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 p-4 h-[120px] flex items-center justify-center cursor-pointer"
+                >
                   <Image
                     src={brand.logo}
                     alt={brand.name}
@@ -69,7 +74,7 @@ export function BrowseByBrand() {
                     height={85}
                     className="object-contain transition-transform duration-300 group-hover:scale-105"
                   />
-                </div>
+                </Link>
               </SwiperSlide>
             ))}
           </Swiper>
