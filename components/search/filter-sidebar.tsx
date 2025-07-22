@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -117,30 +117,71 @@ export function FilterSidebar({
 }: FilterSidebarProps) {
   const router = useRouter()
   const [filters, setFilters] = useState<VehicleFilters>(initialFilters)
-  const [priceToggle, setPriceToggle] = useState(0)
-  const [yearToggle, setYearToggle] = useState(0)
 
   useEffect(() => {
     setFilters(initialFilters)
   }, [initialFilters])
 
-  const debouncedFilterChange = debounce((newFilters: VehicleFilters) => {
-    onFilterChange(newFilters)
-  }, 500)
+  // Create memoized debounced functions to prevent recreation on every render
+  const debouncedFilterChange = useCallback(
+    debounce((newFilters: VehicleFilters) => {
+      onFilterChange(newFilters)
+    }, 500),
+    [onFilterChange]
+  )
 
-  const updateFilters = (updates: Partial<VehicleFilters>) => {
+  // Separate debounce for price and year inputs with 500ms delay
+  const debouncedInputFilterChange = useCallback(
+    debounce((newFilters: VehicleFilters) => {
+      onFilterChange(newFilters)
+    }, 500),
+    [onFilterChange]
+  )
+
+  const updateFilters = useCallback((updates: Partial<VehicleFilters>) => {
     const newFilters = { ...filters, ...updates }
     setFilters(newFilters)
     debouncedFilterChange(newFilters)
-  }
+  }, [filters, debouncedFilterChange])
+
+  const updateInputFilters = useCallback((updates: Partial<VehicleFilters>) => {
+    const newFilters = { ...filters, ...updates }
+    setFilters(newFilters)
+    // Only debounce the parent notification, not the local state update
+    debouncedInputFilterChange(newFilters)
+  }, [filters, debouncedInputFilterChange])
 
   const handleReset = () => {
-    router.push('/search')
+    // Create a clean filter state with only the vehicle type
+    const resetFilters: VehicleFilters = {
+      type: selectedVehicleType,
+      make: undefined,
+      model: undefined,
+      minPrice: undefined,
+      maxPrice: undefined,
+      minYear: undefined,
+      maxYear: undefined,
+      minMileage: undefined,
+      maxMileage: undefined,
+      fuelType: undefined,
+      transmission: undefined,
+      bodyStyle: undefined
+    }
+    
+    // Update local state immediately
+    setFilters(resetFilters)
+    
+    // Notify parent component
+    onFilterChange(resetFilters)
+    
+    // Navigate to clean search page with vehicle type preserved
+    const typeParam = selectedVehicleType ? `?type=${encodeURIComponent(selectedVehicleType)}` : ''
+    router.push(`/search${typeParam}`)
   }
 
   const commonFeatures = ["Wheelchair Access", "Left Hand Drive", "Sat Nav", "Bluetooth", "Leather Seats"]
-  const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid", "LPG"]
-  const transmissions = ["Manual", "Automatic", "Semi-Automatic"]
+  const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid"]
+  const transmissions = ["Manual", "Automatic"]
   const colors = ["Black", "White", "Silver", "Blue", "Red", "Green", "Grey", "Other"]
   const safetyRatings = ["5 Star", "4 Star", "3 Star", "2 Star", "1 Star"]
   const vehicleHistories = ["Full Service History", "Part Service History", "No Service History"]
@@ -178,7 +219,7 @@ export function FilterSidebar({
             <h3 className="font-medium text-sm text-gray-900">Vehicle Type</h3>
           </div>
           <Select
-            value={filters.type}
+            value={filters.type || selectedVehicleType}
             onValueChange={(value: VehicleType) => updateFilters({ type: value })}
           >
             <SelectTrigger>
@@ -245,23 +286,19 @@ export function FilterSidebar({
             <h3 className="font-medium text-sm text-gray-900">Price Range</h3>
           </div>
 
-          <div className="mb-2" role="radiogroup" aria-label="Price type">
-            <ToggleButton options={["Price", "Monthly cost"]} activeIndex={priceToggle} onChange={setPriceToggle} />
-          </div>
-
           <div className="grid grid-cols-2 gap-2">
             <Input
               type="number"
               placeholder="Min"
               value={filters.minPrice || ''}
-              onChange={(e) => updateFilters({ minPrice: e.target.value ? parseInt(e.target.value) : undefined })}
+              onChange={(e) => updateInputFilters({ minPrice: e.target.value ? parseInt(e.target.value) : undefined })}
               className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
             />
             <Input
               type="number"
               placeholder="Max"
               value={filters.maxPrice || ''}
-              onChange={(e) => updateFilters({ maxPrice: e.target.value ? parseInt(e.target.value) : undefined })}
+              onChange={(e) => updateInputFilters({ maxPrice: e.target.value ? parseInt(e.target.value) : undefined })}
               className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
             />
           </div>
@@ -276,23 +313,19 @@ export function FilterSidebar({
             <h3 className="font-medium text-sm text-gray-900">Year Range</h3>
           </div>
 
-          <div className="mb-2" role="radiogroup" aria-label="Year or age selection">
-            <ToggleButton options={["Year", "Age"]} activeIndex={yearToggle} onChange={setYearToggle} />
-          </div>
-
           <div className="grid grid-cols-2 gap-2">
             <Input
               type="number"
               placeholder="Min"
               value={filters.minYear || ''}
-              onChange={(e) => updateFilters({ minYear: e.target.value ? parseInt(e.target.value) : undefined })}
+              onChange={(e) => updateInputFilters({ minYear: e.target.value ? parseInt(e.target.value) : undefined })}
               className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
             />
             <Input
               type="number"
               placeholder="Max"
               value={filters.maxYear || ''}
-              onChange={(e) => updateFilters({ maxYear: e.target.value ? parseInt(e.target.value) : undefined })}
+              onChange={(e) => updateInputFilters({ maxYear: e.target.value ? parseInt(e.target.value) : undefined })}
               className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
             />
           </div>
@@ -315,14 +348,14 @@ export function FilterSidebar({
                   type="number"
                   placeholder="Min"
                   value={filters.minMileage || ''}
-                  onChange={(e) => updateFilters({ minMileage: e.target.value ? parseInt(e.target.value) : undefined })}
+                  onChange={(e) => updateInputFilters({ minMileage: e.target.value ? parseInt(e.target.value) : undefined })}
                   className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
                 />
                 <Input
                   type="number"
                   placeholder="Max"
                   value={filters.maxMileage || ''}
-                  onChange={(e) => updateFilters({ maxMileage: e.target.value ? parseInt(e.target.value) : undefined })}
+                  onChange={(e) => updateInputFilters({ maxMileage: e.target.value ? parseInt(e.target.value) : undefined })}
                   className="bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
                 />
               </div>
@@ -340,7 +373,8 @@ export function FilterSidebar({
                         const newFuelTypes = checked
                           ? [...(filters.fuelType || []), type.toLowerCase() as FuelType]
                           : (filters.fuelType || []).filter(f => f !== type.toLowerCase())
-                        updateFilters({ fuelType: newFuelTypes })
+                        // Set to undefined if array is empty, otherwise set the array
+                        updateFilters({ fuelType: newFuelTypes.length > 0 ? newFuelTypes : undefined })
                       }}
                       className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4"
                     />
@@ -362,7 +396,8 @@ export function FilterSidebar({
                         const newTransmissions = checked
                           ? [...(filters.transmission || []), type.toLowerCase() as TransmissionType]
                           : (filters.transmission || []).filter(t => t !== type.toLowerCase())
-                        updateFilters({ transmission: newTransmissions })
+                        // Set to undefined if array is empty, otherwise set the array
+                        updateFilters({ transmission: newTransmissions.length > 0 ? newTransmissions : undefined })
                       }}
                       className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4"
                     />
@@ -374,21 +409,21 @@ export function FilterSidebar({
           </div>
         </section>
 
-        {/* Body Style (only for cars) */}
+        {/* Body Type (only for cars) */}
         {selectedVehicleType === 'car' && (
           <section className="border-t border-gray-100 py-3">
             <div className="flex items-center mb-2">
               <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
                 <Car className="h-4 w-4 text-blue-600" />
               </div>
-              <h3 className="font-medium text-sm text-gray-900">Body Style</h3>
+              <h3 className="font-medium text-sm text-gray-900">Body Type</h3>
             </div>
             <Select
               value={filters.bodyStyle?.[0] || ''}
               onValueChange={(value: CarBodyStyle) => updateFilters({ bodyStyle: value ? [value] : undefined })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select body style" />
+                <SelectValue placeholder="Select body type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="sedan">Sedan</SelectItem>

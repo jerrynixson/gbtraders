@@ -29,23 +29,23 @@ export class VehicleRepository {
   /**
    * Convert Vehicle to VehicleSummary
    */
-  private convertToSummary(vehicle: Vehicle): VehicleSummary {
-    const { id, type, make, model, year, price, monthlyPrice, mileage, fuel, transmission, color, location, images, mainImage } = vehicle;
+  convertToSummary(vehicle: Vehicle): VehicleSummary {
     return {
-      id,
-      type,
-      make,
-      model,
-      year,
-      price,
-      monthlyPrice,
-      mileage,
-      fuel,
-      transmission,
-      color,
-      location,
-      mainImage: mainImage || images?.[0] || "/placeholder.svg",
-      images: images || [],
+      id: vehicle.id,
+      type: vehicle.type,
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year,
+      price: vehicle.price,
+      monthlyPrice: vehicle.monthlyPrice,
+      mileage: vehicle.mileage,
+      fuel: vehicle.fuel,
+      transmission: vehicle.transmission,
+      color: vehicle.color,
+      registrationNumber: vehicle.registrationNumber,
+      location: vehicle.location,
+      mainImage: vehicle.images?.[0] || vehicle.imageUrls?.[0] || '/placeholder.svg',
+      imageUrls: vehicle.imageUrls || vehicle.images,
     };
   }
 
@@ -162,11 +162,11 @@ export class VehicleRepository {
   private async getLastDocumentFromPage(
     filters: VehicleFilters,
     page: number,
-    limit: number
+    pageLimit: number
   ): Promise<QueryDocumentSnapshot<DocumentData> | null> {
     const constraints = this.buildQueryConstraints(filters);
     constraints.push(orderBy('createdAt', 'desc'));
-    constraints.push(limit(page * limit));
+    constraints.push(limit(page * pageLimit));
 
     const q = query(this.collection, ...constraints);
     const snapshot = await getDocs(q);
@@ -233,7 +233,7 @@ export class VehicleRepository {
       return null;
     }
 
-    return this.convertToVehicle(docSnap);
+    return this.convertToVehicle(docSnap as QueryDocumentSnapshot<DocumentData>);
   }
 
   /**
@@ -266,7 +266,7 @@ export class VehicleRepository {
     const docRef = await addDoc(this.collection, data);
     const docSnap = await getDoc(docRef);
 
-    return this.convertToVehicle(docSnap);
+    return this.convertToVehicle(docSnap as QueryDocumentSnapshot<DocumentData>);
   }
 
   /**
@@ -300,5 +300,24 @@ export class VehicleRepository {
 
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => this.convertToVehicle(doc));
+  }
+
+  /**
+   * Get all vehicles from Firestore (for local filtering)
+   */
+  async getAllVehicles(): Promise<VehicleSummary[]> {
+    try {
+      const q = query(
+        this.collection,
+        orderBy('createdAt', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+      const vehicles = snapshot.docs.map(doc => this.convertToVehicle(doc));
+      return vehicles.map(vehicle => this.convertToSummary(vehicle));
+    } catch (error) {
+      console.error('Error getting all vehicles:', error);
+      return [];
+    }
   }
 } 

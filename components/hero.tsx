@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Search, Tag, MapPin, Sliders, X } from "lucide-react"
+import { Search, Tag, X } from "lucide-react"
 
 // Custom hook for drag-to-scroll
 function useDragScroll() {
@@ -53,9 +53,7 @@ function useDragScroll() {
 
 export function Hero() {
   const router = useRouter()
-  const [selectedDropdownCategory, setSelectedDropdownCategory] = useState<string | null>(null)
   const [keywords, setKeywords] = useState<string>("")
-  const [postcode, setPostcode] = useState<string>("")
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [nextImageIndex, setNextImageIndex] = useState(1)
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -66,7 +64,6 @@ export function Hero() {
   const autoAdvanceRef = useRef<NodeJS.Timeout | null>(null)
   const dragData = useRef({ startX: 0, lastX: 0, dragging: false, moved: false })
 
-  const categories = ["Vehicles", "Dealers"] // commented out 'Breakdown Services', 'Shop', 'Garages'
   const vehicleTypes = [
     "Cars",
     "Vans",
@@ -179,50 +176,12 @@ export function Hero() {
     
     // Add keywords if provided
     if (keywords) {
-      // For vehicles, split keywords into make and model
-      if (selectedDropdownCategory === 'Vehicles') {
-        const parts = keywords.split(' ');
-        if (parts.length >= 2) {
-          searchParams.set('make', parts[0]);
-          searchParams.set('model', parts.slice(1).join(' '));
-        } else {
-          searchParams.set('make', keywords);
-        }
-      } else {
-        // For other categories, use the keyword as is
-        searchParams.set('q', keywords);
-      }
+      searchParams.set('q', keywords);
     }
     
-    // Add postcode if provided
-    if (postcode) {
-      searchParams.set('location', postcode);
-    }
-    
-    // Add category if selected
-    if (selectedDropdownCategory) {
-      // Map category to route
-      const categoryToRoute: Record<string, string> = {
-        'Vehicles': '/search',
-        'Dealers': '/categories/dealers'
-      } // commented out 'Breakdown Services', 'Shop', 'Garages'
-      
-      const route = categoryToRoute[selectedDropdownCategory];
-      if (route) {
-        router.push(`${route}?${searchParams.toString()}`);
-        return;
-      }
-    }
-    
-    // Default to search page if no category selected
-    router.push(`/search/algolia?${searchParams.toString()}`);
+    // Navigate to search page
+    router.push(`/search?${searchParams.toString()}`);
   };
-
-  const resetFilters = () => {
-    setSelectedDropdownCategory(null)
-    setKeywords("")
-    setPostcode("")
-  }
 
   return (
     <div className="relative mx-auto w-full max-w-[85rem] overflow-hidden rounded-2xl bg-gradient-to-br from-red-500 via-blue-600 to-red-700 shadow-xl">
@@ -238,52 +197,16 @@ export function Hero() {
                   <Tag className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200" />
                 </div>
                 <Input
-                  placeholder="Keywords"
+                  placeholder="Search by make, model, or keywords..."
                   className="h-10 sm:h-12 w-full rounded-xl sm:rounded-2xl border-none bg-white/10 pl-10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/60"
                   value={keywords}
                   onChange={(e) => setKeywords(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch();
+                    }
+                  }}
                 />
-              </div>
-
-              <div className="flex space-x-2 sm:space-x-3">
-                <div className="relative flex-grow">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <MapPin className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200" />
-                  </div>
-                  <Input
-                    placeholder="Postcode"
-                    className="h-10 sm:h-12 w-full rounded-xl sm:rounded-2xl border-none bg-white/10 pl-10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/60"
-                    value={postcode}
-                    onChange={(e) => setPostcode(e.target.value)}
-                  />
-                </div>
-
-                <div className="relative">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="h-10 sm:h-12 w-[120px] sm:w-[150px] justify-start rounded-xl sm:rounded-2xl border-none bg-white/10 text-left text-sm text-white ring-1 ring-inset ring-white/20"
-                      >
-                        <Sliders className="h-4 sm:h-5 w-4 sm:w-5 text-blue-200 mr-2" />
-                        {selectedDropdownCategory || "Categories"}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[120px] sm:w-[150px] rounded-xl sm:rounded-2xl">
-                      {categories.map((category) => (
-                        <DropdownMenuItem
-                          key={category}
-                          onSelect={() => setSelectedDropdownCategory(selectedDropdownCategory === category ? null : category)}
-                          className={`cursor-pointer text-sm ${
-                            selectedDropdownCategory === category ? "bg-blue-100 font-semibold text-blue-800" : ""
-                          }`}
-                        >
-                          {category}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
               </div>
 
               <Button
@@ -296,25 +219,7 @@ export function Hero() {
           </div>
 
           <div className="mt-4 sm:mt-6">
-            <div className="flex justify-between text-sm">
-              <Button 
-                variant="outline" 
-                className="rounded-full bg-white/5 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white/70 hover:bg-white/10 hover:text-white border-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
-                onClick={resetFilters}
-              >
-                Reset filters
-              </Button>
-              {/*
-              // More options button hidden for now - for future use
-              <Button 
-                variant="outline" 
-                className="rounded-full bg-white/5 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white/70 hover:bg-white/10 hover:text-white border-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                More options
-              </Button>
-              */}
-            </div>
+            {/* Optional: Add some helpful text or leave empty for spacing */}
           </div>
         </div>
 
