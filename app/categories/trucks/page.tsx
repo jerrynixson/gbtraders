@@ -26,7 +26,7 @@ export default function TrucksPage() {
         <CarRentalBanner />
         <AdvertiseWithUs />
         {/* <LeaseTruckListings /> */}
-        <BlogPostsSection />
+        {/*<BlogPostsSection />*/}
       </main>
       <BackToTop />
       <Footer />
