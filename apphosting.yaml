@@ -105,6 +105,37 @@ env:
       - BUILD
       - RUNTIME
 
+  # Algolia Configuration
+  - variable: NEXT_PUBLIC_ALGOLIA_APP_ID
+    secret: NEXT_PUBLIC_ALGOLIA_APP_ID
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY
+    secret: NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_ALGOLIA_VEHICLES_INDEX
+    secret: NEXT_PUBLIC_ALGOLIA_VEHICLES_INDEX
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_ALGOLIA_GARAGES_INDEX
+    secret: NEXT_PUBLIC_ALGOLIA_GARAGES_INDEX
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_ALGOLIA_DEALERS_INDEX
+    secret: NEXT_PUBLIC_ALGOLIA_DEALERS_INDEX
+    availability:
+      - BUILD
+      - RUNTIME
+
 # Environment variables and secrets.
 # env:
   # Configure environment variables.
