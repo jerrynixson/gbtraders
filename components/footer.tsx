@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Facebook, Instagram, Twitter, Youtube } from "lucide-react"
+import { Facebook, Instagram, Twitter, Youtube, X } from "lucide-react"
 
 export function Footer() {
   return (
@@ -38,15 +38,15 @@ export function Footer() {
               social media.
             </p>
             <div className="flex space-x-4">
-              <Link href="#" className="text-gray-300 hover:text-white">
+              <Link href="https://www.facebook.com/gb.trader.94/" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white">
                 <Facebook className="h-6 w-6" />
                 <span className="sr-only">Facebook</span>
               </Link>
-              <Link href="#" className="text-gray-300 hover:text-white">
-                <Twitter className="h-6 w-6" />
-                <span className="sr-only">Twitter</span>
+              <Link href="https://x.com/gbtraderuk" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white">
+                <X className="h-6 w-6" />
+                <span className="sr-only">X</span>
               </Link>
-              <Link href="#" className="text-gray-300 hover:text-white">
+              {/*<Link href="#" className="text-gray-300 hover:text-white">
                 <Instagram className="h-6 w-6" />
                 <span className="sr-only">Instagram</span>
               </Link>
@@ -54,6 +54,8 @@ export function Footer() {
                 <Youtube className="h-6 w-6" />
                 <span className="sr-only">YouTube</span>
               </Link>
+              */}
+              
             </div>
           </div>
         </div>
