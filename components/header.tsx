@@ -401,6 +401,13 @@ export function Header() {
                     <span className="sr-only">Favorites</span>
                   </Button>
                 </Link>
+                {/* Add Search button for mobile */}
+                <Link href="/search" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
+                    <Search className="h-4 w-4" />
+                    <span className="sr-only">Search</span>
+                  </Button>
+                </Link>
                 {user && user.role === "dealer" && (
                   <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
