@@ -85,20 +85,16 @@ export const VehicleCard = memo(function VehicleCard({
 
   return (
     <Link href={`/vehicle-info/${vehicle.id}`} className="block">
-      <div className={`group bg-white rounded-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-blue-100 ${isGrid ? 'flex flex-col h-full' : 'flex'} ${isHighlighted ? 'ring-2 ring-blue-100' : ''} cursor-pointer`}>
-        <div className={`relative ${isGrid ? 'w-full' : 'w-1/3'}`}>
+      <div className={`group bg-white rounded-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-blue-100 flex flex-col h-full ${isHighlighted ? 'ring-2 ring-blue-100' : ''} cursor-pointer`}>
+        <div className="relative">
           <div className="relative overflow-hidden">
             <Image
-              src={vehicle.mainImage || vehicle.images?.[0] || "/placeholder.svg"}
+              src={vehicle.mainImage || "/placeholder.svg"}
               alt={title}
               width={400}
               height={240}
-              className={`object-cover w-full ${isGrid ? 'h-48' : 'h-full'} transition-transform duration-500 group-hover:scale-105`}
+              className="object-cover w-full h-48 transition-transform duration-500 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="text-white text-sm font-medium">View Details</div>
-            </div>
           </div>
           {isHighlighted && (
             <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-800 to-blue-600 text-white text-xs py-1 px-2 rounded-full font-medium z-10 shadow-sm">
@@ -113,13 +109,15 @@ export const VehicleCard = memo(function VehicleCard({
           </button>
         </div>
         
-        <div className={`p-4 flex flex-col ${isGrid ? 'flex-grow' : 'flex-1'}`}>
-          <div className="flex justify-between items-start mb-2">
+        <div className={`p-4 flex flex-col flex-grow`}> {/* Always flex-grow for grid/list */}
+          <div className="flex justify-between items-start mb-4">
             <div className="flex-1 pr-4">
-              <h3 className="font-bold text-lg leading-tight text-gray-900 group-hover:text-blue-800 transition-colors duration-200 line-clamp-2">
-                {title}
-              </h3>
-              <div className="flex items-center mt-1">
+              <div className="h-[3rem] mb-1">
+                <h3 className="font-bold text-lg leading-tight text-gray-900 group-hover:text-blue-800 transition-colors duration-200 line-clamp-2">
+                  {title}
+                </h3>
+              </div>
+              <div className="flex items-center">
                 <div className="flex items-center text-xs text-gray-600">
                   <span className="flex items-center">
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,43 +137,32 @@ export const VehicleCard = memo(function VehicleCard({
               <Share2 className="h-4 w-4" />
             </button>
           </div>
-          
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="flex items-center text-xs bg-gray-50 p-1.5 rounded-lg">
-              <span className="font-medium text-gray-700 mr-1">Year:</span>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded-lg">
+              <span className="font-medium text-gray-700">Year:</span>
               <span className="text-gray-600">{vehicle.year}</span>
             </div>
-            <div className="flex items-center text-xs bg-gray-50 p-1.5 rounded-lg">
-              <span className="font-medium text-gray-700 mr-1">Mileage:</span>
+            <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded-lg">
+              <span className="font-medium text-gray-700">Mileage:</span>
               <span className="text-gray-600">{vehicle.mileage?.toLocaleString() || 'N/A'} mi</span>
             </div>
-            {vehicle.fuel && (
-              <div className="flex items-center text-xs bg-gray-50 p-1.5 rounded-lg">
-                <span className="font-medium text-gray-700 mr-1">Fuel:</span>
-                <span className="text-gray-600">{vehicle.fuel}</span>
-              </div>
-            )}
-            {vehicle.transmission && (
-              <div className="flex items-center text-xs bg-gray-50 p-1.5 rounded-lg">
-                <span className="font-medium text-gray-700 mr-1">Trans:</span>
-                <span className="text-gray-600">{vehicle.transmission}</span>
-              </div>
-            )}
-          </div>
-          
-          <div className={`${isGrid ? 'mt-auto' : 'flex items-center justify-between gap-4 mt-4'}`}>
-            <div className={`${isGrid ? '' : 'flex-1'}`}>
-              <div className="text-xl font-bold text-blue-800">£{vehicle.price?.toLocaleString() || 'N/A'}</div>
-              {vehicle.monthlyPrice && (
-                <div className="text-xs text-gray-600">£{vehicle.monthlyPrice.toLocaleString()}/month</div>
-              )}
+            <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded-lg">
+              <span className="font-medium text-gray-700">Fuel:</span>
+              <span className="text-gray-600">{vehicle.fuel || 'N/A'}</span>
             </div>
-            
-            <Button 
-              className={`${isGrid ? 'w-full mt-6' : 'w-40 ml-4 mt-6'} bg-gradient-to-r from-blue-800 to-blue-600 hover:from-blue-900 hover:to-blue-700 text-white flex items-center justify-center transition-all duration-200 hover:scale-105 h-10 shadow-md rounded-lg font-semibold`}
-            >
-              <span>View Details</span>
-              <ChevronRight className="h-4 w-4 ml-1.5" />
+            <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded-lg">
+              <span className="font-medium text-gray-700">Trans:</span>
+              <span className="text-gray-600">{vehicle.transmission || 'N/A'}</span>
+            </div>
+          </div>
+          {/* Remove the flex-grow spacer and use mt-auto on the price/button container */}
+          <div className="flex flex-col w-full mt-auto">
+            <div className="text-xl font-bold text-blue-800 mb-2">£{vehicle.price?.toLocaleString() || 'N/A'}</div>
+            {vehicle.monthlyPrice && (
+              <div className="text-xs text-gray-600 mb-2">£{vehicle.monthlyPrice.toLocaleString()}/month</div>
+            )}
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+              View Details <ChevronRight className="h-4 w-4 ml-1.5" />
             </Button>
           </div>
         </div>

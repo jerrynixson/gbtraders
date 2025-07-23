@@ -44,7 +44,7 @@ const SignInPage: React.FC = () => {
       });
       router.push(redirectTo);
     } catch (error: any) {
-      setError(error.message || 'Failed to complete sign in.');
+      setError('Invalid Credential');
     }
   };
 
@@ -83,7 +83,7 @@ const SignInPage: React.FC = () => {
       });
       router.push(redirectTo);
     } catch (error: any) {
-      setError(error.message);
+      setError('Invalid Credentials');
       // If the error is about email verification, show the resend button
       if (error.message.includes('verify your email')) {
         return (
