@@ -349,8 +349,9 @@ export default function EnhancedSearchPage({
                   </div>
                   
                   {/* View Toggle & Sort */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     {/* Filter button for medium screens (tablet/narrow desktop) */}
+                    {/**
                     <div className="lg:hidden">
                       <Button
                         variant="outline"
@@ -362,6 +363,7 @@ export default function EnhancedSearchPage({
                         Filters
                       </Button>
                     </div>
+                    */}
 
                     <div className="flex border rounded-lg">
                       <Button
@@ -383,7 +385,7 @@ export default function EnhancedSearchPage({
                     <select
                       value={`${sortOptions.field}:${sortOptions.direction}`}
                       onChange={(e) => handleSortChange(e.target.value)}
-                      className="border rounded-lg px-3 py-1 text-sm"
+                      className="border rounded-lg px-3 py-1 text-sm w-full sm:w-auto min-w-0"
                     >
                       <option value="price:asc">Price: Low to High</option>
                       <option value="price:desc">Price: High to Low</option>

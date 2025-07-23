@@ -264,6 +264,7 @@ const SignInPage: React.FC = () => {
                 </div>
 
                 {/* Social Sign In Options */}
+                {/*
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <div className="col-span-1">
                     <button
@@ -284,6 +285,7 @@ const SignInPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
+                */}
               </div>
 
               {/* Sign Up Link */}
