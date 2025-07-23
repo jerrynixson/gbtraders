@@ -443,7 +443,10 @@ export function PaymentPlans() {
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <span className="line-through text-gray-400 text-sm">{plan.originalPrice}</span>
                       <span className="text-3xl font-bold text-green-600">
-                        £{(parseFloat(plan.price.replace('£', '')) - parseFloat(plan.couponDiscount.replace('£', ''))).toFixed(2)}
+                        {(() => {
+                          const calculatedPrice = parseFloat(plan.price.replace('£', '')) - parseFloat(plan.couponDiscount.replace('£', ''));
+                          return calculatedPrice === 0 ? 'Free' : `£${calculatedPrice.toFixed(2)}`;
+                        })()}
                       </span>
                     </div>
                     <p className="text-xs text-green-600 font-medium">
