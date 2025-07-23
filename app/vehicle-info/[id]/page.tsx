@@ -173,8 +173,8 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
     phoneNumber: dealerProfile?.phone || "Contact information not available",
     description: dealerProfile?.description || "Dealer description not available",
     email: dealerProfile?.email,
-    logo: dealerProfile?.dealerLogoURL || "/placeholder-logo.png",
-    coverImage: dealerProfile?.dealerBannerURL || "/banner/default-banner.jpg",
+    logo: dealerProfile?.dealerLogoUrl || "/placeholder-logo.png", // was dealerLogoURL
+    coverImage: dealerProfile?.dealerBannerUrl || "/banner/default-banner.jpg", // was dealerBannerURL
     website: dealerProfile?.website,
     socialMedia: dealerProfile?.socialMedia,
   };

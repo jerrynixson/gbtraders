@@ -3,8 +3,8 @@ export interface DealerProfile {
   businessName: string;
   email: string;
   phone: string;
-  dealerLogoURL: string;
-  dealerBannerURL?: string;
+  dealerLogoUrl: string;
+  dealerBannerUrl?: string;
   address: string;
   city: string;
   country: string;
