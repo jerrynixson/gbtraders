@@ -131,6 +131,10 @@ const ErrorState = ({ message }: { message: string }) => (
 );
 
 // Vehicle content component
+import { DealerRepository } from "@/lib/db/repositories/dealerRepository";
+import { DealerProfile } from "@/lib/types/dealer";
+import Image from "next/image";
+
 const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, user }: { 
   vehicle: Vehicle; 
   userLocation: { lat: number; lng: number } | null;
@@ -138,12 +142,41 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
   onFavoriteClick: () => void;
   user: any;
 }) => {
+  const [dealerProfile, setDealerProfile] = useState<DealerProfile | null>(null);
+  const [loadingDealer, setLoadingDealer] = useState(true);
+
+  useEffect(() => {
+    const fetchDealerProfile = async () => {
+      if (!vehicle.dealerUid) {
+        setLoadingDealer(false);
+        return;
+      }
+
+      try {
+        const dealerRepo = new DealerRepository();
+        const profile = await dealerRepo.getDealerProfile(vehicle.dealerUid);
+        console.log('Dealer profile fetched:', profile);
+        setDealerProfile(profile);
+      } catch (error) {
+        console.error("Error fetching dealer profile:", error);
+      } finally {
+        setLoadingDealer(false);
+      }
+    };
+
+    fetchDealerProfile();
+  }, [vehicle.dealerUid]);
+
   const dealerInfo = {
-    name: "Dealer information not available",
-    location: vehicle.location.city,
-    rating: 0,
-    phoneNumber: "Contact information not available",
-    description: "Dealer description not available",
+    name: dealerProfile?.businessName || "Dealer information not available",
+    location: dealerProfile?.city || vehicle.location.city,
+    phoneNumber: dealerProfile?.phone || "Contact information not available",
+    description: dealerProfile?.description || "Dealer description not available",
+    email: dealerProfile?.email,
+    logo: dealerProfile?.dealerLogoURL || "/placeholder-logo.png",
+    coverImage: dealerProfile?.dealerBannerURL || "/banner/default-banner.jpg",
+    website: dealerProfile?.website,
+    socialMedia: dealerProfile?.socialMedia,
   };
 
   const carDetails = {
@@ -375,16 +408,15 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           {/* Show More Details directly under Car Specifications */}
           <div className="mt-2">
             <button
-              className="flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showMoreDetails ? 'bg-gray-200' : ''}`}
               onClick={() => setShowMoreDetails((open) => !open)}
-              aria-expanded={showMoreDetails}
+              aria-expanded={showMoreDetails ? "true" : "false"}
             >
               {showMoreDetails ? 'Hide' : 'Show'} More Details
               <span className={`transition-transform ${showMoreDetails ? 'rotate-180' : ''}`}>▼</span>
             </button>
             <div
-              className={`transition-all duration-300 overflow-hidden ${showMoreDetails ? 'max-h-[1000px] mt-4' : 'max-h-0'}`}
-              style={{ background: showMoreDetails ? '#fff' : 'transparent' }}
+              className={`transition-all duration-300 overflow-hidden bg-transparent hover:bg-white ${showMoreDetails ? 'max-h-[1000px] mt-4' : 'max-h-0'}`}
             >
               {showMoreDetails && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
