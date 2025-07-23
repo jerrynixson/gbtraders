@@ -196,7 +196,7 @@ function PaymentSuccessContent() {
             </Button>
             <Button 
               variant="outline"
-              onClick={() => router.push('/sell')}
+              onClick={() => router.push('/dashboard/add-listing')}
               className="w-full"
             >
               Create Listing
