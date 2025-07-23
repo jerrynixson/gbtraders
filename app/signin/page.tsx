@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from "@/hooks/use-toast";
-import { signInWithEmailAndPassword, sendEmailVerification as sendFirebaseEmailVerification, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendEmailVerification as sendFirebaseEmailVerification, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 const SignInPage: React.FC = () => {
@@ -22,6 +22,10 @@ const SignInPage: React.FC = () => {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetStatus, setResetStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [resetMessage, setResetMessage] = useState('');
 
   useEffect(() => {
     // Check if this is an email sign-in link
@@ -67,6 +71,20 @@ const SignInPage: React.FC = () => {
         description: error.message || "Failed to resend verification email.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetStatus('idle');
+    setResetMessage('');
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setResetStatus('success');
+      setResetMessage('Password reset email sent! Please check your inbox.');
+    } catch (error: any) {
+      setResetStatus('error');
+      setResetMessage(error.message || 'Failed to send password reset email.');
     }
   };
 
@@ -241,6 +259,44 @@ const SignInPage: React.FC = () => {
                     }
                   </button>
                 </div>
+                {/* Forgot Password Link */}
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    className="text-sm text-indigo-600 hover:underline focus:outline-none"
+                    onClick={() => setShowForgotPassword((v) => !v)}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+                {/* Forgot Password Form (not a <form> to avoid nested forms) */}
+                {showForgotPassword && (
+                  <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 mb-1">Enter your email address</label>
+                    <input
+                      id="resetEmail"
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                      className="w-full p-2 border border-gray-200 rounded-lg mb-2"
+                      placeholder="you@example.com"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="w-full p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                    >
+                      Send Reset Email
+                    </button>
+                    {resetStatus === 'success' && (
+                      <p className="mt-2 text-green-600 text-sm">{resetMessage}</p>
+                    )}
+                    {resetStatus === 'error' && (
+                      <p className="mt-2 text-red-600 text-sm">{resetMessage}</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Sign In Button */}
