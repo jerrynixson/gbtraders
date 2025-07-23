@@ -55,9 +55,9 @@ export default function Home() {
           <CategoryGrid categories={categories} />
         </AnimatedSection>
         
-        <AnimatedSection>
+        {/*<AnimatedSection>
           <ValueYourCarBanner className="mt-5" />
-        </AnimatedSection>
+        </AnimatedSection>*/}
 
         <AnimatedSection>
           <RegistrationSteps />

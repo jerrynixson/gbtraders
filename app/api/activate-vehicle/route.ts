@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Update vehicle status to inactive and decrement used tokens
+      // Update vehicle status to inactive but DON'T decrement used tokens (per new requirements)
       const batch = adminDb.batch();
 
       // Move vehicle to inactive collection
@@ -174,13 +174,8 @@ export async function POST(request: NextRequest) {
       
       batch.delete(vehicleRef);
 
-      // Decrement used tokens count
-      const userRef = userDoc.ref;
-      const currentUsedTokens = userData?.usedTokens || 0;
-      batch.update(userRef, {
-        usedTokens: Math.max(0, currentUsedTokens - 1),
-        updatedAt: new Date()
-      });
+      // Note: We no longer decrement used tokens on deactivation
+      // The token is lost and will count against available tokens when reactivating
 
       await batch.commit();
 

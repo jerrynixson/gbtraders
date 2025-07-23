@@ -269,8 +269,9 @@ export class TokenRepository {
         updatedAt: Timestamp.fromDate(now)
       });
 
-      // Update user's used token count only if it was previously active
-      if (vehicleData.tokenStatus === 'active') {
+      // Update user's used token count only if it was previously active AND not user_choice
+      // For user_choice deactivation, we keep the token as "used" so it counts against available tokens on reactivation
+      if (vehicleData.tokenStatus === 'active' && reason !== 'user_choice') {
         const planInfo = await this.getUserPlanInfo(userId, userType);
         if (planInfo) {
           const collectionRef = userType === 'dealer' ? this.dealersCollection : this.usersCollection;

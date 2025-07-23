@@ -33,7 +33,7 @@ export function CarListings() {
     return (
       <div className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-6 text-center">Featured Cars</h2>
+          <h2 className="text-2xl font-bold mb-6 text-center">Cars</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="animate-pulse">
@@ -61,8 +61,8 @@ export function CarListings() {
           view="grid"
         />
       )}
-      title="Featured Cars"
-      viewMoreLink="/cars"
+      title="Cars"
+      viewMoreLink="/search?type=car"
       autoScroll={true}
     />
   );

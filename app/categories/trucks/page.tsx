@@ -1,7 +1,7 @@
 "use client"
 
 import { Header } from "@/components/header"
-import { Hero } from "@/components/categories/trucks/hero"
+import { Hero } from "@/components/hero"
 import { TruckListings } from "@/components/categories/trucks/truck-listings"
 import { SellYourCar } from "@/components/sell-your-car"
 import { BuyingEssentials } from "@/components/buying-essentials"

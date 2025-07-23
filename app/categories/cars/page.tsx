@@ -1,5 +1,5 @@
 import { Header } from "@/components/header"
-import { Hero } from "@/components/categories/cars/hero"
+import { Hero } from "@/components/hero"
 import { CarListings } from "@/components/car-listings"
 import { SellYourCar } from "@/components/sell-your-car"
 import { BuyingEssentials } from "@/components/buying-essentials"

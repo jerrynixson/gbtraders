@@ -51,8 +51,8 @@ export function RegistrationSteps({
   steps = [
     {
       icon: MousePointer,
-      title: 'Start Account',
-      description: 'Click the "Start Account" button',
+      title: 'Create Account',
+      description: 'Click the "Create Account" button',
     },
     {
       icon: PenLine,
@@ -62,12 +62,12 @@ export function RegistrationSteps({
     {
       icon: Mail,
       title: "Verify Email",
-      description: "Check your inbox and click verification link",
+      description: "Check your inbox and click the verification link",
     },
     {
       icon: User,
-      title: "Get Started",
-      description: "Log in and begin your journey",
+      title: "Add/View Vehicles",
+      description: "Add your vehicles or browse available listings",
     },
   ],
   className = ""

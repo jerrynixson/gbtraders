@@ -73,7 +73,7 @@ export function TruckListings() {
         <VehicleCard key={vehicle.id} vehicle={vehicle} view="grid" />
       )}
       title="Trucks"
-      viewMoreLink="/categories/trucks"
+      viewMoreLink="/search?type=truck"
       autoScroll
     />
   )
