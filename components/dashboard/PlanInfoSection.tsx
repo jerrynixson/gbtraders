@@ -57,9 +57,12 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
   const [error, setError] = useState<string | null>(null);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [hasRecentSession, setHasRecentSession] = useState(false);
+  const [availableUpgrades, setAvailableUpgrades] = useState<string[]>([]);
+  const [loadingUpgrades, setLoadingUpgrades] = useState(false);
 
   useEffect(() => {
     loadPlanInfo();
+    loadAvailableUpgrades();
     // Check for recent payment session (client-side only)
     const recentSession = localStorage.getItem('recent_payment_session');
     setHasRecentSession(!!recentSession);
@@ -132,8 +135,51 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
     }
   };
 
+  const loadAvailableUpgrades = async () => {
+    if (!user) return;
+
+    try {
+      setLoadingUpgrades(true);
+      
+      // Get ID token
+      let token;
+      try {
+        if (user.getIdToken) {
+          token = await user.getIdToken();
+        } else {
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            token = await currentUser.getIdToken();
+          } else {
+            throw new Error('No authenticated user found');
+          }
+        }
+      } catch (tokenError) {
+        console.error('Error getting ID token:', tokenError);
+        return;
+      }
+
+      const response = await fetch(`/api/upgrade-plan?userType=${userType}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableUpgrades(data.availableUpgrades || []);
+      }
+    } catch (err) {
+      console.error('Error loading available upgrades:', err);
+    } finally {
+      setLoadingUpgrades(false);
+    }
+  };
+
   const handleRefresh = async () => {
     await loadPlanInfo();
+    await loadAvailableUpgrades();
     if (onPlanUpdate) {
       onPlanUpdate();
     }
@@ -200,6 +246,11 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
     } finally {
       setVerifyingPayment(false);
     }
+  };
+
+  const handleUpgradePlan = () => {
+    // Navigate to payment plans page with upgrade intent
+    router.push('/payment-plans?upgrade=true');
   };
 
   const handleRenewPlan = () => {
@@ -383,11 +434,19 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
               {/* Action Buttons */}
               <div className="flex gap-2 pt-2">
                 {status === 'active' ? (
-                  // <div className="text-green-600 text-sm flex items-center">
-                  //   <CheckCircle className="w-4 h-4 mr-2" />
-                  //   You have an active plan
-                  // </div>
-                  null
+                  // Show upgrade button for active plans if upgrades are available
+                  availableUpgrades.length > 0 ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleUpgradePlan}
+                      className="flex items-center gap-1 border-blue-200 text-blue-700 hover:bg-blue-50"
+                      disabled={loadingUpgrades}
+                    >
+                      <TrendingUp className="w-4 h-4" />
+                      Upgrade Plan
+                    </Button>
+                  ) : null
                 ) : (
                   <Button 
                     variant="outline" 

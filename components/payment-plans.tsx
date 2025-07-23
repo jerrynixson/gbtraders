@@ -149,16 +149,28 @@ export function PaymentPlans() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
   const [hasActivePlan, setHasActivePlan] = useState(false)
   const [checkingPlan, setCheckingPlan] = useState(true)
+  const [isUpgradeMode, setIsUpgradeMode] = useState(false)
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null)
+  const [availableUpgrades, setAvailableUpgrades] = useState<string[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
-    // Check if the user has an active plan
+    // Check URL parameters for upgrade mode
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      setIsUpgradeMode(urlParams.get('upgrade') === 'true');
+    }
+
+    // Check if the user has an active plan and load upgrade options
     if (user) {
       checkActivePlan()
+      if (isUpgradeMode) {
+        loadUpgradeOptions()
+      }
     } else {
       setCheckingPlan(false)
     }
-  }, [user])
+  }, [user, isUpgradeMode])
 
   const checkActivePlan = async () => {
     try {
@@ -184,6 +196,7 @@ export function PaymentPlans() {
           // Check if plan is active (not expired)
           if (planEndDate > now) {
             setHasActivePlan(true)
+            setCurrentPlan(data.planInfo.planName)
           } else {
             setHasActivePlan(false)
           }
@@ -193,6 +206,29 @@ export function PaymentPlans() {
       console.error('Error checking plan status:', error)
     } finally {
       setCheckingPlan(false)
+    }
+  }
+
+  const loadUpgradeOptions = async () => {
+    try {
+      const currentUser = auth.currentUser
+      if (!currentUser) return
+
+      const token = await currentUser.getIdToken(false)
+      const response = await fetch(`/api/upgrade-plan?userType=dealer`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentPlan(data.currentPlan)
+        setAvailableUpgrades(data.availableUpgrades || [])
+      }
+    } catch (error) {
+      console.error('Error loading upgrade options:', error)
     }
   }
 
@@ -216,14 +252,27 @@ export function PaymentPlans() {
       return
     }
 
-    // Check if user has an active plan
-    if (hasActivePlan) {
-      toast({
-        title: "Active plan detected",
-        description: "You already have an active plan. Please wait until your current plan expires to purchase a new one.",
-        variant: "destructive",
-      })
-      return
+    // Check if it's an upgrade or new plan purchase
+    if (isUpgradeMode && currentPlan) {
+      // Validate that the selected plan is actually an upgrade
+      if (!availableUpgrades.includes(planName)) {
+        toast({
+          title: "Invalid upgrade",
+          description: `${planName} is not available as an upgrade from your current ${currentPlan} plan.`,
+          variant: "destructive",
+        })
+        return
+      }
+    } else {
+      // Regular plan selection - check for active plan
+      if (hasActivePlan) {
+        toast({
+          title: "Active plan detected",
+          description: "You already have an active plan. Please wait until your current plan expires to purchase a new one.",
+          variant: "destructive",
+        })
+        return
+      }
     }
 
     setLoadingPlan(planName)
@@ -244,7 +293,11 @@ export function PaymentPlans() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ planName }),
+        body: JSON.stringify({ 
+          planName,
+          isUpgrade: isUpgradeMode,
+          currentPlan: currentPlan
+        }),
       })
 
       const data = await response.json()
@@ -259,7 +312,11 @@ export function PaymentPlans() {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${freshToken}`,
             },
-            body: JSON.stringify({ planName }),
+            body: JSON.stringify({ 
+              planName,
+              isUpgrade: isUpgradeMode,
+              currentPlan: currentPlan
+            }),
           })
           
           const retryData = await retryResponse.json()
@@ -295,8 +352,27 @@ export function PaymentPlans() {
   return (
     <section className="w-full py-16">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Active Plan Alert */}
-        {hasActivePlan && (
+        {/* Upgrade Mode Header */}
+        {isUpgradeMode && currentPlan && (
+          <div className="mb-8 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Upgrade Your Plan
+              </h2>
+              <p className="text-gray-600 mb-4">
+                You're currently on the <strong>{currentPlan}</strong> plan. 
+                Choose a higher tier plan to unlock more features.
+              </p>
+              <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
+                <span>✓ All active vehicles will inherit the new expiration date</span>
+                <span>✓ Seamless transition with zero downtime</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Active Plan Alert - only show when not in upgrade mode */}
+        {hasActivePlan && !isUpgradeMode && (
           <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-3">
             <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mb-2 sm:mb-0" />
             <div className="flex-1">
@@ -317,16 +393,30 @@ export function PaymentPlans() {
 
         {/* Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {plans.map((plan) => {
+          {plans
+            .filter(plan => {
+              // If in upgrade mode, only show plans that are available for upgrade
+              if (isUpgradeMode) {
+                return availableUpgrades.includes(plan.name)
+              }
+              return true
+            })
+            .map((plan) => {
             const colors = getColorClasses(plan.color)
             const IconComponent = plan.icon
+            const isUpgradeEligible = isUpgradeMode ? availableUpgrades.includes(plan.name) : true
+            const isCurrentPlan = plan.name === currentPlan
             
             return (
               <Card
                 key={plan.name}
                 className={
-                  `relative flex flex-col h-full transition-all duration-300 transform border border-gray-200 shadow-lg bg-white hover:shadow-xl${
+                  `relative flex flex-col h-full transition-all duration-300 transform border shadow-lg bg-white hover:shadow-xl${
                     hoveredPlan === plan.name ? ' scale-105 shadow-2xl' : ''
+                  }${
+                    isCurrentPlan ? ' border-blue-300 bg-blue-50' : ' border-gray-200'
+                  }${
+                    !isUpgradeEligible ? ' opacity-50' : ''
                   }`
                 }
                 onMouseEnter={() => setHoveredPlan(plan.name)}
@@ -375,23 +465,31 @@ export function PaymentPlans() {
                 </CardContent>
 
                 <CardFooter className="px-6 pb-6">
-                  <Button 
-                    onClick={() => handlePlanSelection(plan.name)}
-                    disabled={loadingPlan === plan.name || hasActivePlan || checkingPlan}
-                    className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
-                    size="lg"
-                  >
-                    {loadingPlan === plan.name ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : hasActivePlan ? (
-                      "Active Plan in Progress"
-                    ) : (
-                      plan.buttonText
-                    )}
-                  </Button>
+                  {isCurrentPlan ? (
+                    <div className="w-full py-3 text-center bg-blue-100 text-blue-800 rounded-lg font-semibold">
+                      Current Plan
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={() => handlePlanSelection(plan.name)}
+                      disabled={loadingPlan === plan.name || (!isUpgradeMode && hasActivePlan) || checkingPlan || !isUpgradeEligible}
+                      className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+                      size="lg"
+                    >
+                      {loadingPlan === plan.name ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : !isUpgradeMode && hasActivePlan ? (
+                        "Active Plan in Progress"
+                      ) : isUpgradeMode ? (
+                        `Upgrade to ${plan.name}`
+                      ) : (
+                        plan.buttonText
+                      )}
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             )

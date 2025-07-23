@@ -63,13 +63,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 
   const { userId, userType, planName, tokens, validity } = metadata;
+  const isUpgrade = metadata.isUpgrade === 'true';
+  const currentPlan = metadata.currentPlan || '';
 
   if (!userId || !userType || !planName || !tokens || !validity) {
     console.error('Missing required metadata:', metadata);
     return;
   }
 
-  console.log(`Processing plan update for ${userType} ${userId}: ${planName} (${tokens} tokens, ${validity} days)`);
+  console.log(`Processing ${isUpgrade ? 'upgrade' : 'plan update'} for ${userType} ${userId}: ${planName} (${tokens} tokens, ${validity} days)`);
 
   // Get current user data to preserve purchase history
   const collection = userType === 'dealer' ? 'dealers' : 'users';
@@ -87,7 +89,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       amount: session.amount_total ? session.amount_total / 100 : 0,
       stripeSessionId: session.id,
       tokens: parseInt(tokens),
-      validity: parseInt(validity)
+      validity: parseInt(validity),
+      ...(isUpgrade && { upgradeFrom: currentPlan })
     };
 
     const userRef = adminDb.collection(collection).doc(userId);
@@ -100,7 +103,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       planStartDate: admin.firestore.Timestamp.fromDate(now),
       planEndDate: admin.firestore.Timestamp.fromDate(planExpiration),
       totalTokens: parseInt(tokens),
-      usedTokens: 0, // Reset used tokens for new plan
+      // For upgrades, keep current used tokens; for new plans, reset to 0
+      usedTokens: isUpgrade ? (currentData.usedTokens || 0) : 0,
       purchaseHistory: [...currentHistory, purchaseRecord],
       lastPaymentStatus: 'completed',
       lastPaymentSessionId: session.id,
@@ -112,7 +116,37 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     // Update the appropriate collection based on user type
     await userRef.update(updateData);
 
-    console.log(`Successfully updated ${userType} ${userId} with plan ${planName}`);
+    // If it's an upgrade, update all active vehicles with new expiration date
+    if (isUpgrade) {
+      const vehiclesRef = adminDb.collection('vehicles');
+      const activeVehiclesQuery = vehiclesRef
+        .where('userId', '==', userId)
+        .where('tokenStatus', '==', 'active');
+
+      const activeVehiclesSnapshot = await activeVehiclesQuery.get();
+      const batch = adminDb.batch();
+
+      activeVehiclesSnapshot.docs.forEach(vehicleDoc => {
+        const vehicleRef = vehiclesRef.doc(vehicleDoc.id);
+        batch.update(vehicleRef, {
+          tokenExpiryDate: admin.firestore.Timestamp.fromDate(planExpiration),
+          updatedAt: admin.firestore.Timestamp.fromDate(now),
+          upgradeInfo: {
+            upgradedAt: admin.firestore.Timestamp.fromDate(now),
+            fromPlan: currentPlan,
+            toPlan: planName,
+            newExpiryDate: admin.firestore.Timestamp.fromDate(planExpiration)
+          }
+        });
+      });
+
+      if (!activeVehiclesSnapshot.empty) {
+        await batch.commit();
+        console.log(`Updated ${activeVehiclesSnapshot.size} active vehicles with new expiration date`);
+      }
+    }
+
+    console.log(`Successfully ${isUpgrade ? 'upgraded' : 'updated'} ${userType} ${userId} with plan ${planName}`);
     console.log('Update data applied:', updateData);
   } catch (error) {
     console.error('Error updating user profile after successful payment:', error);
