@@ -253,6 +253,7 @@ const SignInPage: React.FC = () => {
               </button>
 
               {/* Divider for social options */}
+              {/*
               <div className="mt-6">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
@@ -262,9 +263,6 @@ const SignInPage: React.FC = () => {
                     <span className="px-2 bg-white text-gray-500">Or sign in with</span>
                   </div>
                 </div>
-
-                {/* Social Sign In Options */}
-                {/*
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <div className="col-span-1">
                     <button
@@ -285,8 +283,8 @@ const SignInPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                */}
               </div>
+              */}
 
               {/* Sign Up Link */}
               <div className="text-center mt-6">
