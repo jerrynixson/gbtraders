@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import './styles/scroll.css'
 import { AuthProvider } from '@/hooks/useAuth'
 import { Toaster } from "@/components/ui/toaster"
 import { headers } from 'next/headers'
