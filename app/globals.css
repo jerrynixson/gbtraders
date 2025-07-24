@@ -35,6 +35,24 @@ body {
     justify-content: center;
     margin-top: 0.25rem;
   }
+  /* Tablet fix for dealer card button alignment */
+  .dealer-card-tablet {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+  }
+  .dealer-card-tablet-content {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+  }
+  .dealer-card-tablet-btn {
+    margin-top: auto !important;
+    margin-bottom: 0.5rem !important;
+    width: 100% !important;
+    display: block !important;
+  }
 }
 
 

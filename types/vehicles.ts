@@ -99,7 +99,7 @@ export type TruckCabType = 'day' | 'sleeper' | 'crew';
 
 // Filter types
 export interface VehicleFilters {
-  type: VehicleType;
+  type?: VehicleType;
   make?: string[];
   model?: string[];
   minPrice?: number;
@@ -179,4 +179,4 @@ export interface FilterSidebarProps {
   availableMakes: string[];
   availableModels: Record<string, string[]>;
   selectedVehicleType: VehicleType;
-} 
+}

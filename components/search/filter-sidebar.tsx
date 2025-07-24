@@ -77,6 +77,7 @@ function ExpandableSection({ title, children, icon }: ExpandableSectionProps) {
           {icon && <span className="mr-2">{icon}</span>}
           <span className="font-medium">{title}</span>
         </div>
+        {/* FIX: Corrected template literal syntax for className */}
         <ChevronRight className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
       </button>
 
@@ -152,32 +153,13 @@ export function FilterSidebar({
   }, [filters, debouncedInputFilterChange])
 
   const handleReset = () => {
-    // Create a clean filter state with only the vehicle type
-    const resetFilters: VehicleFilters = {
-      type: selectedVehicleType,
-      make: undefined,
-      model: undefined,
-      minPrice: undefined,
-      maxPrice: undefined,
-      minYear: undefined,
-      maxYear: undefined,
-      minMileage: undefined,
-      maxMileage: undefined,
-      fuelType: undefined,
-      transmission: undefined,
-      bodyStyle: undefined
-    }
-    
-    // Update local state immediately
-    setFilters(resetFilters)
-    
-    // Notify parent component
-    onFilterChange(resetFilters)
-    
-    // Navigate to clean search page with vehicle type preserved
-    const typeParam = selectedVehicleType ? `?type=${encodeURIComponent(selectedVehicleType)}` : ''
-    router.push(`/search${typeParam}`)
-  }
+    // Create a clean filter state with all fields undefined
+    const resetFilters: VehicleFilters = {};
+    setFilters(resetFilters);
+    onFilterChange(resetFilters);
+    // Navigate to clean search page with no params
+    router.push('/search');
+  };
 
   const commonFeatures = ["Wheelchair Access", "Left Hand Drive", "Sat Nav", "Bluetooth", "Leather Seats"]
   const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid"]
@@ -442,4 +424,3 @@ export function FilterSidebar({
     </aside>
   )
 }
-

@@ -98,7 +98,7 @@ export default function BrowseVehiclesPage() {
   const DealerCard = ({ id, businessName, dealerBannerUrl, contact, location }: DealerData) => {
     return (
       <Link href={`/categories/dealers/${id}`} className="block group cursor-pointer">
-        <div className="bg-white rounded-lg overflow-hidden border border-gray-100 hover:border-gray-200 transition-all hover:shadow-lg">
+        <div className="bg-white rounded-lg overflow-hidden border border-gray-100 hover:border-gray-200 transition-all hover:shadow-lg h-full flex flex-col">
           <div className="relative">
             <Image
               src={dealerBannerUrl || "/placeholder.svg"}
@@ -109,7 +109,7 @@ export default function BrowseVehiclesPage() {
             />
             <div className="absolute inset-0 bg-black/5 group-hover:bg-black/0 transition-colors" />
           </div>
-          <div className="p-4">
+          <div className="p-4 flex flex-col flex-1">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-lg">{businessName}</h3>
               <span className="text-sm text-gray-500 flex items-center">
@@ -122,7 +122,7 @@ export default function BrowseVehiclesPage() {
                 <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {contact.phone || "Not available"}
               </p>
             </div>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white pointer-events-none">
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white pointer-events-none mt-auto">
               Contact Dealer
             </Button>
           </div>
@@ -233,7 +233,7 @@ export default function BrowseVehiclesPage() {
 
       {/* Trusted Dealers Section */}
       <section className="container mx-auto py-12">
-        <h2 className="text-3xl font-bold mb-8">Trusted Dealers</h2>
+        <h2 className="text-3xl font-bold mb-8">Dealers</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {dealers.map((dealer) => (
             <DealerCard
