@@ -579,11 +579,11 @@ export default function DealerDashboard() {
       <main className="container mx-auto px-2 sm:px-4 py-6 sm:py-8 max-w-7xl">
         {/* Welcome Section */}
         <div className="mb-6 sm:mb-8 flex flex-col xs:flex-row xs:items-center gap-3 xs:gap-4">
-          <div className="flex justify-center xs:block">
+          {/*<div className="flex justify-center xs:block">
             <Avatar className="h-14 w-14 bg-blue-100 text-blue-700 font-bold text-xl flex items-center justify-center">
               {isDealerNameLoading ? <Skeleton className="h-10 w-10 rounded-full" /> : getInitials(dealerName)}
             </Avatar>
-          </div>
+          </div>*/}
           <div className="text-center xs:text-left">
             <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">
               Welcome back, {isDealerNameLoading ? "..." : dealerName || "Dealer"}
