@@ -39,10 +39,10 @@ interface SearchParams {
 
 // Convert search params to filters
 function getFiltersFromSearchParams(searchParams: SearchParams): VehicleFilters {
-  const filters: VehicleFilters = {
-    // Set type from searchParams, or default to 'car' if not provided
-    type: (searchParams.type as VehicleType) || 'car', 
-  };
+  const filters: VehicleFilters = {};
+  if (searchParams.type) {
+    filters.type = searchParams.type as VehicleType;
+  }
 
   // Handle keyword search - if there's a 'q' parameter, this will be handled by Algolia
   // We don't add it to filters as the enhanced search page will handle keyword searches differently
