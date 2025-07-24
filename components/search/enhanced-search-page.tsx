@@ -365,6 +365,7 @@ export default function EnhancedSearchPage({
                     </div>
                     */}
 
+                    {/*
                     <div className="flex border rounded-lg">
                       <Button
                         variant={currentView === 'grid' ? 'default' : 'ghost'}
@@ -381,6 +382,7 @@ export default function EnhancedSearchPage({
                         <List className="h-4 w-4" />
                       </Button>
                     </div>
+                    */}
                     
                     <select
                       value={`${sortOptions.field}:${sortOptions.direction}`}
