@@ -618,14 +618,6 @@ export default function DealerDashboard() {
               <TabsTrigger value="profile" className="rounded-md data-[state=active]:bg-gray-100 w-full min-w-[100px] sm:w-auto">Profile</TabsTrigger>
             </TabsList>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-              <Button 
-                variant="outline" 
-                onClick={() => router.push("/payment-plans")}
-                className="border-gray-200 hover:bg-gray-50 w-full sm:w-auto text-base py-2"
-              >
-                <CreditCard className="w-4 h-4 mr-2" />
-                Payment Plans
-              </Button>
               <Button onClick={handleAddListing} className="bg-blue-600 hover:bg-blue-700 shadow-sm w-full sm:w-auto text-base py-2">
                 <Plus className="w-4 h-4 mr-2" />
                 Add New Listing

@@ -249,8 +249,8 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
   };
 
   const handleUpgradePlan = () => {
-    // Navigate to payment plans page with upgrade intent
-    router.push('/payment-plans?upgrade=true');
+    // Navigate to payment plans page - let the payment plans component handle upgrade logic
+    router.push('/payment-plans');
   };
 
   const handleRenewPlan = () => {

@@ -155,22 +155,13 @@ export function PaymentPlans() {
   const { toast } = useToast()
 
   useEffect(() => {
-    // Check URL parameters for upgrade mode
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      setIsUpgradeMode(urlParams.get('upgrade') === 'true');
-    }
-
     // Check if the user has an active plan and load upgrade options
     if (user) {
       checkActivePlan()
-      if (isUpgradeMode) {
-        loadUpgradeOptions()
-      }
     } else {
       setCheckingPlan(false)
     }
-  }, [user, isUpgradeMode])
+  }, [user])
 
   const checkActivePlan = async () => {
     try {
@@ -197,6 +188,12 @@ export function PaymentPlans() {
           if (planEndDate > now) {
             setHasActivePlan(true)
             setCurrentPlan(data.planInfo.planName)
+            // Automatically enable upgrade mode if user has active plan
+            if (!isUpgradeMode) {
+              setIsUpgradeMode(true)
+            }
+            // Load upgrade options
+            await loadUpgradeOptions()
           } else {
             setHasActivePlan(false)
           }
@@ -263,17 +260,8 @@ export function PaymentPlans() {
         })
         return
       }
-    } else {
-      // Regular plan selection - check for active plan
-      if (hasActivePlan) {
-        toast({
-          title: "Active plan detected",
-          description: "You already have an active plan. Please wait until your current plan expires to purchase a new one.",
-          variant: "destructive",
-        })
-        return
-      }
     }
+    // Note: Removed the restriction for users with active plans - they can now purchase
 
     setLoadingPlan(planName)
     
@@ -353,59 +341,30 @@ export function PaymentPlans() {
     <section className="w-full py-16">
       <div className="max-w-7xl mx-auto px-4">
         {/* Upgrade Mode Header */}
-        {isUpgradeMode && currentPlan && (
+        {hasActivePlan && currentPlan && (
           <div className="mb-8 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-6">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Upgrade Your Plan
+                Your Current Plan: {currentPlan}
               </h2>
               <p className="text-gray-600 mb-4">
-                You're currently on the <strong>{currentPlan}</strong> plan. 
-                Choose a higher tier plan to unlock more features.
+                You can upgrade to a higher tier plan or purchase additional plans.
               </p>
               <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
-                <span>✓ All active vehicles will inherit the new expiration date</span>
                 <span>✓ Seamless transition with zero downtime</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Active Plan Alert - only show when not in upgrade mode */}
-        {hasActivePlan && !isUpgradeMode && (
-          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-3">
-            <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mb-2 sm:mb-0" />
-            <div className="flex-1">
-              <h3 className="font-medium text-blue-800">You have an active plan</h3>
-              <p className="text-blue-600 text-sm">
-                You cannot purchase another plan until your current plan expires. Go to your dashboard to view your plan details.
-              </p>
-            </div>
-            <Button 
-              variant="outline" 
-              className="w-full sm:w-auto border-blue-300 text-blue-700 hover:bg-blue-100"
-              onClick={() => router.push('/dashboard')}
-            >
-              Go to Dashboard
-            </Button>
-          </div>
-        )}
-
         {/* Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {plans
-            .filter(plan => {
-              // If in upgrade mode, only show plans that are available for upgrade
-              if (isUpgradeMode) {
-                return availableUpgrades.includes(plan.name)
-              }
-              return true
-            })
-            .map((plan) => {
+          {plans.map((plan) => {
             const colors = getColorClasses(plan.color)
             const IconComponent = plan.icon
-            const isUpgradeEligible = isUpgradeMode ? availableUpgrades.includes(plan.name) : true
+            const isUpgradeEligible = hasActivePlan ? availableUpgrades.includes(plan.name) : true
             const isCurrentPlan = plan.name === currentPlan
+            const isLowerTierPlan = Boolean(hasActivePlan && currentPlan && !availableUpgrades.includes(plan.name) && plan.name !== currentPlan)
             
             return (
               <Card
@@ -414,15 +373,34 @@ export function PaymentPlans() {
                   `relative flex flex-col h-full transition-all duration-300 transform border shadow-lg bg-white hover:shadow-xl${
                     hoveredPlan === plan.name ? ' scale-105 shadow-2xl' : ''
                   }${
-                    isCurrentPlan ? ' border-blue-300 bg-blue-50' : ' border-gray-200'
-                  }${
-                    !isUpgradeEligible ? ' opacity-50' : ''
+                    isCurrentPlan ? ' border-blue-300 bg-blue-50' : isLowerTierPlan ? ' border-gray-300 bg-gray-50 opacity-75' : ' border-gray-200'
                   }`
                 }
                 onMouseEnter={() => setHoveredPlan(plan.name)}
                 onMouseLeave={() => setHoveredPlan(null)}
               >
-                {/* Featured Badge removed: Most Popular badge was here */}
+                {/* Plan Status Badge */}
+                {isCurrentPlan && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge className="bg-blue-600 text-white">
+                      Current Plan
+                    </Badge>
+                  </div>
+                )}
+                {isLowerTierPlan && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge variant="outline" className="bg-gray-200 text-gray-600 border-gray-400">
+                      Lower Tier
+                    </Badge>
+                  </div>
+                )}
+                {isUpgradeEligible && hasActivePlan && !isCurrentPlan && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge className="bg-green-600 text-white">
+                      Upgrade Available
+                    </Badge>
+                  </div>
+                )}
 
                 <CardHeader className="text-center pb-4 pt-8">
                   {/* Plan Icon */}
@@ -472,10 +450,14 @@ export function PaymentPlans() {
                     <div className="w-full py-3 text-center bg-blue-100 text-blue-800 rounded-lg font-semibold">
                       Current Plan
                     </div>
+                  ) : isLowerTierPlan ? (
+                    <div className="w-full py-3 text-center bg-gray-100 text-gray-600 rounded-lg font-semibold">
+                      Not Available (Lower Tier)
+                    </div>
                   ) : (
                     <Button 
                       onClick={() => handlePlanSelection(plan.name)}
-                      disabled={loadingPlan === plan.name || (!isUpgradeMode && hasActivePlan) || checkingPlan || !isUpgradeEligible}
+                      disabled={loadingPlan === plan.name || checkingPlan || isLowerTierPlan}
                       className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
                       size="lg"
                     >
@@ -484,9 +466,7 @@ export function PaymentPlans() {
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           Processing...
                         </>
-                      ) : !isUpgradeMode && hasActivePlan ? (
-                        "Active Plan in Progress"
-                      ) : isUpgradeMode ? (
+                      ) : (hasActivePlan && isUpgradeEligible) ? (
                         `Upgrade to ${plan.name}`
                       ) : (
                         plan.buttonText

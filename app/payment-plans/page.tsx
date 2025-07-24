@@ -12,15 +12,6 @@ import { useState, useEffect } from "react"
 
 export default function PaymentPlansPage() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
-  const [isUpgradeMode, setIsUpgradeMode] = useState(false)
-
-  useEffect(() => {
-    // Check URL parameters for upgrade mode
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      setIsUpgradeMode(urlParams.get('upgrade') === 'true');
-    }
-  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-blue-50 to-red-100">
@@ -32,13 +23,10 @@ export default function PaymentPlansPage() {
         <div className="relative container mx-auto px-4 py-20">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-              {isUpgradeMode ? 'Upgrade Your Plan' : 'Choose Your Perfect Plan'}
+              Choose Your Perfect Plan
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 mb-8 leading-relaxed">
-              {isUpgradeMode 
-                ? 'Take your business to the next level with more features and listings.'
-                : 'Unlock the full potential of car trading with our flexible pricing plans. Start free and scale as you grow.'
-              }
+              Unlock the full potential of car trading with our flexible pricing plans. Start free and scale as you grow.
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-sm text-blue-200">
               <div className="flex items-center gap-2">
