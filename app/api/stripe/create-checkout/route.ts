@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     const userId = decodedToken.uid;
     const userEmail = decodedToken.email;
 
-    const { planName, isUpgrade, currentPlan } = await request.json();
+    const { planName, isUpgrade, isRenewal, currentPlan } = await request.json();
 
     if (!planName) {
       return NextResponse.json(
@@ -168,8 +168,8 @@ export async function POST(request: NextRequest) {
       ],
       mode: 'payment',
       success_url: process.env.NODE_ENV === 'production'
-        ? `${process.env.NEXT_PUBLIC_SITE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}${isUpgrade ? '&upgrade=true' : ''}`
-        : `${request.nextUrl.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}${isUpgrade ? '&upgrade=true' : ''}`,
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}${isUpgrade ? '&upgrade=true' : ''}${isRenewal ? '&renewal=true' : ''}`
+        : `${request.nextUrl.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}${isUpgrade ? '&upgrade=true' : ''}${isRenewal ? '&renewal=true' : ''}`,
       cancel_url: process.env.NODE_ENV === 'production'
         ? `${process.env.NEXT_PUBLIC_SITE_URL}/payment-plans?cancelled=true`
         : `${request.nextUrl.origin}/payment-plans?cancelled=true`,
@@ -185,6 +185,7 @@ export async function POST(request: NextRequest) {
         discountApplied: discountAmount.toString(),
         finalPrice: finalPrice.toString(),
         isUpgrade: isUpgrade ? 'true' : 'false',
+        isRenewal: isRenewal ? 'true' : 'false',
         currentPlan: currentPlan || '',
       },
       customer_email: userEmail || undefined,

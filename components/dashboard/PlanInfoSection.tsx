@@ -58,6 +58,7 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [hasRecentSession, setHasRecentSession] = useState(false);
   const [availableUpgrades, setAvailableUpgrades] = useState<string[]>([]);
+  const [availableRenewals, setAvailableRenewals] = useState<string[]>([]);
   const [loadingUpgrades, setLoadingUpgrades] = useState(false);
 
   useEffect(() => {
@@ -169,6 +170,7 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
       if (response.ok) {
         const data = await response.json();
         setAvailableUpgrades(data.availableUpgrades || []);
+        setAvailableRenewals(data.availableRenewals || []);
       }
     } catch (err) {
       console.error('Error loading available upgrades:', err);
@@ -434,19 +436,31 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
               {/* Action Buttons */}
               <div className="flex gap-2 pt-2">
                 {status === 'active' ? (
-                  // Show upgrade button for active plans if upgrades are available
-                  availableUpgrades.length > 0 ? (
+                  <div className="flex gap-2 w-full">
+                    {/* Always show renew option for active plans */}
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={handleUpgradePlan}
-                      className="flex items-center gap-1 border-blue-200 text-blue-700 hover:bg-blue-50"
-                      disabled={loadingUpgrades}
+                      onClick={handleRenewPlan}
+                      className="flex items-center gap-1 flex-1"
                     >
-                      <TrendingUp className="w-4 h-4" />
-                      Upgrade Plan
+                      <CreditCard className="w-4 h-4" />
+                      Renew Plan
                     </Button>
-                  ) : null
+                    {/* Show upgrade button only if upgrades are available */}
+                    {availableUpgrades.length > 0 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleUpgradePlan}
+                        className="flex items-center gap-1 border-blue-200 text-blue-700 hover:bg-blue-50 flex-1"
+                        disabled={loadingUpgrades}
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                        Upgrade Plan
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <Button 
                     variant="outline" 

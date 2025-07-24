@@ -31,6 +31,15 @@ function getAvailableUpgrades(currentPlan: string): PlanName[] {
 }
 
 /**
+ * Get available renewal plans for a user's current plan (includes current plan + upgrades)
+ */
+function getAvailableRenewalPlans(currentPlan: string): PlanName[] {
+  const currentIndex = PLAN_HIERARCHY.indexOf(currentPlan as PlanName);
+  if (currentIndex === -1) return PLAN_HIERARCHY.slice(); // All plans if current not found
+  return PLAN_HIERARCHY.slice(currentIndex); // Current plan + higher tier plans
+}
+
+/**
  * Check if targetPlan is an upgrade from currentPlan
  */
 function isUpgrade(currentPlan: string, targetPlan: string): boolean {
@@ -40,13 +49,23 @@ function isUpgrade(currentPlan: string, targetPlan: string): boolean {
 }
 
 /**
+ * Check if targetPlan is a valid renewal (same plan or upgrade) from currentPlan
+ */
+function isValidRenewal(currentPlan: string, targetPlan: string): boolean {
+  const currentIndex = PLAN_HIERARCHY.indexOf(currentPlan as PlanName);
+  const targetIndex = PLAN_HIERARCHY.indexOf(targetPlan as PlanName);
+  return targetIndex >= currentIndex;
+}
+
+/**
  * Upgrade user plan and update all active vehicles with new expiration date
  */
 async function upgradeUserPlan(
   userId: string, 
   userType: 'user' | 'dealer',
   newPlan: PlanName,
-  sessionId: string
+  sessionId: string,
+  isRenewal: boolean = false
 ) {
   const batch = adminDb.batch();
   
@@ -69,9 +88,15 @@ async function upgradeUserPlan(
     const userData = userDoc.data();
     const currentPlan = userData?.planName;
 
-    // Verify it's actually an upgrade
-    if (!isUpgrade(currentPlan, newPlan)) {
-      throw new Error(`${newPlan} is not an upgrade from ${currentPlan}`);
+    // Verify it's a valid renewal or upgrade
+    if (isRenewal) {
+      if (!isValidRenewal(currentPlan, newPlan)) {
+        throw new Error(`${newPlan} is not a valid renewal option from ${currentPlan}`);
+      }
+    } else {
+      if (!isUpgrade(currentPlan, newPlan)) {
+        throw new Error(`${newPlan} is not an upgrade from ${currentPlan}`);
+      }
     }
 
     const planConfig = PLAN_CONFIGS[newPlan];
@@ -87,7 +112,8 @@ async function upgradeUserPlan(
       stripeSessionId: sessionId,
       tokens: planConfig.tokens,
       validity: planConfig.validity,
-      upgradeFrom: currentPlan
+      upgradeFrom: currentPlan,
+      isRenewal: isRenewal
     };
 
     // Update user plan information
@@ -136,9 +162,12 @@ async function upgradeUserPlan(
 
     return {
       success: true,
-      message: `Successfully upgraded from ${currentPlan} to ${newPlan}`,
+      message: isRenewal 
+        ? `Successfully renewed ${newPlan} plan`
+        : `Successfully upgraded from ${currentPlan} to ${newPlan}`,
       updatedVehicles: activeVehiclesSnapshot.size,
-      newEndDate: newEndDate.toISOString()
+      newEndDate: newEndDate.toISOString(),
+      isRenewal: isRenewal
     };
 
   } catch (error) {
@@ -158,7 +187,7 @@ export async function POST(request: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const userId = decodedToken.uid;
 
-    const { targetPlan, userType = 'dealer', sessionId } = await request.json();
+    const { targetPlan, userType = 'dealer', sessionId, isRenewal = false } = await request.json();
 
     if (!targetPlan || !PLAN_HIERARCHY.includes(targetPlan)) {
       return NextResponse.json({ error: 'Invalid target plan' }, { status: 400 });
@@ -168,7 +197,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
-    const result = await upgradeUserPlan(userId, userType, targetPlan, sessionId);
+    const result = await upgradeUserPlan(userId, userType, targetPlan, sessionId, isRenewal);
 
     return NextResponse.json(result);
 
@@ -218,10 +247,12 @@ export async function GET(request: NextRequest) {
     }
 
     const availableUpgrades = getAvailableUpgrades(currentPlan);
+    const availableRenewals = getAvailableRenewalPlans(currentPlan);
 
     return NextResponse.json({
       currentPlan,
       availableUpgrades,
+      availableRenewals,
       planHierarchy: PLAN_HIERARCHY
     });
 

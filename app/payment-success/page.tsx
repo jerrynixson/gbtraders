@@ -15,6 +15,7 @@ function PaymentSuccessContent() {
   const { user } = useAuth();
   const sessionId = searchParams.get('session_id');
   const isUpgrade = searchParams.get('upgrade') === 'true';
+  const isRenewal = searchParams.get('renewal') === 'true';
   const [loading, setLoading] = useState(true);
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,13 +178,17 @@ function PaymentSuccessContent() {
             <CheckCircle className="h-16 w-16 text-green-600" />
           </div>
           <CardTitle className="text-center text-green-600">
-            {isUpgrade ? 'Plan Upgraded Successfully!' : 'Payment Successful!'}
+            {isUpgrade ? 'Plan Upgraded Successfully!' : 
+             isRenewal ? 'Plan Renewed Successfully!' : 
+             'Payment Successful!'}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-gray-600 mb-6">
             {isUpgrade 
               ? 'Your plan has been upgraded successfully. All your active vehicles have been updated with the new expiration date.'
+              : isRenewal
+              ? 'Your plan has been renewed successfully. All your active vehicles have been updated with the extended expiration date.'
               : 'Your payment has been processed successfully. Your plan has been activated and you can now create listings.'
             }
           </p>

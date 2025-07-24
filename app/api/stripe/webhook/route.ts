@@ -64,6 +64,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
   const { userId, userType, planName, tokens, validity } = metadata;
   const isUpgrade = metadata.isUpgrade === 'true';
+  const isRenewal = metadata.isRenewal === 'true';
   const currentPlan = metadata.currentPlan || '';
 
   if (!userId || !userType || !planName || !tokens || !validity) {
@@ -71,7 +72,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  console.log(`Processing ${isUpgrade ? 'upgrade' : 'plan update'} for ${userType} ${userId}: ${planName} (${tokens} tokens, ${validity} days)`);
+  console.log(`Processing ${isUpgrade ? 'upgrade' : isRenewal ? 'renewal' : 'plan purchase'} for ${userType} ${userId}: ${planName} (${tokens} tokens, ${validity} days)`);
 
   // Get current user data to preserve purchase history
   const collection = userType === 'dealer' ? 'dealers' : 'users';
@@ -90,7 +91,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       stripeSessionId: session.id,
       tokens: parseInt(tokens),
       validity: parseInt(validity),
-      ...(isUpgrade && { upgradeFrom: currentPlan })
+      ...(isUpgrade && { upgradeFrom: currentPlan }),
+      ...(isRenewal && { isRenewal: true })
     };
 
     const userRef = adminDb.collection(collection).doc(userId);

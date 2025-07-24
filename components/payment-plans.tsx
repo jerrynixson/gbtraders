@@ -152,6 +152,7 @@ export function PaymentPlans() {
   const [isUpgradeMode, setIsUpgradeMode] = useState(false)
   const [currentPlan, setCurrentPlan] = useState<string | null>(null)
   const [availableUpgrades, setAvailableUpgrades] = useState<string[]>([])
+  const [availableRenewals, setAvailableRenewals] = useState<string[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
@@ -223,6 +224,7 @@ export function PaymentPlans() {
         const data = await response.json()
         setCurrentPlan(data.currentPlan)
         setAvailableUpgrades(data.availableUpgrades || [])
+        setAvailableRenewals(data.availableRenewals || [])
       }
     } catch (error) {
       console.error('Error loading upgrade options:', error)
@@ -249,13 +251,17 @@ export function PaymentPlans() {
       return
     }
 
-    // Check if it's an upgrade or new plan purchase
+    // Check if it's an upgrade, renewal, or new plan purchase
+    const isCurrentPlanSelected = currentPlan === planName;
+    const isUpgradeSelected = availableUpgrades.includes(planName);
+    const isRenewalSelected = availableRenewals.includes(planName) && !isUpgradeSelected;
+
     if (isUpgradeMode && currentPlan) {
-      // Validate that the selected plan is actually an upgrade
-      if (!availableUpgrades.includes(planName)) {
+      // Validate that the selected plan is available for purchase (upgrade or renewal)
+      if (!availableRenewals.includes(planName)) {
         toast({
-          title: "Invalid upgrade",
-          description: `${planName} is not available as an upgrade from your current ${currentPlan} plan.`,
+          title: "Invalid selection",
+          description: `${planName} is not available from your current ${currentPlan} plan.`,
           variant: "destructive",
         })
         return
@@ -283,7 +289,8 @@ export function PaymentPlans() {
         },
         body: JSON.stringify({ 
           planName,
-          isUpgrade: isUpgradeMode,
+          isUpgrade: isUpgradeSelected,
+          isRenewal: isRenewalSelected,
           currentPlan: currentPlan
         }),
       })
@@ -302,7 +309,8 @@ export function PaymentPlans() {
             },
             body: JSON.stringify({ 
               planName,
-              isUpgrade: isUpgradeMode,
+              isUpgrade: isUpgradeSelected,
+              isRenewal: isRenewalSelected,
               currentPlan: currentPlan
             }),
           })
@@ -364,7 +372,8 @@ export function PaymentPlans() {
             const IconComponent = plan.icon
             const isUpgradeEligible = hasActivePlan ? availableUpgrades.includes(plan.name) : true
             const isCurrentPlan = plan.name === currentPlan
-            const isLowerTierPlan = Boolean(hasActivePlan && currentPlan && !availableUpgrades.includes(plan.name) && plan.name !== currentPlan)
+            const isRenewalEligible = hasActivePlan ? availableRenewals.includes(plan.name) : true
+            const isLowerTierPlan = Boolean(hasActivePlan && currentPlan && !availableRenewals.includes(plan.name))
             
             return (
               <Card
@@ -447,9 +456,21 @@ export function PaymentPlans() {
 
                 <CardFooter className="px-6 pb-6">
                   {isCurrentPlan ? (
-                    <div className="w-full py-3 text-center bg-blue-100 text-blue-800 rounded-lg font-semibold">
-                      Current Plan
-                    </div>
+                    <Button 
+                      onClick={() => handlePlanSelection(plan.name)}
+                      disabled={loadingPlan === plan.name || checkingPlan}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                      size="lg"
+                    >
+                      {loadingPlan === plan.name ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        `Renew ${plan.name}`
+                      )}
+                    </Button>
                   ) : isLowerTierPlan ? (
                     <div className="w-full py-3 text-center bg-gray-100 text-gray-600 rounded-lg font-semibold">
                       Not Available (Lower Tier)
