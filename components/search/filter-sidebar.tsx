@@ -392,6 +392,8 @@ export function FilterSidebar({
         </section>
 
         {/* Body Type (only for cars) */}
+        {/* Body Type (only for cars) */}
+        {/**
         {selectedVehicleType === 'car' && (
           <section className="border-t border-gray-100 py-3">
             <div className="flex items-center mb-2">
@@ -420,6 +422,7 @@ export function FilterSidebar({
             </Select>
           </section>
         )}
+        **/}
       </div>
     </aside>
   )
