@@ -78,6 +78,8 @@ export async function POST(request: NextRequest) {
     }
 
     const { userType, planName, tokens, validity } = metadata;
+    const isUpgrade = metadata.isUpgrade === 'true';
+    const isRenewal = metadata.isRenewal === 'true';
 
     if (!userType || !planName || !tokens || !validity) {
       return NextResponse.json(
@@ -100,24 +102,55 @@ export async function POST(request: NextRequest) {
         amount: session.amount_total ? session.amount_total / 100 : 0,
         stripeSessionId: sessionId,
         tokens: parseInt(tokens),
-        validity: parseInt(validity)
+        validity: parseInt(validity),
+        ...(isUpgrade && { upgradeFrom: metadata.currentPlan }),
+        ...(isRenewal && { isRenewal: true })
       };
 
       // Get current user data to preserve purchase history
       const collection = userType === 'dealer' ? 'dealers' : 'users';
-      const userRef = adminDb.collection(collection).doc(userId);
-      const currentDoc = await userRef.get();
+      let userRef = adminDb.collection(collection).doc(userId);
+      let currentDoc = await userRef.get();
+      
+      // If dealer document doesn't exist, try users collection as fallback
+      if (!currentDoc.exists && userType === 'dealer') {
+        userRef = adminDb.collection('users').doc(userId);
+        currentDoc = await userRef.get();
+      }
+      
       const currentData = currentDoc.exists ? currentDoc.data() || {} : {};
       const currentHistory = currentData.purchaseHistory || [];
 
       console.log(`Updating ${userType} ${userId} in collection ${collection}, document exists: ${currentDoc.exists}`);
 
+      // Calculate tokens for upgrades and renewals
+      let finalTotalTokens = parseInt(tokens);
+      let finalUsedTokens = 0;
+      
+      if (isUpgrade || isRenewal) {
+        // For upgrades/renewals: totalTokens = (currentTotal - currentUsed) + newPlanAllocation
+        const currentTotalTokens = currentData.totalTokens || 0;
+        const currentUsedTokens = currentData.usedTokens || 0;
+        const remainingTokens = Math.max(0, currentTotalTokens - currentUsedTokens);
+        
+        finalTotalTokens = remainingTokens + parseInt(tokens);
+        finalUsedTokens = 0; // Reset to allow full usage
+        
+        console.log(`Token calculation for ${isUpgrade ? 'upgrade' : 'renewal'}:`, {
+          currentTotal: currentTotalTokens,
+          currentUsed: currentUsedTokens,
+          remainingTokens,
+          newPlanAllocation: parseInt(tokens),
+          finalTotal: finalTotalTokens
+        });
+      }
+
       const updateData = {
         planName: planName,
         planStartDate: admin.firestore.Timestamp.fromDate(now),
         planEndDate: admin.firestore.Timestamp.fromDate(planExpiration),
-        totalTokens: parseInt(tokens),
-        usedTokens: 0, // Reset used tokens for new plan
+        totalTokens: finalTotalTokens,
+        usedTokens: finalUsedTokens,
         purchaseHistory: [...currentHistory, purchaseRecord],
         lastPaymentStatus: 'completed',
         lastPaymentSessionId: sessionId,

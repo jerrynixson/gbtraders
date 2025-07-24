@@ -58,7 +58,7 @@ function isValidRenewal(currentPlan: string, targetPlan: string): boolean {
 }
 
 /**
- * Upgrade user plan and update all active vehicles with new expiration date
+ * Upgrade user plan
  */
 async function upgradeUserPlan(
   userId: string, 
@@ -104,6 +104,20 @@ async function upgradeUserPlan(
     const newEndDate = new Date();
     newEndDate.setDate(newEndDate.getDate() + planConfig.validity);
 
+    // Calculate tokens for upgrades and renewals
+    const currentTotalTokens = userData?.totalTokens || 0;
+    const currentUsedTokens = userData?.usedTokens || 0;
+    const remainingTokens = Math.max(0, currentTotalTokens - currentUsedTokens);
+    const finalTotalTokens = remainingTokens + planConfig.tokens;
+
+    console.log(`Token calculation for ${isRenewal ? 'renewal' : 'upgrade'}:`, {
+      currentTotal: currentTotalTokens,
+      currentUsed: currentUsedTokens,
+      remainingTokens,
+      newPlanAllocation: planConfig.tokens,
+      finalTotal: finalTotalTokens
+    });
+
     // Prepare purchase record
     const purchaseRecord = {
       planName: newPlan,
@@ -122,9 +136,8 @@ async function upgradeUserPlan(
       planPrice: planConfig.price,
       planStartDate: now,
       planEndDate: newEndDate,
-      totalTokens: planConfig.tokens,
-      // Keep current used tokens (don't reset)
-      usedTokens: userData?.usedTokens || 0,
+      totalTokens: finalTotalTokens,
+      usedTokens: 0, // Reset to allow full usage
       lastPaymentDate: now,
       lastPaymentStatus: 'completed',
       purchaseHistory: [
@@ -135,28 +148,6 @@ async function upgradeUserPlan(
 
     batch.update(userRef, userUpdateData);
 
-    // Update all active vehicles with new expiration date
-    const vehiclesRef = adminDb.collection('vehicles');
-    const activeVehiclesQuery = vehiclesRef
-      .where('userId', '==', userId)
-      .where('tokenStatus', '==', 'active');
-
-    const activeVehiclesSnapshot = await activeVehiclesQuery.get();
-
-    activeVehiclesSnapshot.docs.forEach(vehicleDoc => {
-      const vehicleRef = vehiclesRef.doc(vehicleDoc.id);
-      batch.update(vehicleRef, {
-        tokenExpiryDate: newEndDate,
-        updatedAt: now,
-        upgradeInfo: {
-          upgradedAt: now,
-          fromPlan: currentPlan,
-          toPlan: newPlan,
-          newExpiryDate: newEndDate
-        }
-      });
-    });
-
     // Execute all updates atomically
     await batch.commit();
 
@@ -165,7 +156,7 @@ async function upgradeUserPlan(
       message: isRenewal 
         ? `Successfully renewed ${newPlan} plan`
         : `Successfully upgraded from ${currentPlan} to ${newPlan}`,
-      updatedVehicles: activeVehiclesSnapshot.size,
+      updatedVehicles: 0, // No vehicles updated since we removed that logic
       newEndDate: newEndDate.toISOString(),
       isRenewal: isRenewal
     };

@@ -95,18 +95,46 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       ...(isRenewal && { isRenewal: true })
     };
 
-    const userRef = adminDb.collection(collection).doc(userId);
-    const currentDoc = await userRef.get();
+    let userRef = adminDb.collection(collection).doc(userId);
+    let currentDoc = await userRef.get();
+    
+    // If dealer document doesn't exist, try users collection as fallback
+    if (!currentDoc.exists && userType === 'dealer') {
+      userRef = adminDb.collection('users').doc(userId);
+      currentDoc = await userRef.get();
+    }
+    
     const currentData = currentDoc.exists ? currentDoc.data() || {} : {};
     const currentHistory = currentData.purchaseHistory || [];
+
+    // Calculate tokens for upgrades and renewals
+    let finalTotalTokens = parseInt(tokens);
+    let finalUsedTokens = 0;
+    
+    if (isUpgrade || isRenewal) {
+      // For upgrades/renewals: totalTokens = (currentTotal - currentUsed) + newPlanAllocation
+      const currentTotalTokens = currentData.totalTokens || 0;
+      const currentUsedTokens = currentData.usedTokens || 0;
+      const remainingTokens = Math.max(0, currentTotalTokens - currentUsedTokens);
+      
+      finalTotalTokens = remainingTokens + parseInt(tokens);
+      finalUsedTokens = 0; // Reset to allow full usage
+      
+      console.log(`Token calculation for ${isUpgrade ? 'upgrade' : 'renewal'}:`, {
+        currentTotal: currentTotalTokens,
+        currentUsed: currentUsedTokens,
+        remainingTokens,
+        newPlanAllocation: parseInt(tokens),
+        finalTotal: finalTotalTokens
+      });
+    }
 
     const updateData = {
       planName: planName,
       planStartDate: admin.firestore.Timestamp.fromDate(now),
       planEndDate: admin.firestore.Timestamp.fromDate(planExpiration),
-      totalTokens: parseInt(tokens),
-      // For upgrades, keep current used tokens; for new plans, reset to 0
-      usedTokens: isUpgrade ? (currentData.usedTokens || 0) : 0,
+      totalTokens: finalTotalTokens,
+      usedTokens: finalUsedTokens,
       purchaseHistory: [...currentHistory, purchaseRecord],
       lastPaymentStatus: 'completed',
       lastPaymentSessionId: session.id,
@@ -116,36 +144,16 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     };
 
     // Update the appropriate collection based on user type
-    await userRef.update(updateData);
-
-    // If it's an upgrade, update all active vehicles with new expiration date
-    if (isUpgrade) {
-      const vehiclesRef = adminDb.collection('vehicles');
-      const activeVehiclesQuery = vehiclesRef
-        .where('userId', '==', userId)
-        .where('tokenStatus', '==', 'active');
-
-      const activeVehiclesSnapshot = await activeVehiclesQuery.get();
-      const batch = adminDb.batch();
-
-      activeVehiclesSnapshot.docs.forEach(vehicleDoc => {
-        const vehicleRef = vehiclesRef.doc(vehicleDoc.id);
-        batch.update(vehicleRef, {
-          tokenExpiryDate: admin.firestore.Timestamp.fromDate(planExpiration),
-          updatedAt: admin.firestore.Timestamp.fromDate(now),
-          upgradeInfo: {
-            upgradedAt: admin.firestore.Timestamp.fromDate(now),
-            fromPlan: currentPlan,
-            toPlan: planName,
-            newExpiryDate: admin.firestore.Timestamp.fromDate(planExpiration)
-          }
-        });
+    if (currentDoc.exists) {
+      await userRef.update(updateData);
+    } else {
+      // If document doesn't exist, create it with default fields
+      await userRef.set({
+        uid: userId,
+        email: metadata.userEmail || '',
+        createdAt: admin.firestore.Timestamp.fromDate(now),
+        ...updateData
       });
-
-      if (!activeVehiclesSnapshot.empty) {
-        await batch.commit();
-        console.log(`Updated ${activeVehiclesSnapshot.size} active vehicles with new expiration date`);
-      }
     }
 
     console.log(`Successfully ${isUpgrade ? 'upgraded' : 'updated'} ${userType} ${userId} with plan ${planName}`);

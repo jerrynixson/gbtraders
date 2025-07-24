@@ -1,4 +1,4 @@
-import { collection, query, where, orderBy, limit, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, writeBatch, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, doc, getDoc, addDoc, updateDoc, setDoc, deleteDoc, writeBatch, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/db/firebase';
 
 export interface PlanDetails {
@@ -97,11 +97,22 @@ export class TokenRepository {
       validity: number; // days
       amount: number;
       stripeSessionId: string;
+      isUpgrade?: boolean;
+      isRenewal?: boolean;
     }
   ): Promise<void> {
     try {
       const collectionRef = userType === 'dealer' ? this.dealersCollection : this.usersCollection;
-      const userRef = doc(collectionRef, userId);
+      let userRef = doc(collectionRef, userId);
+      
+      // Try to get the document from the primary collection first
+      let currentDoc = await getDoc(userRef);
+      
+      // If not found and userType is 'dealer', try users collection as fallback
+      if (!currentDoc.exists() && userType === 'dealer') {
+        userRef = doc(this.usersCollection, userId);
+        currentDoc = await getDoc(userRef);
+      }
       
       const now = new Date();
       const endDate = new Date();
@@ -116,17 +127,30 @@ export class TokenRepository {
         validity: planData.validity
       };
 
-      // Get current user data to preserve purchase history
-      const currentDoc = await getDoc(userRef);
+      // Get current user data to preserve purchase history and tokens
       const currentData = currentDoc.exists() ? currentDoc.data() : {};
       const currentHistory = currentData.purchaseHistory || [];
 
-      await updateDoc(userRef, {
+      // Calculate tokens for upgrades and renewals
+      let finalTotalTokens = planData.totalTokens;
+      let finalUsedTokens = 0;
+      
+      if (planData.isUpgrade || planData.isRenewal) {
+        // For upgrades/renewals: totalTokens = (currentTotal - currentUsed) + newPlanAllocation
+        const currentTotalTokens = currentData.totalTokens || 0;
+        const currentUsedTokens = currentData.usedTokens || 0;
+        const remainingTokens = Math.max(0, currentTotalTokens - currentUsedTokens);
+        
+        finalTotalTokens = remainingTokens + planData.totalTokens;
+        finalUsedTokens = 0; // Reset to allow full usage
+      }
+
+      const updateData = {
         planName: planData.planName,
         planStartDate: Timestamp.fromDate(now),
         planEndDate: Timestamp.fromDate(endDate),
-        totalTokens: planData.totalTokens,
-        usedTokens: 0, // Reset used tokens for new plan
+        totalTokens: finalTotalTokens,
+        usedTokens: finalUsedTokens,
         purchaseHistory: [...currentHistory, {
           ...purchaseRecord,
           purchaseDate: Timestamp.fromDate(purchaseRecord.purchaseDate)
@@ -134,7 +158,18 @@ export class TokenRepository {
         lastPaymentStatus: 'completed',
         lastPaymentDate: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now)
-      });
+      };
+
+      if (currentDoc.exists()) {
+        await updateDoc(userRef, updateData);
+      } else {
+        // If document doesn't exist, create it
+        await setDoc(userRef, {
+          uid: userId,
+          createdAt: Timestamp.fromDate(now),
+          ...updateData
+        });
+      }
     } catch (error) {
       console.error('Error updating user plan:', error);
       throw error;
