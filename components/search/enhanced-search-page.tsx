@@ -41,7 +41,7 @@ export default function EnhancedSearchPage({
   availableMakes = [],
   availableModels = [],
   selectedVehicleType = 'car',
-  initialFilters = { type: 'car' },
+  initialFilters = {}, // No default type - show all vehicles initially
   view = 'grid',
   page = 1,
   sort = 'createdAt:desc'
@@ -56,6 +56,20 @@ export default function EnhancedSearchPage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchFlow, setSearchFlow] = useState<'keyword' | 'filter'>('filter');
+  
+  // Dynamic makes and models state
+  const [currentAvailableMakes, setCurrentAvailableMakes] = useState<string[]>(availableMakes);
+  const [currentAvailableModels, setCurrentAvailableModels] = useState<string[]>(availableModels);
+
+  // Initialize makes and models from props (if any)
+  useEffect(() => {
+    if (availableMakes.length > 0) {
+      setCurrentAvailableMakes(availableMakes);
+    }
+    if (availableModels.length > 0) {
+      setCurrentAvailableModels(availableModels);
+    }
+  }, [availableMakes, availableModels]);
   
   // UI State
   const [currentView, setCurrentView] = useState<'grid' | 'list'>(view);
@@ -99,6 +113,51 @@ export default function EnhancedSearchPage({
     }
   }, []);
 
+  // Update available makes and models based on current filters and data
+  const updateAvailableMakesAndModels = useCallback((currentFilters: VehicleFilters, vehicleData: VehicleSummary[]) => {
+    if (vehicleData.length === 0) {
+      // If no vehicle data, keep existing makes/models from props
+      return;
+    }
+
+    // Get available makes based on current type filter
+    let filteredForMakes = vehicleData;
+    if (currentFilters.type) {
+      filteredForMakes = vehicleData.filter(v => v.type === currentFilters.type);
+    }
+    
+    const makesSet = new Set<string>();
+    filteredForMakes.forEach(vehicle => {
+      if (vehicle.make && vehicle.make.trim()) {
+        makesSet.add(vehicle.make.trim());
+      }
+    });
+    const sortedMakes = Array.from(makesSet).sort();
+    setCurrentAvailableMakes(sortedMakes);
+
+    // Get available models based on current type and make filters
+    let filteredForModels = vehicleData;
+    if (currentFilters.type) {
+      filteredForModels = filteredForModels.filter(v => v.type === currentFilters.type);
+    }
+    if (currentFilters.make?.length) {
+      filteredForModels = filteredForModels.filter(v => 
+        currentFilters.make!.some(make => 
+          v.make && v.make.toLowerCase().includes(make.toLowerCase())
+        )
+      );
+    }
+    
+    const modelsSet = new Set<string>();
+    filteredForModels.forEach(vehicle => {
+      if (vehicle.model && vehicle.model.trim()) {
+        modelsSet.add(vehicle.model.trim());
+      }
+    });
+    const sortedModels = Array.from(modelsSet).sort();
+    setCurrentAvailableModels(sortedModels);
+  }, []);
+
   // 🔍 Flow 2: Filter Search (Local Filtering)
   const loadAllVehiclesForFiltering = useCallback(async () => {
     if (allVehicles.length > 0) return; // Already loaded
@@ -126,7 +185,10 @@ export default function EnhancedSearchPage({
     const filtered = applyLocalFilters(baseVehicles, filterOptions);
     setFilteredVehicles(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [vehicles, allVehicles, searchFlow]);
+    
+    // Update available makes and models based on the new filters
+    updateAvailableMakesAndModels(newFilters, baseVehicles);
+  }, [vehicles, allVehicles, searchFlow, updateAvailableMakesAndModels]);
 
   // Sort vehicles
   const sortedVehicles = useMemo(() => {
@@ -137,6 +199,17 @@ export default function EnhancedSearchPage({
   const paginationResult = useMemo(() => {
     return paginateLocally(sortedVehicles, currentPage, pageSize);
   }, [sortedVehicles, currentPage, pageSize]);
+
+  // Update makes and models when vehicle data changes
+  useEffect(() => {
+    const vehicleData = searchFlow === 'keyword' ? vehicles : allVehicles;
+    if (vehicleData.length > 0) {
+      updateAvailableMakesAndModels(filters, vehicleData);
+    } else if (initialVehicles.length > 0 && currentAvailableMakes.length === 0) {
+      // If no cached data yet but we have initial vehicles, use them
+      updateAvailableMakesAndModels(filters, initialVehicles);
+    }
+  }, [vehicles, allVehicles, filters, searchFlow, updateAvailableMakesAndModels, initialVehicles, currentAvailableMakes.length]);
 
   // Initialize search based on flow
   useEffect(() => {
@@ -278,8 +351,8 @@ export default function EnhancedSearchPage({
                 <FilterSidebar
                   initialFilters={filters}
                   onFilterChange={handleFilterChange}
-                  availableMakes={availableMakes}
-                  availableModels={availableModels}
+                  availableMakes={currentAvailableMakes}
+                  availableModels={currentAvailableModels}
                   selectedVehicleType={selectedVehicleType}
                 />
               </div>
@@ -306,8 +379,8 @@ export default function EnhancedSearchPage({
                       <FilterSidebar
                         initialFilters={filters}
                         onFilterChange={handleFilterChange}
-                        availableMakes={availableMakes}
-                        availableModels={availableModels}
+                        availableMakes={currentAvailableMakes}
+                        availableModels={currentAvailableModels}
                         selectedVehicleType={selectedVehicleType}
                       />
                     </div>
@@ -413,7 +486,7 @@ export default function EnhancedSearchPage({
                   <Button 
                     variant="outline" 
                     onClick={() => {
-                      setFilters({ type: selectedVehicleType });
+                      setFilters({}); // Clear all filters including type to show all vehicles
                       if (keyword) {
                         router.push('/search');
                       }

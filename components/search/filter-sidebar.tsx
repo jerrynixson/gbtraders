@@ -201,13 +201,17 @@ export function FilterSidebar({
             <h3 className="font-medium text-sm text-gray-900">Vehicle Type</h3>
           </div>
           <Select
-            value={filters.type || selectedVehicleType}
-            onValueChange={(value: VehicleType) => updateFilters({ type: value })}
+            value={filters.type || 'all'}
+            onValueChange={(value: string) => {
+              // If "all" is selected, remove the type filter to show all vehicles
+              updateFilters({ type: value === 'all' ? undefined : (value as VehicleType) })
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select vehicle type" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">All Vehicles</SelectItem>
               <SelectItem value="car">Car</SelectItem>
               <SelectItem value="used-car">Used Car</SelectItem>
               <SelectItem value="truck">Truck</SelectItem>
@@ -392,7 +396,7 @@ export function FilterSidebar({
         </section>
 
         {/* Body Type (only for cars) */}
-        {selectedVehicleType === 'car' && (
+        {filters.type === 'car' && (
           <section className="border-t border-gray-100 py-3">
             <div className="flex items-center mb-2">
               <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">

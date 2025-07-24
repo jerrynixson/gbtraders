@@ -57,8 +57,10 @@ export class VehicleRepository {
   private buildQueryConstraints(filters: VehicleFilters): QueryConstraint[] {
     const constraints: QueryConstraint[] = [];
 
-    // Type filter (required)
-    constraints.push(where('type', '==', filters.type));
+    // Type filter (only add if type is specified)
+    if (filters.type) {
+      constraints.push(where('type', '==', filters.type));
+    }
 
     // Optional filters
     if (filters.make?.length) {

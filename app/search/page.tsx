@@ -40,9 +40,11 @@ interface SearchParams {
 // Convert search params to filters
 function getFiltersFromSearchParams(searchParams: SearchParams): VehicleFilters {
   const filters: VehicleFilters = {};
+  // Only set type if explicitly provided in search params
   if (searchParams.type) {
     filters.type = searchParams.type as VehicleType;
   }
+  // Don't set a default type - undefined means show all vehicle types
 
   // Handle keyword search - if there's a 'q' parameter, this will be handled by Algolia
   // We don't add it to filters as the enhanced search page will handle keyword searches differently
@@ -112,47 +114,28 @@ function getFiltersFromSearchParams(searchParams: SearchParams): VehicleFilters 
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
   const repository = new VehicleRepository();
   
+  // Await search params as required by Next.js 15
+  const awaitedSearchParams = await searchParams;
+  
   // Get filters and other parameters
-  const filters = getFiltersFromSearchParams(searchParams);
-  const page = typeof searchParams.page === 'string' ? parseInt(searchParams.page) : 1;
-  const view = (searchParams.view as 'grid' | 'list') || 'grid';
-  const sort = searchParams.sort as string || 'createdAt:desc';
-  const keyword = searchParams.q;
+  const filters = getFiltersFromSearchParams(awaitedSearchParams);
+  const page = typeof awaitedSearchParams.page === 'string' ? parseInt(awaitedSearchParams.page) : 1;
+  const view = (awaitedSearchParams.view as 'grid' | 'list') || 'grid';
+  const sort = awaitedSearchParams.sort as string || 'createdAt:desc';
+  const keyword = awaitedSearchParams.q;
 
   // For keyword searches, we'll let the enhanced search page handle the Algolia search
-  // For filter-based searches, we can still pre-fetch some data for better UX
+  // For filter-based searches, we'll let the enhanced search page handle everything locally
   let initialVehicles: any = [];
   let availableMakes: string[] = [];
   let availableModels: string[] = [];
 
-  // Only pre-fetch data if no keyword search (filter-based search)
-  if (!keyword) {
-    try {
-      const [vehiclesResult, makes, models] = await Promise.all([
-        repository.searchVehicles(filters, { page, limit: 12 }),
-        repository.getAvailableMakes(filters.type),
-        filters.make ? repository.getAvailableModels(filters.type, filters.make[0]) : Promise.resolve([]),
-      ]);
-      
-      initialVehicles = vehiclesResult.items;
-      availableMakes = makes;
-      availableModels = models;
-    } catch (error) {
-      console.error('Error pre-fetching data:', error);
-      // Continue with empty data - the enhanced search page will handle loading
-    }
-  } else {
-    // For keyword searches, still get available makes for filters
-    try {
-      availableMakes = await repository.getAvailableMakes(filters.type);
-    } catch (error) {
-      console.error('Error fetching makes:', error);
-    }
-  }
+  // Don't pre-fetch any data here - let the enhanced search page handle all data loading locally
+  // This avoids Firebase index requirements and keeps everything client-side
 
   return (
     <Suspense fallback={<Loading />}>
@@ -160,7 +143,7 @@ export default async function SearchPage({
         initialVehicles={initialVehicles}
         availableMakes={availableMakes}
         availableModels={availableModels}
-        selectedVehicleType={filters.type}
+        selectedVehicleType={filters.type || 'car'} // Default to 'car' for UI purposes only
         initialFilters={filters}
         view={view}
         page={page}
