@@ -28,7 +28,7 @@ export function AdvertiseWithUs() {
                 asChild
                 className="bg-white text-blue-600 hover:bg-yellow-300 hover:text-blue-700 font-bold text-lg px-8 py-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105"
               >
-                <Link href="/advertise">
+                <Link href="/dashboard">
                   Advertise With Us
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
