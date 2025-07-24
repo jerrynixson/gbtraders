@@ -3,6 +3,7 @@
 import { Hero } from "@/components/hero";
 import { Button } from "@/components/ui/button";
 import { VehicleCard } from "@/components/vehicle-card";
+import { Carousel } from "@/components/ui/carousel";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
@@ -198,24 +199,36 @@ export default function BrowseVehiclesPage() {
 
       {/* Featured Vehicles Section */}
       <section className="container mx-auto py-12 bg-gray-50">
-        <h2 className="text-3xl font-bold mb-8">Vehicles</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredVehicles.slice(0, 4).map((vehicle) => (
-            <VehicleCard
-              key={vehicle.id}
-              vehicle={vehicle}
-              view="grid"
-            />
-          ))}
-        </div>
-        <div className="mt-8 text-center">
-          <Link href="/search">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white">
-              View All Vehicles
-            </Button>
-          </Link>
-        </div>
-      </section>
+  <h2 className="text-3xl font-bold mb-8">Vehicles</h2>
+  {/* Mobile: Horizontal draggable carousel */}
+  <div className="block md:hidden">
+    <Carousel
+      items={featuredVehicles.slice(0, 4)}
+      renderItem={(vehicle) => (
+        <VehicleCard key={vehicle.id} vehicle={vehicle} view="grid" />
+      )}
+      className=""
+      autoScroll={false}
+    />
+  </div>
+  {/* Desktop/Tablet: Grid */}
+  <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    {featuredVehicles.slice(0, 4).map((vehicle) => (
+      <VehicleCard
+        key={vehicle.id}
+        vehicle={vehicle}
+        view="grid"
+      />
+    ))}
+  </div>
+  <div className="mt-8 text-center">
+    <Link href="/search">
+      <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white">
+        View All Vehicles
+      </Button>
+    </Link>
+  </div>
+</section>
           
 
       {/* Trusted Dealers Section */}

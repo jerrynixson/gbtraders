@@ -13,6 +13,8 @@ export class VehicleRepository {
     return {
       ...data,
       id: doc.id,
+      fuel: data.fuel ?? data.fuelType, // Use fuelType if fuel is missing
+      bodyStyle: data.bodyStyle ?? data.bodyType, // Use bodyType if bodyStyle is missing
       createdAt: data.createdAt?.toDate(),
       updatedAt: data.updatedAt?.toDate(),
       mot: data.mot ? {
@@ -320,4 +322,4 @@ export class VehicleRepository {
       return [];
     }
   }
-} 
+}

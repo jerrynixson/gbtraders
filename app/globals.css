@@ -12,6 +12,32 @@ body {
   }
 }
 
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Tablet view navigation bubble fixes */
+  .main-navigation-bubble {
+    border-radius: 1.5rem !important;
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+    font-size: 1.1rem !important;
+    min-width: 120px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .main-navigation-bubble-sub {
+    border-radius: 1.25rem !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+    font-size: 0.98rem !important;
+    min-width: 80px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.25rem;
+  }
+}
+
+
 @layer base {
   :root {
     --background: 0 0% 100%;
