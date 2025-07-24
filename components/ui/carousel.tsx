@@ -11,7 +11,7 @@ const DRAG_THRESHOLD = 50;
 interface CarouselProps {
   items: any[];
   renderItem: (item: any) => React.ReactNode;
-  title: string;
+  title?: string;
   viewMoreLink?: string;
   autoScroll?: boolean;
   className?: string;
@@ -143,7 +143,9 @@ export function Carousel({
   return (
     <section className={`py-12 bg-gray-50 ${className}`}>
       <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6 text-center">{title}</h2>
+        {title && (
+  <h2 className="text-2xl font-bold mb-6 text-center">{title}</h2>
+)}
 
         <div className="relative">
           {/* Mobile Carousel */}
