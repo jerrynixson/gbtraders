@@ -96,27 +96,13 @@ interface VehicleData {
   dateV5cIssued: string
   registrationDate: string
   firstRegistrationDate: string
-  usedBeforeFirstRegistration: boolean
   vehicleIdentificationNumber?: string
   priorNiVrm?: string
   // Extended data for non-car vehicles
-  isNonEuImport?: boolean
-  isImported?: boolean
-  isExported?: boolean
-  exportedDate?: string
-  isScrapped?: boolean
-  scrappedDate?: string
   previousKeepers?: number
   lastKeeperChangeDate?: string
   colorChanges?: number
   lastColorChangeDate?: string
-  taxDetails?: {
-    month12RflY1: number
-    month6RflY2ToY6Premium: number
-    month12RflY2ToY6Premium: number
-    month6RflY2ToY6: number
-    month12RflY2ToY6: number
-  }
 }
 
 interface ListingFormData {
@@ -127,8 +113,8 @@ interface ListingFormData {
   model: string
   year: string
   mileage: string
-  fuelType: 'petrol' | 'diesel' | 'electric' | 'hybrid'
-  transmission: 'manual' | 'automatic'
+  fuelType: 'petrol' | 'diesel' | 'electric' | 'hybrid' | ''
+  transmission: 'manual' | 'automatic' | ''
   description: string
   images: File[]
   registrationNumber: string
@@ -140,12 +126,11 @@ interface ListingFormData {
   dateOfLastV5CIssued: string
   registrationDate: string
   firstRegistrationDate: string
-  usedBeforeFirstRegistration: boolean
   v5cQty: string
   engineCapacity: string
   co2Emissions: string
   co2Band: string
-  bodyType?: 'sedan' | 'suv' | 'hatchback' | 'coupe' | 'wagon'
+  bodyType?: 'sedan' | 'suv' | 'hatchback' | 'coupe' | 'wagon' | ''
   doors?: string
   seats?: string
   cargoVolume?: string
@@ -153,23 +138,12 @@ interface ListingFormData {
   length?: string
   height?: string
   axles?: string
-  cabType?: 'day' | 'sleeper'
+  cabType?: 'day' | 'sleeper' | ''
   // Extended fields for non-car vehicles
-  isNonEuImport: boolean
-  isImported: boolean
-  isExported: boolean
-  exportedDate: string
-  isScrapped: boolean
-  scrappedDate: string
   previousKeepers: string
   lastKeeperChangeDate: string
   colorChanges: string
   lastColorChangeDate: string
-  month12RflY1: string
-  month6RflY2ToY6Premium: string
-  month12RflY2ToY6Premium: string
-  month6RflY2ToY6: string
-  month12RflY2ToY6: string
   location: {
     city: string
     country: string
@@ -238,8 +212,8 @@ export default function AddVehicleForm() {
     model: "",
     year: "",
     mileage: "",
-    fuelType: "petrol",
-    transmission: "automatic",
+    fuelType: "",
+    transmission: "",
     description: "",
     images: [],
     registrationNumber: "",
@@ -251,26 +225,14 @@ export default function AddVehicleForm() {
     dateOfLastV5CIssued: new Date().toISOString().split('T')[0],
     registrationDate: "",
     firstRegistrationDate: "",
-    usedBeforeFirstRegistration: false,
     v5cQty: "1",
     engineCapacity: "",
     co2Emissions: "0",
     co2Band: "",
-    isNonEuImport: false,
-    isImported: false,
-    isExported: false,
-    exportedDate: "",
-    isScrapped: false,
-    scrappedDate: "",
     previousKeepers: "0",
     lastKeeperChangeDate: "",
     colorChanges: "0",
     lastColorChangeDate: "",
-    month12RflY1: "0",
-    month6RflY2ToY6Premium: "0",
-    month12RflY2ToY6Premium: "0",
-    month6RflY2ToY6: "0",
-    month12RflY2ToY6: "0",
     location: {
       city: "",
       country: "",
@@ -487,32 +449,18 @@ export default function AddVehicleForm() {
         dateV5cIssued: apiResult.vehicle_identification.date_v5c_issued,
         registrationDate: apiResult.vehicle_identification.registration_date,
         firstRegistrationDate: apiResult.vehicle_identification.first_registration_date,
-        usedBeforeFirstRegistration: apiResult.vehicle_identification.used_before_first_registration,
         vehicleIdentificationNumber: apiResult.vehicle_identification.vehicle_identification_number || "",
         priorNiVrm: apiResult.vehicle_identification.prior_ni_vrm || "",
-        isNonEuImport: apiResult.vehicle_status_details?.is_non_eu_import || false,
-        isImported: apiResult.vehicle_status_details?.is_imported || false,
-        isExported: apiResult.vehicle_status_details?.is_exported || false,
-        exportedDate: apiResult.vehicle_status_details?.exported_date || "",
-        isScrapped: apiResult.vehicle_status_details?.is_scrapped || false,
-        scrappedDate: apiResult.vehicle_status_details?.scrapped_date || "",
         previousKeepers: apiResult.keeper_change_list?.[0]?.number_previous_keepers || 0,
         lastKeeperChangeDate: apiResult.keeper_change_list?.[0]?.date_of_last_keeper_change || "",
         colorChanges: apiResult.colour_details?.colour_changes_qty || 0,
-        lastColorChangeDate: apiResult.colour_details?.date_of_last_colour_change || "",
-        taxDetails: apiResult.vehicle_excise_duty_details ? {
-          month12RflY1: apiResult.vehicle_excise_duty_details["12_month_rfl_y1"],
-          month6RflY2ToY6Premium: apiResult.vehicle_excise_duty_details["6_month_rfl_y2_to_y6_premium"],
-          month12RflY2ToY6Premium: apiResult.vehicle_excise_duty_details["12_month_rfl_y2_to_y6_premium"],
-          month6RflY2ToY6: apiResult.vehicle_excise_duty_details["6_month_rfl_y2_to_y6"],
-          month12RflY2ToY6: apiResult.vehicle_excise_duty_details["12_month_rfl_y2_to_y6"]
-        } : undefined
+        lastColorChangeDate: apiResult.colour_details?.date_of_last_colour_change || ""
       }
 
       setVehicleData(vehicleData)
       
       // Map fuel type to our enum
-      let mappedFuelType: 'petrol' | 'diesel' | 'electric' | 'hybrid' = 'petrol'
+      let mappedFuelType: 'petrol' | 'diesel' | 'electric' | 'hybrid' | '' = 'petrol'
       const fuelTypeLower = vehicleData.fuelType.toLowerCase()
       if (fuelTypeLower.includes('diesel')) mappedFuelType = 'diesel'
       else if (fuelTypeLower.includes('electric')) mappedFuelType = 'electric'
@@ -535,22 +483,10 @@ export default function AddVehicleForm() {
         dateOfLastV5CIssued: vehicleData.dateV5cIssued,
         registrationDate: vehicleData.registrationDate,
         firstRegistrationDate: vehicleData.firstRegistrationDate,
-        usedBeforeFirstRegistration: vehicleData.usedBeforeFirstRegistration,
-        isNonEuImport: vehicleData.isNonEuImport || false,
-        isImported: vehicleData.isImported || false,
-        isExported: vehicleData.isExported || false,
-        exportedDate: vehicleData.exportedDate || "",
-        isScrapped: vehicleData.isScrapped || false,
-        scrappedDate: vehicleData.scrappedDate || "",
         previousKeepers: (vehicleData.previousKeepers || 0).toString(),
         lastKeeperChangeDate: vehicleData.lastKeeperChangeDate || "",
         colorChanges: (vehicleData.colorChanges || 0).toString(),
-        lastColorChangeDate: vehicleData.lastColorChangeDate || "",
-        month12RflY1: (vehicleData.taxDetails?.month12RflY1 || 0).toString(),
-        month6RflY2ToY6Premium: (vehicleData.taxDetails?.month6RflY2ToY6Premium || 0).toString(),
-        month12RflY2ToY6Premium: (vehicleData.taxDetails?.month12RflY2ToY6Premium || 0).toString(),
-        month6RflY2ToY6: (vehicleData.taxDetails?.month6RflY2ToY6 || 0).toString(),
-        month12RflY2ToY6: (vehicleData.taxDetails?.month12RflY2ToY6 || 0).toString(),
+        lastColorChangeDate: vehicleData.lastColorChangeDate || ""
       }))
       
       toast.success("Vehicle data fetched successfully")
@@ -1037,7 +973,7 @@ export default function AddVehicleForm() {
           </div>
           <div className="space-y-2">
             <Label>Fuel Type</Label>
-            <Select value={formData.fuelType} onValueChange={(value) => handleFormChange("fuelType", value as 'petrol' | 'diesel' | 'electric' | 'hybrid')}>
+            <Select value={formData.fuelType} onValueChange={(value) => handleFormChange("fuelType", value as 'petrol' | 'diesel' | 'electric' | 'hybrid' | '')}>
               <SelectTrigger className={formErrors.fuelType ? "border-red-500" : ""}><SelectValue placeholder="Select fuel type" /></SelectTrigger>
               <SelectContent>
                 {FUEL_TYPES.map(type => (<SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>))}
@@ -1047,7 +983,7 @@ export default function AddVehicleForm() {
           </div>
           <div className="space-y-2">
             <Label>Transmission</Label>
-            <Select value={formData.transmission} onValueChange={(value) => handleFormChange("transmission", value as 'manual' | 'automatic')}>
+            <Select value={formData.transmission} onValueChange={(value) => handleFormChange("transmission", value as 'manual' | 'automatic' | '')}>
               <SelectTrigger className={formErrors.transmission ? "border-red-500" : ""}><SelectValue placeholder="Select transmission" /></SelectTrigger>
               <SelectContent>
                 {TRANSMISSION_TYPES.map(type => (<SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>))}
@@ -1279,131 +1215,6 @@ export default function AddVehicleForm() {
                 )}
               </div>
             </div>
-
-            {/* Tax Information */}
-            <h4 className="text-md font-medium mt-6">Tax Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>12 Month RFL Y1 (£)</Label>
-                <Input
-                  type="number"
-                  value={formData.month12RflY1}
-                  onChange={(e) => handleFormChange("month12RflY1", e.target.value)}
-                  placeholder="Enter 12 month RFL Y1"
-                  className={formErrors.month12RflY1 ? "border-red-500" : ""}
-                />
-                {formErrors.month12RflY1 && (
-                  <p className="text-sm text-red-500">{formErrors.month12RflY1}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>6 Month RFL Y2-Y6 Premium (£)</Label>
-                <Input
-                  type="number"
-                  value={formData.month6RflY2ToY6Premium}
-                  onChange={(e) => handleFormChange("month6RflY2ToY6Premium", e.target.value)}
-                  placeholder="Enter 6 month RFL Y2-Y6 premium"
-                  className={formErrors.month6RflY2ToY6Premium ? "border-red-500" : ""}
-                />
-                {formErrors.month6RflY2ToY6Premium && (
-                  <p className="text-sm text-red-500">{formErrors.month6RflY2ToY6Premium}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>12 Month RFL Y2-Y6 Premium (£)</Label>
-                <Input
-                  type="number"
-                  value={formData.month12RflY2ToY6Premium}
-                  onChange={(e) => handleFormChange("month12RflY2ToY6Premium", e.target.value)}
-                  placeholder="Enter 12 month RFL Y2-Y6 premium"
-                  className={formErrors.month12RflY2ToY6Premium ? "border-red-500" : ""}
-                />
-                {formErrors.month12RflY2ToY6Premium && (
-                  <p className="text-sm text-red-500">{formErrors.month12RflY2ToY6Premium}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>6 Month RFL Y2-Y6 (£)</Label>
-                <Input
-                  type="number"
-                  value={formData.month6RflY2ToY6}
-                  onChange={(e) => handleFormChange("month6RflY2ToY6", e.target.value)}
-                  placeholder="Enter 6 month RFL Y2-Y6"
-                  className={formErrors.month6RflY2ToY6 ? "border-red-500" : ""}
-                />
-                {formErrors.month6RflY2ToY6 && (
-                  <p className="text-sm text-red-500">{formErrors.month6RflY2ToY6}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>12 Month RFL Y2-Y6 (£)</Label>
-                <Input
-                  type="number"
-                  value={formData.month12RflY2ToY6}
-                  onChange={(e) => handleFormChange("month12RflY2ToY6", e.target.value)}
-                  placeholder="Enter 12 month RFL Y2-Y6"
-                  className={formErrors.month12RflY2ToY6 ? "border-red-500" : ""}
-                />
-                {formErrors.month12RflY2ToY6 && (
-                  <p className="text-sm text-red-500">{formErrors.month12RflY2ToY6}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Status Information */}
-            <h4 className="text-md font-medium mt-6">Status Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isNonEuImport"
-                  checked={formData.isNonEuImport}
-                  onChange={(e) => handleFormChange("isNonEuImport", e.target.checked.toString())}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="isNonEuImport">Non-EU Import</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isImported"
-                  checked={formData.isImported}
-                  onChange={(e) => handleFormChange("isImported", e.target.checked.toString())}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="isImported">Imported</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isExported"
-                  checked={formData.isExported}
-                  onChange={(e) => handleFormChange("isExported", e.target.checked.toString())}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="isExported">Exported</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isScrapped"
-                  checked={formData.isScrapped}
-                  onChange={(e) => handleFormChange("isScrapped", e.target.checked.toString())}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="isScrapped">Scrapped</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="usedBeforeFirstRegistration"
-                  checked={formData.usedBeforeFirstRegistration}
-                  onChange={(e) => handleFormChange("usedBeforeFirstRegistration", e.target.checked.toString())}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="usedBeforeFirstRegistration">Used Before First Registration</Label>
-              </div>
-            </div>
           </div>
           <Separator className="my-6" />
         </>
@@ -1466,7 +1277,7 @@ export default function AddVehicleForm() {
               <Label>Body Type</Label>
               <Select
                 value={formData.bodyType}
-                onValueChange={(value) => handleFormChange("bodyType", value as 'hatchback' | 'saloon' | 'suv' | 'coupe' | 'convertible' | 'estate' | 'mpv')}
+                onValueChange={(value) => handleFormChange("bodyType", value as 'sedan' | 'suv' | 'hatchback' | 'coupe' | 'wagon' | '')}
               >
                 <SelectTrigger className={formErrors.bodyType ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select body type" />
@@ -1609,7 +1420,7 @@ export default function AddVehicleForm() {
               <Label>Cab Type</Label>
               <Select
                 value={formData.cabType}
-                onValueChange={(value) => handleFormChange("cabType", value as 'day' | 'sleeper' | 'crew')}
+                onValueChange={(value) => handleFormChange("cabType", value as 'day' | 'sleeper' | '')}
               >
                 <SelectTrigger className={formErrors.cabType ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select cab type" />
