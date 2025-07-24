@@ -151,9 +151,9 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex flex-col items-center flex-grow mx-8">
-            <div className="bg-gray-100 rounded-full px-6 py-2 mb-3 inline-flex">
-              <nav className="flex items-center space-x-8">
+          <div className="hidden lg:flex flex-col items-center flex-grow mx-8 md:flex-row md:justify-center md:items-center md:space-x-6 md:space-y-0 md:flex-wrap md:gap-y-3">
+            <div className="bg-gray-100 rounded-full px-6 py-2 mb-3 inline-flex main-navigation-bubble md:min-w-[120px] md:h-12 md:px-6 md:py-0 md:flex md:items-center md:justify-center md:text-base md:px-8 md:py-3 md:mb-0 md:text-base">
+              <nav className="flex items-center space-x-8 lg:space-x-16 md:space-x-3 md:flex-wrap md:justify-center md:w-full">
                 {topNavItems.map((item, index) => 
                   isDropdownItem(item) ? (
                     <DropdownMenu key={index}>
@@ -194,7 +194,7 @@ export function Header() {
                 </Link>
               </nav>
             </div>
-            <nav className="flex items-center space-x-8">
+            <nav className="flex items-center space-x-8 lg:space-x-16 md:space-x-3 md:flex-wrap md:justify-center md:w-full">
               {bottomNavItems.map((item) => (
                 item.href && (
                   // <Link 
@@ -327,52 +327,38 @@ export function Header() {
               <div className="flex-grow pr-4">
                 <div className="mb-6">
                   <h3 className="text-xs uppercase text-gray-500 font-semibold mb-3">Main Navigation</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {topNavItems.map((item, index) => 
-                      isDropdownItem(item) ? (
-                        <div key={index} className="inline-block">
-                          <div className="bg-gray-100 rounded-full px-4 py-2 text-sm font-medium">
-                            {item.label}
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {item.items.map((subItem) => (
-                              subItem.href && (
-                                <Link
-                                  key={subItem.href}
-                                  href={subItem.href}
-                                  className="inline-flex bg-gray-50 rounded-full px-3 py-1 text-xs font-medium hover:bg-gray-200"
-                                  onClick={() => setMobileMenuOpen(false)}
-                                >
-                                  {subItem.label}
-                                </Link>
-                              )
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        item.href && (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className="inline-flex bg-gray-100 rounded-full px-4 py-2 text-sm font-medium hover:bg-gray-200"
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            {item.label}
-                          </Link>
-                        )
-                      )
-                    )}
+                  <div className="flex flex-row gap-x-3 w-full">
+  <Link href="/categories/vehicles" className="bg-gray-100 rounded-full px-4 py-2 text-sm font-extrabold main-navigation-bubble md:min-w-[200px] md:h-16 md:px-10 md:py-0 md:flex md:items-center md:justify-center md:text-xl md:mb-0 flex-1 justify-center">
+    Vehicles
+  </Link>
+  <Link href="/categories/dealers" className="bg-gray-100 rounded-full px-4 py-2 text-sm font-extrabold main-navigation-bubble md:min-w-[200px] md:h-16 md:px-10 md:py-0 md:flex md:items-center md:justify-center md:text-xl md:mb-0 flex-1 justify-center">
+    Dealers
+  </Link>
+</div>
+{/* Sub-bubbles for Vehicles */}
+<div className="flex flex-wrap gap-2 mt-2 md:gap-3 md:mt-3">
+  {vehicleNavItems.map((subItem) => (
+    subItem.href && (
+      <Link
+        key={subItem.href}
+        href={subItem.href}
+        className="inline-flex bg-gray-50 rounded-full px-3 py-1 text-xs font-medium hover:bg-gray-200 main-navigation-bubble md:min-w-[120px] md:h-12 md:px-6 md:py-0 md:flex md:items-center md:justify-center md:text-base-sub md:px-4 md:py-1.5 md:text-sm"
+        onClick={() => setMobileMenuOpen(false)}
+      >
+        {subItem.label}
+      </Link>
+    )
+  ))}
+</div>
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-xs uppercase text-gray-500 font-semibold mb-3">Categories</h3>
-                  <nav className="flex flex-col space-y-3">
-                    {bottomNavItems.map((item) => (
-                      item.href && (
-                        // <Link
-                        //   key={item.href}
-                        //   href={item.href}
-                        //   className="text-sm font-medium py-2 border-b border-gray-100 flex items-center space-x-2 hover:text-primary"
+                  {/* Categories section hidden as per user request */}
+                  {/* 
+                    <h3 className="text-xs uppercase text-gray-500 font-semibold mb-3">Categories</h3>
+                    <nav className="flex flex-col space-y-3">
+                      {bottomNavItems.map((item) => (
+                        item.href && (
                         //   onClick={() => setMobileMenuOpen(false)}
                         // >
                         //   {item.icon}
