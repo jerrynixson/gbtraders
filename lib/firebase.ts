@@ -143,6 +143,7 @@ export const getDealerListings = async (userId: string) => {
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
+        mainImage: data.images?.[0] || "/placeholder.svg", // for VehicleCard compatibility,
         id: doc.id,
         title: data.title || `${data.make} ${data.model}`,
         price: data.price || 0,

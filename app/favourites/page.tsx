@@ -9,14 +9,14 @@ import { useAuth } from "@/hooks/useAuth"
 import { FavoritesRepository } from "@/lib/db/repositories/favoritesRepository"
 import { VehicleRepository } from "@/lib/db/repositories/vehicleRepository"
 import { VehicleCard } from "@/components/vehicle-card"
-import { Vehicle } from "@/types/vehicles"
+import { VehicleSummary } from "@/types/vehicles"
 
 const favoritesRepo = new FavoritesRepository();
 const vehicleRepo = new VehicleRepository();
 
 export default function FavouritesPage() {
   const { user } = useAuth();
-  const [favoriteVehicles, setFavoriteVehicles] = useState<Vehicle[]>([]);
+  const [favoriteVehicles, setFavoriteVehicles] = useState<VehicleSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,13 +30,16 @@ export default function FavouritesPage() {
         // Get favorite vehicle IDs
         const favoriteIds = await favoritesRepo.getUserFavorites(user.uid);
         
-        // Fetch full vehicle details for each favorite
+        // Fetch full vehicle details for each favorite, convert to VehicleSummary for correct image support
         const vehicles = await Promise.all(
-          favoriteIds.map(id => vehicleRepo.getVehicleById(id))
+          favoriteIds.map(async id => {
+            const v = await vehicleRepo.getVehicleById(id);
+            return v ? vehicleRepo.convertToSummary(v) : null;
+          })
         );
 
         // Filter out any null values (in case a vehicle was deleted)
-        setFavoriteVehicles(vehicles.filter((v): v is Vehicle => v !== null));
+        setFavoriteVehicles(vehicles.filter((v): v is VehicleSummary => v !== null));
       } catch (error) {
         console.error('Error loading favorites:', error);
       } finally {
