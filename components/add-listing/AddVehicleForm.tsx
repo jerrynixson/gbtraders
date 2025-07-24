@@ -200,6 +200,7 @@ export default function AddVehicleForm() {
   const [user, loading, error] = useAuthState(auth)
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
+  const [isFetchingCoordinates, setIsFetchingCoordinates] = useState(false)
   const [registrationNumber, setRegistrationNumber] = useState("")
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null)
   const [canCreateNewListing, setCanCreateNewListing] = useState(false)
@@ -341,7 +342,29 @@ export default function AddVehicleForm() {
     // Location validation
     if (!formData.location.city.trim()) errors["location.city"] = "City is required"
     if (!formData.location.country.trim()) errors["location.country"] = "Country is required"
-    if (!formData.location.pincode.trim()) errors["location.pincode"] = "Pincode is required"
+    if (!formData.location.pincode.trim()) errors["location.pincode"] = "Postcode is required"
+    
+    // UK Postcode validation
+    if (formData.location.pincode.trim()) {
+      const ukPostcodeRegex = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}$/i
+      if (!ukPostcodeRegex.test(formData.location.pincode.trim())) {
+        errors["location.pincode"] = "Please enter a valid UK postcode (e.g., SW1A 1AA, M1 1AA)"
+      }
+    }
+    
+    // Validate that latitude and longitude are valid numbers (internal validation)
+    if (formData.location.coordinates.latitude.trim()) {
+      const lat = Number(formData.location.coordinates.latitude)
+      if (isNaN(lat) || lat < -90 || lat > 90) {
+        errors["location.coordinates.latitude"] = "Invalid latitude coordinate"
+      }
+    }
+    if (formData.location.coordinates.longitude.trim()) {
+      const lng = Number(formData.location.coordinates.longitude)
+      if (isNaN(lng) || lng < -180 || lng > 180) {
+        errors["location.coordinates.longitude"] = "Invalid longitude coordinate"
+      }
+    }
 
     // Type-specific validation
     switch (formData.type) {
@@ -581,20 +604,38 @@ export default function AddVehicleForm() {
         setIsLoading(false);
         return;
       }
-      // Get coordinates from pincode (optional - don't fail if this doesn't work)
-      let coordinates = { latitude: "0", longitude: "0" }
-      try {
-        coordinates = await getCoordinatesFromPincode(
-          formData.location.pincode,
-          formData.location.city,
-          formData.location.country
-        )
-      } catch (coordError) {
-        console.warn("Could not get coordinates, using default values:", coordError)
-        // Continue with default coordinates - this is not a critical error
+      
+      // Use existing coordinates or fetch if not available
+      let coordinates = formData.location.coordinates
+      
+      // If coordinates are empty, try to fetch them
+      if (!coordinates.latitude || !coordinates.longitude || coordinates.latitude === "0" || coordinates.longitude === "0") {
+        console.log("🔄 Coordinates not found in form, attempting to fetch from postcode...")
+        try {
+          coordinates = await getCoordinatesFromPincode(
+            formData.location.pincode,
+            formData.location.city,
+            formData.location.country
+          )
+        } catch (coordError) {
+          console.warn("Could not get coordinates during submission, using default values:", coordError)
+          coordinates = { latitude: "0", longitude: "0" }
+        }
       }
       
-      // Update form data with coordinates
+      // Log final coordinates being used for vehicle submission
+      console.log("🚗 Final coordinates for vehicle submission:", {
+        vehicleTitle: formData.title,
+        postcode: formData.location.pincode,
+        city: formData.location.city,
+        coordinates: {
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude
+        },
+        timestamp: new Date().toISOString()
+      })
+      
+      // Update form data with final coordinates
       setFormData((prev: any) => ({
         ...prev,
         location: {
@@ -778,20 +819,62 @@ export default function AddVehicleForm() {
     }
   }
 
-  const handleLocationChange = (field: string, value: string) => {
+  const handleLocationChange = async (field: string, value: string) => {
+    const updatedLocation = {
+      ...formData.location,
+      [field]: value
+    }
+    
     setFormData((prev: any) => ({
       ...prev,
-      location: {
-        ...prev.location,
-        [field]: value
-      }
+      location: updatedLocation
     }))
+    
     if (formErrors[`location.${field}`]) {
       setFormErrors((prev: any) => {
         const newErrors = { ...prev }
         delete newErrors[`location.${field}`]
         return newErrors
       })
+    }
+
+    // Auto-fetch coordinates if all required fields are present and postcode is UK format
+    if (updatedLocation.pincode.trim() && updatedLocation.city.trim() && updatedLocation.country.trim()) {
+      // Validate UK postcode format
+      const ukPostcodeRegex = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}$/i
+      if (ukPostcodeRegex.test(updatedLocation.pincode.trim())) {
+        setIsFetchingCoordinates(true)
+        try {
+          const coordinates = await getCoordinatesFromPincode(
+            updatedLocation.pincode,
+            updatedLocation.city,
+            updatedLocation.country
+          )
+          
+          // Console log for verification
+          console.log('📍 Coordinates fetched from postcode:', {
+            postcode: updatedLocation.pincode,
+            city: updatedLocation.city,
+            country: updatedLocation.country,
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude
+          })
+          
+          setFormData((prev: any) => ({
+            ...prev,
+            location: {
+              ...prev.location,
+              coordinates
+            }
+          }))
+          toast.success("Coordinates updated automatically")
+        } catch (error) {
+          console.warn("Could not auto-fetch coordinates:", error)
+          // Don't show error toast for auto-fetch, user can manually fetch if needed
+        } finally {
+          setIsFetchingCoordinates(false)
+        }
+      }
     }
   }
 
@@ -815,6 +898,65 @@ export default function AddVehicleForm() {
     }
   }
 
+  const handlePincodeChange = (value: string) => {
+    // Format UK postcode (add space if missing)
+    let formattedValue = value.toUpperCase().replace(/\s+/g, '')
+    if (formattedValue.length > 3) {
+      formattedValue = formattedValue.slice(0, -3) + ' ' + formattedValue.slice(-3)
+    }
+    
+    // Use the existing handleLocationChange function which now includes auto-fetch
+    handleLocationChange("pincode", formattedValue)
+  }
+
+  const handleFetchCoordinates = async () => {
+    if (!formData.location.pincode || !formData.location.city || !formData.location.country) {
+      toast.error("Please fill in city, country, and postcode first")
+      return
+    }
+
+    // Validate UK postcode format
+    const ukPostcodeRegex = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}$/i
+    if (!ukPostcodeRegex.test(formData.location.pincode.trim())) {
+      toast.error("Please enter a valid UK postcode (e.g., SW1A 1AA, M1 1AA)")
+      return
+    }
+
+    setIsFetchingCoordinates(true)
+    try {
+      toast.info("Fetching coordinates from UK postcode...")
+      const coordinates = await getCoordinatesFromPincode(
+        formData.location.pincode,
+        formData.location.city,
+        formData.location.country
+      )
+      
+      // Console log for verification
+      console.log('📍 Manual coordinates fetch result:', {
+        postcode: formData.location.pincode,
+        city: formData.location.city,
+        country: formData.location.country,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        timestamp: new Date().toISOString()
+      })
+      
+      setFormData((prev: any) => ({
+        ...prev,
+        location: {
+          ...prev.location,
+          coordinates
+        }
+      }))
+      toast.success(`Coordinates fetched successfully for ${formData.location.pincode}`)
+    } catch (error) {
+      console.error("Error fetching coordinates:", error)
+      toast.error(`Failed to fetch coordinates: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsFetchingCoordinates(false)
+    }
+  }
+
   const getCoordinatesFromPincode = async (pincode: string, city: string, country: string) => {
     try {
       // Check if we have a Google Maps API key
@@ -824,12 +966,11 @@ export default function AddVehicleForm() {
         throw new Error('Google Maps API key not configured')
       }
 
-      console.log("Making geocoding request for:", `${pincode} ${city} ${country}`)
+      const searchQuery = `${pincode} ${city} ${country}`
+      console.log("🔍 Making geocoding request for UK postcode:", searchQuery)
       
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-          `${pincode} ${city} ${country}`
-        )}&key=${apiKey}`
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}&region=uk&components=country:GB`
       );
       
       if (!response.ok) {
@@ -837,7 +978,11 @@ export default function AddVehicleForm() {
       }
       
       const data = await response.json();
-      console.log("Geocoding API response:", data)
+      console.log("🌍 Geocoding API response for", pincode, ":", {
+        status: data.status,
+        results_count: data.results?.length || 0,
+        formatted_address: data.results?.[0]?.formatted_address
+      })
       
       if (data.status !== 'OK') {
         throw new Error(`Geocoding API error: ${data.status} - ${data.error_message || 'Unknown error'}`)
@@ -845,12 +990,23 @@ export default function AddVehicleForm() {
       
       if (data.results && data.results.length > 0) {
         const { lat, lng } = data.results[0].geometry.location;
-        console.log("Found coordinates:", { lat, lng })
-        return { latitude: lat.toString(), longitude: lng.toString() };
+        const result = { latitude: lat.toString(), longitude: lng.toString() };
+        
+        console.log("✅ UK Postcode coordinates found:", {
+          postcode: pincode,
+          formatted_address: data.results[0].formatted_address,
+          coordinates: {
+            latitude: lat,
+            longitude: lng
+          },
+          location_type: data.results[0].geometry.location_type
+        })
+        
+        return result;
       }
-      throw new Error('No results found for the provided address');
+      throw new Error('No results found for the provided UK postcode');
     } catch (error) {
-      console.error('Error getting coordinates:', error);
+      console.error('❌ Error getting coordinates for UK postcode:', error);
       throw error;
     }
   };
@@ -1223,7 +1379,7 @@ export default function AddVehicleForm() {
       {/* Location Information */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Location Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>City</Label>
             <Input
@@ -1242,7 +1398,7 @@ export default function AddVehicleForm() {
             <Input
               value={formData.location.country}
               onChange={(e) => handleLocationChange("country", e.target.value)}
-              placeholder="Enter country"
+              placeholder="United Kingdom"
               required
               className={formErrors['location.country'] ? "border-red-500" : ""}
             />
@@ -1251,17 +1407,32 @@ export default function AddVehicleForm() {
             )}
           </div>
           <div className="space-y-2">
-            <Label>Pincode</Label>
-            <Input
-              value={formData.location.pincode}
-              onChange={(e) => handleLocationChange("pincode", e.target.value)}
-              placeholder="Enter pincode"
-              required
-              className={formErrors['location.pincode'] ? "border-red-500" : ""}
-            />
+            <Label>UK Postcode</Label>
+            <div className="flex gap-2">
+              <Input
+                value={formData.location.pincode}
+                onChange={(e) => handlePincodeChange(e.target.value.toUpperCase())}
+                placeholder="e.g., SW1A 1AA"
+                required
+                className={`flex-1 ${formErrors['location.pincode'] ? "border-red-500" : ""}`}
+              />
+              <Button
+                type="button"
+                onClick={handleFetchCoordinates}
+                disabled={!formData.location.pincode || !formData.location.city || !formData.location.country || isFetchingCoordinates}
+                className="bg-blue-600 hover:bg-blue-700 px-3"
+                size="sm"
+                title="Fetch coordinates from postcode"
+              >
+                {isFetchingCoordinates ? <RefreshCw className="w-4 h-4 animate-spin" /> : "📍"}
+              </Button>
+            </div>
             {formErrors['location.pincode'] && (
               <p className="text-sm text-red-500">{formErrors['location.pincode']}</p>
             )}
+            <p className="text-xs text-gray-500">
+              Coordinates will be automatically fetched from your UK postcode
+            </p>
           </div>
         </div>
       </div>
