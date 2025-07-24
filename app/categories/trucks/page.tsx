@@ -27,6 +27,7 @@ export default function TrucksPage() {
         <AdvertiseWithUs />
         {/* <LeaseTruckListings /> */}
         {/*<BlogPostsSection />*/}
+        <BrowseByBrand />
       </main>
       <BackToTop />
       <Footer />
