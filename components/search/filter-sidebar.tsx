@@ -154,7 +154,21 @@ export function FilterSidebar({
 
   const handleReset = () => {
     // Create a clean filter state with all fields undefined
-    const resetFilters: VehicleFilters = {};
+    const resetFilters: VehicleFilters = {
+      type: undefined,
+      make: undefined,
+      model: undefined,
+      minPrice: undefined,
+      maxPrice: undefined,
+      minYear: undefined,
+      maxYear: undefined,
+      minMileage: undefined,
+      maxMileage: undefined,
+      fuelType: undefined,
+      transmission: undefined,
+      bodyStyle: undefined,
+      location: undefined
+    };
     setFilters(resetFilters);
     onFilterChange(resetFilters);
     // Navigate to clean search page with no params
@@ -354,11 +368,12 @@ export function FilterSidebar({
                   <div key={type} className="flex items-center">
                     <Checkbox
                       id={`fuel-${type}`}
-                      checked={filters.fuelType?.includes(type.toLowerCase() as FuelType)}
+                      checked={(filters.fuelType || []).includes(type.toLowerCase() as FuelType)}
                       onCheckedChange={(checked) => {
+                        const currentFuelTypes = filters.fuelType || [];
                         const newFuelTypes = checked
-                          ? [...(filters.fuelType || []), type.toLowerCase() as FuelType]
-                          : (filters.fuelType || []).filter(f => f !== type.toLowerCase())
+                          ? [...currentFuelTypes, type.toLowerCase() as FuelType]
+                          : currentFuelTypes.filter(f => f !== type.toLowerCase())
                         // Set to undefined if array is empty, otherwise set the array
                         updateFilters({ fuelType: newFuelTypes.length > 0 ? newFuelTypes : undefined })
                       }}
@@ -377,11 +392,12 @@ export function FilterSidebar({
                   <div key={type} className="flex items-center">
                     <Checkbox
                       id={`transmission-${type}`}
-                      checked={filters.transmission?.includes(type.toLowerCase() as TransmissionType)}
+                      checked={(filters.transmission || []).includes(type.toLowerCase() as TransmissionType)}
                       onCheckedChange={(checked) => {
+                        const currentTransmissions = filters.transmission || [];
                         const newTransmissions = checked
-                          ? [...(filters.transmission || []), type.toLowerCase() as TransmissionType]
-                          : (filters.transmission || []).filter(t => t !== type.toLowerCase())
+                          ? [...currentTransmissions, type.toLowerCase() as TransmissionType]
+                          : currentTransmissions.filter(t => t !== type.toLowerCase())
                         // Set to undefined if array is empty, otherwise set the array
                         updateFilters({ transmission: newTransmissions.length > 0 ? newTransmissions : undefined })
                       }}
