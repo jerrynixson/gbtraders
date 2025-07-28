@@ -235,16 +235,15 @@ export function Hero() {
 
               {/* Optional Filters Row */}
               <div className="space-y-2">
-                <p className="text-xs text-white/70">(optional)</p>
-                <div className="grid grid-cols-2 gap-2">
+
+                <div className="grid grid-cols-2 gap-2 flex items-stretch">
                   <Select
                     value={fuelType}
                     onValueChange={(value) => {
-                      // If "all" is selected, clear the fuel type
                       setFuelType(value === "all" ? "" : value);
                     }}
                   >
-                    <SelectTrigger className="h-9 sm:h-10 rounded-xl sm:rounded-2xl border-none bg-white/10 text-sm text-white ring-1 ring-inset ring-white/20 [&>span]:text-white/50 data-[state=open]:ring-white/30">
+                    <SelectTrigger className="w-full flex-1 rounded-2xl border-none bg-white/10 text-base text-white px-4 ring-1 ring-inset ring-white/20 [&>span]:text-white/50 data-[state=open]:ring-white/30" style={{height:48}}>
                       <SelectValue placeholder="Fuel Type" />
                     </SelectTrigger>
                     <SelectContent className="bg-white/95 backdrop-blur-md border-white/20 rounded-xl">
@@ -258,7 +257,7 @@ export function Hero() {
 
                   <Input
                     placeholder="UK Postcode"
-                    className="h-9 sm:h-10 rounded-xl sm:rounded-2xl border-none bg-white/10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/50 focus:ring-white/30"
+                    className="w-full flex-1 rounded-2xl border-none bg-white/10 text-base text-white px-4 ring-1 ring-inset ring-white/20 placeholder:text-white/50 focus:ring-white/30" style={{height:48}}
                     value={postcode}
                     onChange={(e) => setPostcode(e.target.value)}
                     onKeyDown={(e) => {
