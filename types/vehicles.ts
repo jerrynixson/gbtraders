@@ -114,6 +114,12 @@ export interface VehicleFilters {
   location?: {
     city?: string;
     country?: string;
+    postcode?: string;
+    radius?: number; // in kilometers
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
   };
 }
 

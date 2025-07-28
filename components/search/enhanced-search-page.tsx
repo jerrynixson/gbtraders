@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Grid, List, Filter, X, MapPin, Car, AlertCircle } from 'lucide-react';
 import { VehicleSummary, VehicleFilters, VehicleType } from '@/types/vehicles';
+import { postcodeToCoordinates } from '@/lib/utils/location';
 import {
   searchWithAlgoliaKeywords,
   fetchVehiclesFromFirestoreCached,
@@ -93,6 +94,36 @@ export default function EnhancedSearchPage({
   useEffect(() => {
     setSearchFlow(isKeywordSearch ? 'keyword' : 'filter');
   }, [isKeywordSearch]);
+
+  // Handle initial postcode geocoding if postcode is provided without coordinates
+  useEffect(() => {
+    const handleInitialPostcodeGeocoding = async () => {
+      if (filters.location?.postcode && !filters.location?.coordinates) {
+        try {
+          const coordinates = await postcodeToCoordinates(filters.location.postcode);
+          if (coordinates) {
+            const updatedFilters = {
+              ...filters,
+              location: {
+                ...filters.location,
+                coordinates: {
+                  latitude: coordinates.latitude,
+                  longitude: coordinates.longitude
+                },
+                // Set default radius if not already set
+                radius: filters.location.radius || 10
+              }
+            };
+            setFilters(updatedFilters);
+          }
+        } catch (error) {
+          console.error('Failed to geocode initial postcode:', error);
+        }
+      }
+    };
+
+    handleInitialPostcodeGeocoding();
+  }, [filters.location?.postcode, filters.location?.coordinates]); // Only run when postcode changes or coordinates are missing
 
   // 🔍 Flow 1: Keyword Search (Hero -> Algolia -> Firestore)
   const performKeywordSearch = useCallback(async (searchKeyword: string) => {
@@ -233,7 +264,7 @@ export default function EnhancedSearchPage({
     const params = new URLSearchParams(searchParams?.toString());
     
     // Clear existing filter params
-    ['make', 'model', 'minPrice', 'maxPrice', 'minYear', 'maxYear', 'fuel', 'transmission', 'type'].forEach(key => {
+    ['make', 'model', 'minPrice', 'maxPrice', 'minYear', 'maxYear', 'fuel', 'transmission', 'type', 'postcode', 'radius'].forEach(key => {
       params.delete(key);
     });
     
@@ -247,6 +278,10 @@ export default function EnhancedSearchPage({
     if (newFilters.fuelType?.length) params.set('fuel', newFilters.fuelType.join(','));
     if (newFilters.transmission?.length) params.set('transmission', newFilters.transmission.join(','));
     if (newFilters.type) params.set('type', newFilters.type);
+    
+    // Add location parameters
+    if (newFilters.location?.postcode) params.set('postcode', newFilters.location.postcode);
+    if (newFilters.location?.radius) params.set('radius', newFilters.location.radius.toString());
     
     router.replace(`/search?${params.toString()}`, { scroll: false });
   }, [searchParams, router]);

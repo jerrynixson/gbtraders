@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { VehicleType, VehicleFilters, FuelType, TransmissionType, CarBodyStyle } from '@/types/vehicles'
 import { debounce } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import { validateUKPostcode, postcodeToCoordinates } from '@/lib/utils/location'
 
 // Types
 interface FilterState {
@@ -118,9 +119,13 @@ export function FilterSidebar({
 }: FilterSidebarProps) {
   const router = useRouter()
   const [filters, setFilters] = useState<VehicleFilters>(initialFilters)
+  const [postcodeInput, setPostcodeInput] = useState<string>(initialFilters.location?.postcode || '')
+  const [postcodeError, setPostcodeError] = useState<string>('')
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState<boolean>(false)
 
   useEffect(() => {
     setFilters(initialFilters)
+    setPostcodeInput(initialFilters.location?.postcode || '')
   }, [initialFilters])
 
   // Create memoized debounced functions to prevent recreation on every render
@@ -152,6 +157,61 @@ export function FilterSidebar({
     debouncedInputFilterChange(newFilters)
   }, [filters, debouncedInputFilterChange])
 
+  // Geocode postcode to coordinates
+  const handlePostcodeSubmit = useCallback(async (postcode: string) => {
+    if (!postcode.trim()) {
+      setPostcodeError('')
+      updateFilters({ 
+        location: {
+          ...filters.location,
+          postcode: undefined,
+          coordinates: undefined,
+          radius: undefined
+        }
+      })
+      return
+    }
+
+    if (!validateUKPostcode(postcode)) {
+      setPostcodeError('Please enter a valid UK postcode')
+      return
+    }
+
+    setPostcodeError('')
+    setIsGeocodingLoading(true)
+
+    try {
+      const coordinates = await postcodeToCoordinates(postcode)
+      if (coordinates) {
+        updateFilters({ 
+          location: {
+            ...filters.location,
+            postcode: postcode.trim(),
+            coordinates: {
+              latitude: coordinates.latitude,
+              longitude: coordinates.longitude
+            },
+            radius: 10 // Automatically set to 10km
+          }
+        })
+      } else {
+        setPostcodeError('Postcode not found. Please check and try again.')
+      }
+    } catch (error) {
+      setPostcodeError('Failed to find postcode. Please try again.')
+    } finally {
+      setIsGeocodingLoading(false)
+    }
+  }, [filters.location, updateFilters])
+
+  // Debounced postcode geocoding
+  const debouncedPostcodeSubmit = useCallback(
+    debounce((postcode: string) => {
+      handlePostcodeSubmit(postcode)
+    }, 1000),
+    [handlePostcodeSubmit]
+  )
+
   const handleReset = () => {
     // Create a clean filter state with all fields undefined
     const resetFilters: VehicleFilters = {
@@ -170,6 +230,8 @@ export function FilterSidebar({
       location: undefined
     };
     setFilters(resetFilters);
+    setPostcodeInput('');
+    setPostcodeError('');
     onFilterChange(resetFilters);
     // Navigate to clean search page with no params
     router.push('/search');
@@ -274,6 +336,73 @@ export function FilterSidebar({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </section>
+
+        {/* Location */}
+        <section className="border-t border-gray-100 py-3">
+          <div className="flex items-center mb-2">
+            <div className="bg-blue-50 p-1.5 rounded mr-2" aria-hidden="true">
+              <MapPin className="h-4 w-4 text-blue-600" />
+            </div>
+            <h3 className="font-medium text-sm text-gray-900">Location</h3>
+          </div>
+          <div className="space-y-2">
+            <div>
+              <Label className="text-xs font-medium text-gray-700 mb-1">UK Postcode & Radius</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="text"
+                  placeholder="e.g. SW1A 1AA"
+                  value={postcodeInput}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setPostcodeInput(value)
+                    setPostcodeError('')
+                    debouncedPostcodeSubmit(value)
+                  }}
+                  className={`bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm ${
+                    postcodeError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                  }`}
+                  disabled={isGeocodingLoading}
+                />
+                <Select
+                  value={filters.location?.radius?.toString() || '10'}
+                  onValueChange={(value) => updateFilters({ 
+                    location: {
+                      ...filters.location,
+                      radius: parseInt(value)
+                    }
+                  })}
+                  disabled={!filters.location?.coordinates}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue placeholder="Radius" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10 km</SelectItem>
+                    <SelectItem value="20">20 km</SelectItem>
+                    <SelectItem value="30">30 km</SelectItem>
+                    <SelectItem value="40">40 km</SelectItem>
+                    <SelectItem value="50">50 km</SelectItem>
+                    <SelectItem value="60">60 km</SelectItem>
+                    <SelectItem value="70">70 km</SelectItem>
+                    <SelectItem value="80">80 km</SelectItem>
+                    <SelectItem value="90">90 km</SelectItem>
+                    <SelectItem value="100">100 km</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {postcodeError && (
+                <p className="text-xs text-red-600 mt-1">{postcodeError}</p>
+              )}
+              {isGeocodingLoading && (
+                <p className="text-xs text-blue-600 mt-1">Finding location...</p>
+              )}
+              {filters.location?.coordinates && !isGeocodingLoading && (
+                <p className="text-xs text-green-600 mt-1">✓ Location found</p>
+              )}
+            </div>
           </div>
         </section>
 

@@ -35,6 +35,8 @@ interface SearchParams {
   sort?: string;
   q?: string;
   location?: string;
+  postcode?: string;
+  radius?: string;
 }
 
 // Convert search params to filters
@@ -106,6 +108,19 @@ function getFiltersFromSearchParams(searchParams: SearchParams): VehicleFilters 
     filters.bodyStyle = Array.isArray(searchParams.bodyStyle) 
       ? (searchParams.bodyStyle as CarBodyStyle[]) 
       : [searchParams.bodyStyle as CarBodyStyle];
+  }
+
+  // Handle location filters
+  if (searchParams.postcode) {
+    filters.location = {};
+    
+    if (searchParams.postcode) {
+      filters.location.postcode = searchParams.postcode;
+    }
+    
+    if (searchParams.radius) {
+      filters.location.radius = parseInt(searchParams.radius);
+    }
   }
 
   return filters;

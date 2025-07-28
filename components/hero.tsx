@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Search, X } from "lucide-react"
 
@@ -54,6 +55,8 @@ function useDragScroll() {
 export function Hero() {
   const router = useRouter()
   const [keywords, setKeywords] = useState<string>("")
+  const [postcode, setPostcode] = useState<string>("")
+  const [fuelType, setFuelType] = useState<string>("")
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [nextImageIndex, setNextImageIndex] = useState(1)
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -179,6 +182,18 @@ export function Hero() {
       searchParams.set('q', keywords);
     }
     
+    // Add fuel type if provided
+    if (fuelType) {
+      searchParams.set('fuel', fuelType);
+    }
+    
+    // Add postcode if provided
+    if (postcode.trim()) {
+      searchParams.set('postcode', postcode.trim());
+      // Set default radius to 10km when postcode is provided
+      searchParams.set('radius', '10');
+    }
+    
     // Navigate to search page
     router.push(`/search?${searchParams.toString()}`);
   };
@@ -207,7 +222,7 @@ export function Hero() {
                 </div>
                 <Input
                   placeholder="Search by make, model, or keywords..."
-                  className="h-10 sm:h-12 w-full rounded-xl sm:rounded-2xl border-none bg-white/10 pl-10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/60"
+                  className="h-10 sm:h-12 w-full rounded-xl sm:rounded-2xl border-none bg-white/10 pl-10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/60 focus:ring-white/30"
                   value={keywords}
                   onChange={(e) => setKeywords(e.target.value)}
                   onKeyDown={(e) => {
@@ -216,6 +231,43 @@ export function Hero() {
                     }
                   }}
                 />
+              </div>
+
+              {/* Optional Filters Row */}
+              <div className="space-y-2">
+                <p className="text-xs text-white/70">(optional)</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Select
+                    value={fuelType}
+                    onValueChange={(value) => {
+                      // If "all" is selected, clear the fuel type
+                      setFuelType(value === "all" ? "" : value);
+                    }}
+                  >
+                    <SelectTrigger className="h-9 sm:h-10 rounded-xl sm:rounded-2xl border-none bg-white/10 text-sm text-white ring-1 ring-inset ring-white/20 [&>span]:text-white/50 data-[state=open]:ring-white/30">
+                      <SelectValue placeholder="Fuel Type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white/95 backdrop-blur-md border-white/20 rounded-xl">
+                      <SelectItem value="all" className="text-gray-700">All Fuel Types</SelectItem>
+                      <SelectItem value="petrol" className="text-gray-700">Petrol</SelectItem>
+                      <SelectItem value="diesel" className="text-gray-700">Diesel</SelectItem>
+                      <SelectItem value="electric" className="text-gray-700">Electric</SelectItem>
+                      <SelectItem value="hybrid" className="text-gray-700">Hybrid</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    placeholder="UK Postcode"
+                    className="h-9 sm:h-10 rounded-xl sm:rounded-2xl border-none bg-white/10 text-sm text-white ring-1 ring-inset ring-white/20 placeholder:text-white/50 focus:ring-white/30"
+                    value={postcode}
+                    onChange={(e) => setPostcode(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSearch();
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
               <Button

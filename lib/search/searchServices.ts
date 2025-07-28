@@ -1,8 +1,10 @@
 import algoliasearch from 'algoliasearch/lite';
 import { VehicleRepository } from '@/lib/db/repositories/vehicleRepository';
 import { VehicleFilters, VehicleSummary } from '@/types/vehicles';
+import { cache } from 'react';
+import { calculateDistance } from '@/lib/utils/location';
 
-// Algolia configuration
+// Algolia configuration (read-only search key - safe for client)
 const ALGOLIA_APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || "";
 const ALGOLIA_SEARCH_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY || "";
 const ALGOLIA_INDEX = process.env.NEXT_PUBLIC_ALGOLIA_VEHICLES_INDEX || "vehicles";
@@ -22,6 +24,13 @@ export interface FilterOptions {
   maxMileage?: number;
   transmission?: string[];
   bodyType?: string[];
+  location?: {
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+    radius?: number; // in kilometers
+  };
 }
 
 export interface PaginationOptions {
@@ -206,6 +215,24 @@ export function applyLocalFilters(
       if (!bodyTypeMatches) return false;
     }
 
+    // Location filter (distance-based)
+    if (filters.location?.coordinates && filters.location?.radius) {
+      if (!vehicle.location?.coordinates) {
+        return false; // Skip vehicles without coordinates
+      }
+      
+      const distance = calculateDistance(
+        filters.location.coordinates.latitude,
+        filters.location.coordinates.longitude,
+        vehicle.location.coordinates.latitude,
+        vehicle.location.coordinates.longitude
+      );
+      
+      if (distance > filters.location.radius) {
+        return false;
+      }
+    }
+
     return true;
   });
 }
@@ -371,6 +398,10 @@ export function convertVehicleFiltersToFilterOptions(filters: VehicleFilters): F
     minMileage: filters.minMileage,
     maxMileage: filters.maxMileage,
     transmission: filters.transmission,
-    bodyType: filters.bodyStyle
+    bodyType: filters.bodyStyle,
+    location: filters.location?.coordinates && filters.location?.radius ? {
+      coordinates: filters.location.coordinates,
+      radius: filters.location.radius
+    } : undefined
   };
 }

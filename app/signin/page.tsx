@@ -81,7 +81,7 @@ const SignInPage: React.FC = () => {
     try {
       await sendPasswordResetEmail(auth, resetEmail);
       setResetStatus('success');
-      setResetMessage('Password reset email sent! Please check your inbox.');
+      setResetMessage('If your email is registered, you will receive a password reset email in your inbox.');
     } catch (error: any) {
       setResetStatus('error');
       setResetMessage(error.message || 'Failed to send password reset email.');
