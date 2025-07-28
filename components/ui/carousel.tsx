@@ -7,7 +7,7 @@ import { Button } from "./button"
 const AUTO_SCROLL_INTERVAL = 5000;
 const MOBILE_RESUME_SCROLL_DELAY = 3500; // 3.5 seconds for mobile drag
 const DESKTOP_RESUME_SCROLL_DELAY = 10000; // fallback for desktop (unchanged)
-const DRAG_THRESHOLD = 50;
+const DRAG_THRESHOLD = 10; // Super easy swipe
 
 interface CarouselProps {
   items: any[];
@@ -94,7 +94,7 @@ export function Carousel({
     let newIndex = currentIndex;
     if (Math.abs(dragPercentage) > DRAG_THRESHOLD) {
       const direction = dragPercentage > 0 ? -1 : 1;
-      newIndex = Math.max(0, Math.min(items.length - 1, currentIndex + direction));
+      newIndex = (currentIndex + direction + items.length) % items.length;
       setCurrentIndex(newIndex);
     }
     // Always animate to the correct position, even if index did not change
