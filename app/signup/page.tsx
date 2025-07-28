@@ -31,9 +31,19 @@ const SignUpPage: React.FC = () => {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
 
+  // Password validation function
+  const validatePassword = (password: string) => {
+    const minLength = password.length >= 6;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    
+    return minLength && hasUppercase && hasLowercase && hasNumber;
+  };
+
   const toggleAdditionalRole = (role: string) => {
-    setAdditionalRoles(prev => 
-      prev.includes(role) 
+    setAdditionalRoles(prev =>
+      prev.includes(role)
         ? prev.filter(r => r !== role)
         : [...prev, role]
     );
@@ -64,9 +74,15 @@ const SignUpPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!firstName || !lastName || !email || !password || !country) {
       setError('Please fill in all required fields');
+      return;
+    }
+
+    // Client-side password validation
+    if (!validatePassword(password)) {
+      setError('Password must contain: at least 6 characters, one uppercase letter, one lowercase letter, and one number.');
       return;
     }
 
@@ -121,7 +137,7 @@ const SignUpPage: React.FC = () => {
         if (additionalRoles.length > 0) {
           // Get the ID token for the newly created user
           const idToken = await user.getIdToken();
-          
+
           for (const additionalRole of additionalRoles) {
             const addRoleResponse = await fetch('/api/auth/manage-additional-roles', {
               method: 'POST',
@@ -150,7 +166,7 @@ const SignUpPage: React.FC = () => {
           description: "Please check your email to verify your account.",
           variant: "default",
         });
-        
+
         // Sign out the user until they verify their email
         await logout();
       } catch (setupError: any) {
@@ -161,8 +177,25 @@ const SignUpPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Signup error:", error);
-      if (error.message.includes('already registered')) {
-        setError('This email is already registered. Please sign in instead.');
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            setError('This email is already registered. Please sign in instead.');
+            break;
+          case 'auth/invalid-email':
+            setError('The email address is not valid. Please check and try again.');
+            break;
+          case 'auth/operation-not-allowed':
+            setError('Email/password accounts are not enabled. Please contact support.');
+            break;
+          case 'auth/password-does-not-meet-requirements':
+          case 'auth/weak-password':
+            setError('Password must contain: at least 6 characters, one uppercase letter, one lowercase letter, and one number.');
+            break;
+          default:
+            // Fallback for any other Firebase Auth errors
+            setError(error.message || 'An unexpected error occurred during signup. Please try again.');
+        }
       } else {
         setError(error.message || 'An error occurred during signup. Please try again.');
       }
@@ -214,7 +247,7 @@ const SignUpPage: React.FC = () => {
               Create an account today and start your journey to finding the perfect vehicle that matches your needs and style.
             </p>
             <div className="mt-12 bg-indigo-800/40 p-6 rounded-lg border border-indigo-700">
-              <p className="italic text-indigo-200">"The signup process was quick and easy. Within minutes I was browsing through their extensive collection."</p>
+              <p className="italic text-indigo-200">"The signup process was quick and easy. Within minutes I was Browse through their extensive collection."</p>
               <p className="text-white mt-3 font-medium">— Michael Torres</p>
             </div>
           </div>
@@ -227,7 +260,7 @@ const SignUpPage: React.FC = () => {
               <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
               <p className="mt-2 text-gray-600">Fill in your details to get started</p>
             </div>
-            
+
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-600 text-sm">
@@ -242,15 +275,15 @@ const SignUpPage: React.FC = () => {
                 </p>
               </div>
             )}
-            
+
             <form className="space-y-5" onSubmit={handleSubmit}>
               {/* Dealer Account Toggle */}
               <div className="flex items-center">
                 <label className="flex items-center cursor-pointer">
                   <div className="relative">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only" 
+                    <input
+                      type="checkbox"
+                      className="sr-only"
                       checked={isDealerAccount}
                       onChange={() => setIsDealerAccount(!isDealerAccount)}
                     />
@@ -326,8 +359,8 @@ const SignUpPage: React.FC = () => {
                   />
                 </div>
               </div>
-              
-              {/* Password Field */}
+
+              {/* Enhanced Password Field with Requirements */}
               <div className="space-y-2">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
@@ -352,11 +385,34 @@ const SignUpPage: React.FC = () => {
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? 
-                      <EyeOff size={18} className="text-gray-400 hover:text-gray-600" /> : 
+                    {showPassword ?
+                      <EyeOff size={18} className="text-gray-400 hover:text-gray-600" /> :
                       <Eye size={18} className="text-gray-400 hover:text-gray-600" />
                     }
                   </button>
+                </div>
+                
+                {/* Password Requirements Display */}
+                <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-xs font-medium text-gray-700 mb-2">Password must contain:</p>
+                  <div className="space-y-1">
+                    <div className={`flex items-center text-xs ${password.length >= 6 ? 'text-green-600' : 'text-gray-500'}`}>
+                      <div className={`w-2 h-2 rounded-full mr-2 ${password.length >= 6 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                      At least 6 characters
+                    </div>
+                    <div className={`flex items-center text-xs ${/[A-Z]/.test(password) ? 'text-green-600' : 'text-gray-500'}`}>
+                      <div className={`w-2 h-2 rounded-full mr-2 ${/[A-Z]/.test(password) ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                      One uppercase letter
+                    </div>
+                    <div className={`flex items-center text-xs ${/[a-z]/.test(password) ? 'text-green-600' : 'text-gray-500'}`}>
+                      <div className={`w-2 h-2 rounded-full mr-2 ${/[a-z]/.test(password) ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                      One lowercase letter
+                    </div>
+                    <div className={`flex items-center text-xs ${/[0-9]/.test(password) ? 'text-green-600' : 'text-gray-500'}`}>
+                      <div className={`w-2 h-2 rounded-full mr-2 ${/[0-9]/.test(password) ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                      One number
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -444,14 +500,14 @@ const SignUpPage: React.FC = () => {
               <div className="text-center mt-6">
                 <p className="text-xs text-gray-500">
                   By signing up, I agree to the{" "}
-                  <button 
+                  <button
                     onClick={() => setIsPrivacyModalOpen(true)}
                     className="text-indigo-600 hover:underline"
                   >
                     Terms of Service
                   </button>{" "}
                   and{" "}
-                  <button 
+                  <button
                     onClick={() => setIsPrivacyModalOpen(true)}
                     className="text-indigo-600 hover:underline"
                   >
@@ -472,7 +528,7 @@ const SignUpPage: React.FC = () => {
 
       <Footer />
 
-      <PrivacyPolicyModal 
+      <PrivacyPolicyModal
         isOpen={isPrivacyModalOpen}
         onClose={() => setIsPrivacyModalOpen(false)}
       />
