@@ -501,7 +501,7 @@ export function ProfilePage() {
                         </Label>
                         <p className="text-sm text-gray-500 mb-2">
                           {userProfile.role === 'user' ? 
-                            "You can upgrade your account to a Dealer account to list vehicles." :
+                            "You can upgrade your account to a Dealer account to list multiple vehicles." :
                             "Dealer accounts cannot be downgraded to regular user accounts."
                           }
                         </p>
