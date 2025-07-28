@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Heart, Share2 } from "lucide-react";
+import { ChevronRight, Heart, Share2, Check } from "lucide-react";
 import { useState, memo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -28,6 +28,7 @@ export const VehicleCard = memo(function VehicleCard({
   const { user } = useAuth();
   const isGrid = view === "grid";
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isShared, setIsShared] = useState(false);
 
   useEffect(() => {
     const checkFavoriteStatus = async () => {
@@ -75,9 +76,45 @@ export const VehicleCard = memo(function VehicleCard({
     }
   };
 
-  const handleShareClick = (e: React.MouseEvent) => {
+  const handleShareClick = async (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent navigation when clicking the share button
-    if (onShare) onShare();
+    
+    try {
+      const vehicleUrl = `${window.location.origin}/vehicle-info/${vehicle.id}`;
+      
+      // Check if the Web Share API is available (mobile devices)
+      if (navigator.share) {
+        await navigator.share({
+          title: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+          text: `Check out this ${vehicle.year} ${vehicle.make} ${vehicle.model} for £${vehicle.price?.toLocaleString() || 'N/A'}`,
+          url: vehicleUrl,
+        });
+      } else {
+        // Fallback to clipboard API
+        await navigator.clipboard.writeText(vehicleUrl);
+        
+        // Show confirmation feedback
+        setIsShared(true);
+        setTimeout(() => setIsShared(false), 2000);
+      }
+      
+      // Call the optional onShare callback if provided
+      if (onShare) onShare();
+      
+    } catch (error) {
+      console.error('Error sharing vehicle:', error);
+      
+      // Fallback: try to copy to clipboard manually
+      try {
+        const vehicleUrl = `${window.location.origin}/vehicle-info/${vehicle.id}`;
+        await navigator.clipboard.writeText(vehicleUrl);
+        setIsShared(true);
+        setTimeout(() => setIsShared(false), 2000);
+      } catch (clipboardError) {
+        console.error('Failed to copy to clipboard:', clipboardError);
+        // You could show a toast notification here or use a different fallback
+      }
+    }
   };
 
   const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
@@ -130,11 +167,20 @@ export const VehicleCard = memo(function VehicleCard({
               </div>
             </div>
             <button
-              className="text-gray-500 hover:text-gray-700 transition-colors duration-200 hover:scale-110 flex-shrink-0"
+              className={`transition-all duration-200 hover:scale-110 flex-shrink-0 p-1 rounded-full ${
+                isShared 
+                  ? 'text-green-600 bg-green-50' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
               onClick={handleShareClick}
               type="button"
+              title={isShared ? 'Link copied!' : 'Share vehicle'}
             >
-              <Share2 className="h-4 w-4" />
+              {isShared ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Share2 className="h-4 w-4" />
+              )}
             </button>
           </div>
           <div className="grid grid-cols-2 gap-2 mb-4">
@@ -171,4 +217,4 @@ export const VehicleCard = memo(function VehicleCard({
   );
 });
 
-VehicleCard.displayName = "VehicleCard"; 
+VehicleCard.displayName = "VehicleCard";
