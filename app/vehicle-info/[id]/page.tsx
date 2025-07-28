@@ -281,7 +281,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
   // More Details section: show all fields except id, images, and the specified fields
   const excludedFields = [
     'id', 'images', 'deactivationReason', 'dateOfLastV5CIssued', 'tokenExpiryDate', 'tokenActivatedDate',
-    'updatedAt', 'tokenStatus', 'createdAt', 'location', 'features', 'dealerUid', 'deactivatedAt', 'mot'
+    'updatedAt', 'tokenStatus', 'createdAt', 'location', 'features', 'dealerUid', 'deactivatedAt', 'mot', 'registrationNumber'
   ];
   const moreDetails = Object.entries(vehicle)
     .filter(([key]) => !excludedFields.includes(key))
@@ -306,7 +306,9 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
       <div className="lg:hidden mb-6">
         <CarDetailsPayment {...carDetails} makeOfferButton={makeOfferButton} />
       </div>
-
+<div className="lg:hidden mt-2 mb-4 px-2">
+  <p className="text-base text-gray-700 whitespace-pre-line">{vehicle.description}</p>
+</div>
       {/* Vehicle Details for mobile */}
       <div className="lg:hidden">
         <CommonVehicleDetails vehicle={vehicle} />
@@ -402,6 +404,9 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           <Suspense fallback={<div>Loading images...</div>}>
             <CarImageSection images={vehicle.images} />
           </Suspense>
+<div className="mt-2 mb-4 px-2">
+  <p className="text-base text-gray-700 whitespace-pre-line">{vehicle.description}</p>
+</div>
           <CommonVehicleDetails vehicle={vehicle} />
           <VehicleDocumentation vehicle={vehicle} />
           <VehicleSpecificDetails vehicle={vehicle} />

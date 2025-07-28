@@ -5,7 +5,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "./button"
 
 const AUTO_SCROLL_INTERVAL = 5000;
-const RESUME_SCROLL_DELAY = 10000;
+const MOBILE_RESUME_SCROLL_DELAY = 3500; // 3.5 seconds for mobile drag
+const DESKTOP_RESUME_SCROLL_DELAY = 10000; // fallback for desktop (unchanged)
 const DRAG_THRESHOLD = 50;
 
 interface CarouselProps {
@@ -33,6 +34,11 @@ export function Carousel({
   const [isAnimating, setIsAnimating] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Track if last drag was a touch (mobile)
+  const lastWasTouch = useRef(false);
+  // Timeout ref for resuming auto-scroll
+  const resumeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const nextItem = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % items.length);
   }, [items.length]);
@@ -45,16 +51,24 @@ export function Carousel({
     setIsAutoScrolling(false);
   }, []);
 
-  const handleDragStart = useCallback((clientX: number) => {
+  const handleDragStart = useCallback((clientX: number, isTouch = false) => {
     setIsDragging(true);
     setStartX(clientX);
     setIsAnimating(false);
     handleUserInteraction();
+    if (isTouch) {
+      lastWasTouch.current = true;
+      setIsAutoScrolling(false);
+      if (resumeTimeout.current) {
+        clearTimeout(resumeTimeout.current);
+        resumeTimeout.current = null;
+      }
+    }
   }, [handleUserInteraction]);
 
   const handleDragMove = useCallback((clientX: number) => {
     if (!isDragging) return;
-    
+    setIsAnimating(false); // Disable transition during drag
     const x = clientX - startX;
     const container = containerRef.current;
     if (!container) return;
@@ -68,9 +82,8 @@ export function Carousel({
     setScrollLeft(newScrollLeft);
   }, [isDragging, startX, currentIndex, items.length]);
 
-  const handleDragEnd = useCallback((clientX: number) => {
+  const handleDragEnd = useCallback((clientX: number, isTouch = false) => {
     if (!isDragging) return;
-    
     setIsDragging(false);
     const x = clientX - startX;
     const container = containerRef.current;
@@ -78,20 +91,28 @@ export function Carousel({
 
     const containerWidth = container.offsetWidth;
     const dragPercentage = (x / containerWidth) * 100;
-
+    let newIndex = currentIndex;
     if (Math.abs(dragPercentage) > DRAG_THRESHOLD) {
       const direction = dragPercentage > 0 ? -1 : 1;
-      const newIndex = Math.max(0, Math.min(items.length - 1, currentIndex + direction));
+      newIndex = Math.max(0, Math.min(items.length - 1, currentIndex + direction));
       setCurrentIndex(newIndex);
     }
-
-    setScrollLeft(-currentIndex * 100);
+    // Always animate to the correct position, even if index did not change
+    setScrollLeft(-newIndex * 100);
     setIsAnimating(true);
+
+    // Only for mobile/touch: resume auto-scroll after animation and delay
+    if (isTouch) {
+      if (resumeTimeout.current) clearTimeout(resumeTimeout.current);
+      resumeTimeout.current = setTimeout(() => {
+        setIsAutoScrolling(true);
+      }, MOBILE_RESUME_SCROLL_DELAY + 350); // Wait for animation + delay
+    }
   }, [isDragging, startX, currentIndex, items.length]);
 
   // Touch event handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    handleDragStart(e.touches[0].clientX);
+    handleDragStart(e.touches[0].clientX, true);
   }, [handleDragStart]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
@@ -99,7 +120,7 @@ export function Carousel({
   }, [handleDragMove]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    handleDragEnd(e.changedTouches[0].clientX);
+    handleDragEnd(e.changedTouches[0].clientX, true);
   }, [handleDragEnd]);
 
   // Mouse event handlers
@@ -124,21 +145,35 @@ export function Carousel({
   // Auto-scroll effect
   useEffect(() => {
     if (!isAutoScrolling) return;
-
-    const interval = setInterval(nextItem, AUTO_SCROLL_INTERVAL);
+    const interval = setInterval(() => {
+      setIsAnimating(true);
+      nextItem();
+    }, AUTO_SCROLL_INTERVAL);
     return () => clearInterval(interval);
   }, [isAutoScrolling, nextItem]);
 
-  // Resume auto-scroll after delay
+  // Resume auto-scroll after delay (desktop fallback only)
   useEffect(() => {
-    if (!isAutoScrolling) {
+    if (!isAutoScrolling && !lastWasTouch.current) {
       const timeout = setTimeout(() => {
         setIsAutoScrolling(true);
-      }, RESUME_SCROLL_DELAY);
-
+      }, DESKTOP_RESUME_SCROLL_DELAY);
       return () => clearTimeout(timeout);
     }
   }, [isAutoScrolling]);
+
+  // Clean up resumeTimeout on unmount
+  useEffect(() => {
+    return () => {
+      if (resumeTimeout.current) clearTimeout(resumeTimeout.current);
+    };
+  }, []);
+
+  // Whenever currentIndex changes (from auto or drag), animate to correct position
+  useEffect(() => {
+    setScrollLeft(-currentIndex * 100);
+    setIsAnimating(true);
+  }, [currentIndex]);
 
   return (
     <section className={`py-12 bg-gray-50 ${className}`}>
