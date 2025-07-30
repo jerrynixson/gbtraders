@@ -151,9 +151,19 @@ export function PaymentPlans() {
   const [checkingPlan, setCheckingPlan] = useState(true)
   const [isUpgradeMode, setIsUpgradeMode] = useState(false)
   const [currentPlan, setCurrentPlan] = useState<string | null>(null)
+  const [planExpiryDate, setPlanExpiryDate] = useState<Date | null>(null)
   const [availableUpgrades, setAvailableUpgrades] = useState<string[]>([])
   const [availableRenewals, setAvailableRenewals] = useState<string[]>([])
   const { toast } = useToast()
+
+  // Helper function to check if a plan is free
+  const isFreePlan = (planName: string) => {
+    const plan = plans.find(p => p.name === planName)
+    if (!plan) return false
+    const originalPrice = parseFloat(plan.originalPrice.replace('£', ''))
+    const discount = parseFloat(plan.couponDiscount.replace('£', ''))
+    return originalPrice === discount
+  }
 
   useEffect(() => {
     // Check if the user has an active plan and load upgrade options
@@ -185,6 +195,7 @@ export function PaymentPlans() {
         if (data.planInfo) {
           const planEndDate = new Date(data.planInfo.planEndDate)
           const now = new Date()
+          setPlanExpiryDate(planEndDate)
           // Check if plan is active (not expired)
           if (planEndDate > now) {
             setHasActivePlan(true)
@@ -255,6 +266,21 @@ export function PaymentPlans() {
     const isCurrentPlanSelected = currentPlan === planName;
     const isUpgradeSelected = availableUpgrades.includes(planName);
     const isRenewalSelected = availableRenewals.includes(planName) && !isUpgradeSelected;
+    const isCurrentPlanFree = currentPlan ? isFreePlan(currentPlan) : false;
+    const isSelectedPlanFree = isFreePlan(planName);
+
+    // For free plan renewals, check if current plan has expired
+    if (isCurrentPlanSelected && isCurrentPlanFree && hasActivePlan && planExpiryDate) {
+      const now = new Date();
+      if (planExpiryDate > now) {
+        toast({
+          title: "Free plan renewal not available",
+          description: `You can renew your free plan only after it expires on ${planExpiryDate.toLocaleDateString()}. You can upgrade to a paid plan anytime.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     if (isUpgradeMode && currentPlan) {
       // Validate that the selected plan is available for purchase (upgrade or renewal)
@@ -356,10 +382,16 @@ export function PaymentPlans() {
                 Your Current Plan: {currentPlan}
               </h2>
               <p className="text-gray-600 mb-4">
-                You can upgrade to a higher tier plan or purchase additional plans.
+                {isFreePlan(currentPlan) 
+                  ? "You can upgrade to any paid plan anytime. Free plan renewals are available only after expiry."
+                  : "You can upgrade to a higher tier plan or purchase additional plans."
+                }
               </p>
               <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
                 <span>✓ Seamless transition with zero downtime</span>
+                {planExpiryDate && (
+                  <span>• Plan expires: {planExpiryDate.toLocaleDateString()}</span>
+                )}
               </div>
             </div>
           </div>
@@ -374,6 +406,11 @@ export function PaymentPlans() {
             const isCurrentPlan = plan.name === currentPlan
             const isRenewalEligible = hasActivePlan ? availableRenewals.includes(plan.name) : true
             const isLowerTierPlan = Boolean(hasActivePlan && currentPlan && !availableRenewals.includes(plan.name))
+            const isCurrentPlanFree = currentPlan ? isFreePlan(currentPlan) : false
+            const isSelectedPlanFree = isFreePlan(plan.name)
+            const isPlanExpired = planExpiryDate ? new Date() > planExpiryDate : false
+            const canRenewFreePlan = isCurrentPlan && isSelectedPlanFree && isCurrentPlanFree && isPlanExpired
+            const isFreePlanRenewalBlocked = isCurrentPlan && isSelectedPlanFree && isCurrentPlanFree && !isPlanExpired
             
             return (
               <Card
@@ -382,7 +419,10 @@ export function PaymentPlans() {
                   `relative flex flex-col h-full transition-all duration-300 transform border shadow-lg bg-white hover:shadow-xl${
                     hoveredPlan === plan.name ? ' scale-105 shadow-2xl' : ''
                   }${
-                    isCurrentPlan ? ' border-blue-300 bg-blue-50' : isLowerTierPlan ? ' border-gray-300 bg-gray-50 opacity-75' : ' border-gray-200'
+                    isCurrentPlan ? ' border-blue-300 bg-blue-50' : 
+                    isFreePlanRenewalBlocked ? ' border-orange-300 bg-orange-50' :
+                    isLowerTierPlan ? ' border-gray-300 bg-gray-50 opacity-75' : 
+                    ' border-gray-200'
                   }`
                 }
                 onMouseEnter={() => setHoveredPlan(plan.name)}
@@ -396,14 +436,21 @@ export function PaymentPlans() {
                     </Badge>
                   </div>
                 )}
-                {isLowerTierPlan && (
+                {isFreePlanRenewalBlocked && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300">
+                      Available After Expiry
+                    </Badge>
+                  </div>
+                )}
+                {isLowerTierPlan && !isCurrentPlan && (
                   <div className="absolute top-4 right-4 z-10">
                     <Badge variant="outline" className="bg-gray-200 text-gray-600 border-gray-400">
                       Lower Tier
                     </Badge>
                   </div>
                 )}
-                {isUpgradeEligible && hasActivePlan && !isCurrentPlan && (
+                {isUpgradeEligible && hasActivePlan && !isCurrentPlan && !isLowerTierPlan && (
                   <div className="absolute top-4 right-4 z-10">
                     <Badge className="bg-green-600 text-white">
                       Upgrade Available
@@ -455,7 +502,16 @@ export function PaymentPlans() {
                 </CardContent>
 
                 <CardFooter className="px-6 pb-6">
-                  {isCurrentPlan ? (
+                  {isFreePlanRenewalBlocked ? (
+                    <div className="w-full">
+                      <div className="w-full py-3 text-center bg-orange-50 text-orange-700 rounded-lg font-semibold border border-orange-200 mb-2">
+                        Available After Expiry
+                      </div>
+                      <p className="text-xs text-center text-orange-600">
+                        Expires: {planExpiryDate?.toLocaleDateString()}
+                      </p>
+                    </div>
+                  ) : isCurrentPlan && !isFreePlanRenewalBlocked ? (
                     <Button 
                       onClick={() => handlePlanSelection(plan.name)}
                       disabled={loadingPlan === plan.name || checkingPlan}
@@ -471,14 +527,14 @@ export function PaymentPlans() {
                         `Renew ${plan.name}`
                       )}
                     </Button>
-                  ) : isLowerTierPlan ? (
+                  ) : isLowerTierPlan && !isCurrentPlan ? (
                     <div className="w-full py-3 text-center bg-gray-100 text-gray-600 rounded-lg font-semibold">
                       Not Available (Lower Tier)
                     </div>
                   ) : (
                     <Button 
                       onClick={() => handlePlanSelection(plan.name)}
-                      disabled={loadingPlan === plan.name || checkingPlan || isLowerTierPlan}
+                      disabled={loadingPlan === plan.name || checkingPlan || (isLowerTierPlan && !isCurrentPlan)}
                       className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
                       size="lg"
                     >
@@ -487,7 +543,7 @@ export function PaymentPlans() {
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           Processing...
                         </>
-                      ) : (hasActivePlan && isUpgradeEligible) ? (
+                      ) : (hasActivePlan && isUpgradeEligible && !isCurrentPlan) ? (
                         `Upgrade to ${plan.name}`
                       ) : (
                         plan.buttonText
