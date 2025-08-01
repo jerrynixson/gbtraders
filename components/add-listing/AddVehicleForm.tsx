@@ -662,6 +662,7 @@ export default function AddVehicleForm() {
       }
 
       const vehicleDataFromForm = {
+        title: formData.title,
         make: formData.make,
         model: formData.model,
         year: Number(formData.year),
