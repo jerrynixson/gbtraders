@@ -25,6 +25,13 @@ service cloud.firestore {
       return userDoc != null && userDoc.data != null && userDoc.data.role == 'dealer';
     }
 
+    // Function to check if user is a dealer OR regular user (both can create listings)
+    function isDealerOrUser() {
+      let userDoc = get(/databases/(default)/documents/users/$(request.auth.uid));
+      return userDoc != null && userDoc.data != null && 
+             (userDoc.data.role == 'dealer' || userDoc.data.role == 'user');
+    }
+
     // Function to validate vehicle data
     function isValidVehicleData() {
       let requiredFields = ['make', 'model', 'year', 'price', 'mileage', 'type', 'dealerUid'];
@@ -79,10 +86,10 @@ service cloud.firestore {
       // Allow read for everyone (public listings)
       allow read: if true;
       
-      // Allow list operation for verified dealers querying their own listings
+      // Allow list operation for verified dealers and users querying their own listings
       allow list: if isAuthenticated() 
         && isEmailVerified()
-        && isDealer()
+        && isDealerOrUser()
         && request.query.limit <= 100  // Limit query size for security
         && (
           // Allow if no where clause (getting all listings)
@@ -96,22 +103,22 @@ service cloud.firestore {
           )
         );
       
-      // Allow create for authenticated and verified dealers with valid data
+      // Allow create for authenticated and verified dealers and users with valid data
       allow create: if (isAuthenticated() 
         && isEmailVerified()
-        && isDealer()
+        && isDealerOrUser()
         && isValidVehicleData()) || isAdmin();
       
-      // Allow update/delete for verified dealers who own the listing or admins
+      // Allow update/delete for verified dealers and users who own the listing or admins
       allow update: if (isAuthenticated() 
         && isEmailVerified()
-        && isDealer()
+        && isDealerOrUser()
         && ownsVehicle()
         && isValidVehicleData()) || isAdmin();
         
       allow delete: if (isAuthenticated() 
         && isEmailVerified()
-        && isDealer()
+        && isDealerOrUser()
         && ownsVehicle()) || isAdmin();
     }
 

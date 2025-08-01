@@ -105,6 +105,7 @@ export function Header() {
   ]
 
   const userNavItems: NavItem[] = [
+    { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { href: "/profile", label: "Profile", icon: <UserCircle className="h-4 w-4" /> }
   ]
 
@@ -228,7 +229,7 @@ export function Header() {
                 <Heart className="h-6 w-6" />
               </Button>
             </Link>
-            {user && user.role === "dealer" && (
+            {user && (
               <Link href="/dashboard">
                 <Button variant="secondary" className="hidden lg:flex">
                   Dashboard
@@ -256,7 +257,7 @@ export function Header() {
                       <DropdownMenuSeparator />
                     </>
                   )}
-                  {user && (user.role === "dealer" || isAdmin) && (
+                  {user && (user.role === "dealer" || user.role === "user" || isAdmin) && (
                     <>
                       {dealerNavItems.map((item) => (
                         <DropdownMenuItem key={item.href} asChild>
@@ -394,7 +395,7 @@ export function Header() {
                     <span className="sr-only">Search</span>
                   </Button>
                 </Link>
-                {user && user.role === "dealer" && (
+                {user && (
                   <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
                       <LayoutDashboard className="h-4 w-4" />
@@ -410,7 +411,7 @@ export function Header() {
                         <span className="sr-only">Profile</span>
                       </Button>
                     </Link>
-                    {user.role === "dealer" && (
+                    {user && (
                       <Link href="/dashboard/add-listing" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="outline" size="sm" className="w-full flex items-center justify-center">
                           <PlusCircle className="h-4 w-4" />

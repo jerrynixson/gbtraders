@@ -270,7 +270,8 @@ export default function DealerDashboard() {
       }
 
       // Load plan information using API
-      const planResponse = await fetch(`/api/plan-info?userType=dealer`, {
+      const userRole = user?.role || 'user'; // Get user role, default to 'user'
+      const planResponse = await fetch(`/api/plan-info?userType=${userRole}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -600,7 +601,7 @@ export default function DealerDashboard() {
           <div className="mb-8">
             <PlanInfoSection 
               userId={user.uid} 
-              userType="dealer"
+              userType={user?.role || 'user'}
               onPlanUpdate={loadDashboardData}
             />
           </div>
@@ -739,7 +740,7 @@ export default function DealerDashboard() {
                         key={vehicle.id}
                         vehicle={vehicle}
                         userId={user?.uid || ''}
-                        userType="dealer"
+                        userType={user?.role || 'user'}
                         availableTokens={stats.availableTokens}
                         onEdit={handleEditListing}
                         onDelete={(id) => {

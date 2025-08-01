@@ -154,6 +154,7 @@ export function PaymentPlans() {
   const [planExpiryDate, setPlanExpiryDate] = useState<Date | null>(null)
   const [availableUpgrades, setAvailableUpgrades] = useState<string[]>([])
   const [availableRenewals, setAvailableRenewals] = useState<string[]>([])
+  const [userRole, setUserRole] = useState<'user' | 'dealer'>('dealer')
   const { toast } = useToast()
 
   // Helper function to check if a plan is free
@@ -165,9 +166,19 @@ export function PaymentPlans() {
     return originalPrice === discount
   }
 
+  // Check if user can access this plan
+  const canUserAccessPlan = (planName: string) => {
+    if (userRole === 'dealer') return true // Dealers can access all plans
+    
+    // Users can only access Basic and Private Gold plans
+    return planName === 'Basic' || planName === 'Private Gold'
+  }
+
   useEffect(() => {
     // Check if the user has an active plan and load upgrade options
     if (user) {
+      // Set user role based on user object
+      setUserRole(user.role || 'user')
       checkActivePlan()
     } else {
       setCheckingPlan(false)
@@ -183,7 +194,7 @@ export function PaymentPlans() {
       }
 
       const token = await currentUser.getIdToken(false)
-      const response = await fetch(`/api/plan-info?userType=dealer`, {
+      const response = await fetch(`/api/plan-info?userType=${userRole}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -224,7 +235,7 @@ export function PaymentPlans() {
       if (!currentUser) return
 
       const token = await currentUser.getIdToken(false)
-      const response = await fetch(`/api/upgrade-plan?userType=dealer`, {
+      const response = await fetch(`/api/upgrade-plan?userType=${userRole}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -411,6 +422,7 @@ export function PaymentPlans() {
             const isPlanExpired = planExpiryDate ? new Date() > planExpiryDate : false
             const canRenewFreePlan = isCurrentPlan && isSelectedPlanFree && isCurrentPlanFree && isPlanExpired
             const isFreePlanRenewalBlocked = isCurrentPlan && isSelectedPlanFree && isCurrentPlanFree && !isPlanExpired
+            const isPlanAccessible = canUserAccessPlan(plan.name)
             
             return (
               <Card
@@ -422,6 +434,7 @@ export function PaymentPlans() {
                     isCurrentPlan ? ' border-blue-300 bg-blue-50' : 
                     isFreePlanRenewalBlocked ? ' border-orange-300 bg-orange-50' :
                     isLowerTierPlan ? ' border-gray-300 bg-gray-50 opacity-75' : 
+                    !isPlanAccessible ? ' border-red-300 bg-red-50 opacity-75' :
                     ' border-gray-200'
                   }`
                 }
@@ -433,6 +446,13 @@ export function PaymentPlans() {
                   <div className="absolute top-4 right-4 z-10">
                     <Badge className="bg-blue-600 text-white">
                       Current Plan
+                    </Badge>
+                  </div>
+                )}
+                {!isPlanAccessible && userRole === 'user' && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300">
+                      Dealer Only
                     </Badge>
                   </div>
                 )}
@@ -502,7 +522,16 @@ export function PaymentPlans() {
                 </CardContent>
 
                 <CardFooter className="px-6 pb-6">
-                  {isFreePlanRenewalBlocked ? (
+                  {!isPlanAccessible ? (
+                    <div className="w-full">
+                      <div className="w-full py-3 text-center bg-red-50 text-red-700 rounded-lg font-semibold border border-red-200 mb-2">
+                        Dealer Account Required
+                      </div>
+                      <p className="text-xs text-center text-red-600">
+                        Upgrade to dealer account to access this plan
+                      </p>
+                    </div>
+                  ) : isFreePlanRenewalBlocked ? (
                     <div className="w-full">
                       <div className="w-full py-3 text-center bg-orange-50 text-orange-700 rounded-lg font-semibold border border-orange-200 mb-2">
                         Available After Expiry
@@ -567,8 +596,15 @@ export function PaymentPlans() {
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-4 px-4 font-semibold text-gray-900">Feature</th>
                   {plans.map((plan) => (
-                    <th key={plan.name} className="text-center py-4 px-4 font-semibold text-gray-900">
+                    <th key={plan.name} className={`text-center py-4 px-4 font-semibold ${
+                      !canUserAccessPlan(plan.name) && userRole === 'user' 
+                        ? 'text-gray-400' 
+                        : 'text-gray-900'
+                    }`}>
                       {plan.name}
+                      {!canUserAccessPlan(plan.name) && userRole === 'user' && (
+                        <span className="block text-xs text-red-500 font-normal">Dealer Only</span>
+                      )}
                     </th>
                   ))}
                 </tr>
@@ -577,8 +613,16 @@ export function PaymentPlans() {
                 <tr className="border-b border-gray-100">
                   <td className="py-4 px-4 text-gray-700">Listings</td>
                   {plans.map((plan) => (
-                    <td key={plan.name} className="text-center py-4 px-4">
+                    <td key={plan.name} className={`text-center py-4 px-4 ${
+                      !canUserAccessPlan(plan.name) && userRole === 'user' 
+                        ? 'text-gray-400' 
+                        : 'text-gray-900'
+                    }`}>
                       {(() => {
+                        if (!canUserAccessPlan(plan.name) && userRole === 'user') {
+                          return '—'
+                        }
+                        
                         const feature = plan.features.find(f => f.includes('Listing'));
                         if (!feature) return '1';
 
@@ -596,8 +640,17 @@ export function PaymentPlans() {
                 <tr className="border-b border-gray-100">
                   <td className="py-4 px-4 text-gray-700">Duration</td>
                   {plans.map((plan) => (
-                    <td key={plan.name} className="text-center py-4 px-4">
-                      {plan.features.find(f => f.includes('days') || f.includes('Days'))?.split(' ')[0] || '7 days'}
+                    <td key={plan.name} className={`text-center py-4 px-4 ${
+                      !canUserAccessPlan(plan.name) && userRole === 'user' 
+                        ? 'text-gray-400' 
+                        : 'text-gray-900'
+                    }`}>
+                      {(() => {
+                        if (!canUserAccessPlan(plan.name) && userRole === 'user') {
+                          return '—'
+                        }
+                        return plan.features.find(f => f.includes('days') || f.includes('Days'))?.split(' ')[0] || '7 days'
+                      })()}
                     </td>
                   ))}
                 </tr>

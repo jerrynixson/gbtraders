@@ -14,6 +14,14 @@ service firebase.storage {
       return userDoc != null && userDoc.data.role == 'dealer';
     }
 
+    // Function to check if user is a dealer OR regular user (both can upload)
+    function isDealerOrUser() {
+      let userId = request.auth.uid;
+      let userDoc = firestore.get(/databases/(default)/documents/users/$(userId));
+      return userDoc != null && 
+             (userDoc.data.role == 'dealer' || userDoc.data.role == 'user');
+    }
+
     // Function to validate image upload
     function isValidImage() {
       return request.resource.contentType.matches('image/.*')
@@ -30,9 +38,9 @@ service firebase.storage {
       // Allow read for everyone (public listings)
       allow read: if true;
       
-      // Allow write for authenticated dealers
+      // Allow write for authenticated dealers and users
       allow write: if isAuthenticated() 
-        && isDealer()
+        && isDealerOrUser()
         && isValidImage();
     }
 
