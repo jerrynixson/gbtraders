@@ -326,7 +326,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           makeOfferButton={makeOfferButton}
           vehicleSpecs={{
             engineSize: vehicle.engineCapacity || 'N/A',
-            mileage: vehicle.mileage,
+            mileage: vehicle.mileage ? Number(vehicle.mileage) : 0,
             fuelType: vehicle.fuel || 'N/A',
             transmission: vehicle.transmission || 'N/A'
           }}
@@ -596,7 +596,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
               makeOfferButton={makeOfferButton}
               vehicleSpecs={{
                 engineSize: vehicle.engineCapacity || 'N/A',
-                mileage: vehicle.mileage ? Number(vehicle.mileage).toLocaleString() : 'N/A',
+                mileage: vehicle.mileage ? Number(vehicle.mileage) : 0,
                 fuelType: vehicle.fuel || 'N/A',
                 transmission: vehicle.transmission || 'N/A'
               }}
