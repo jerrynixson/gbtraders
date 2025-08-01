@@ -18,14 +18,19 @@ service firebase.storage {
     function isDealerOrUser() {
       let userId = request.auth.uid;
       let userDoc = firestore.get(/databases/(default)/documents/users/$(userId));
-      return userDoc != null && 
+      return userDoc != null && userDoc.data != null &&
              (userDoc.data.role == 'dealer' || userDoc.data.role == 'user');
     }
 
     // Function to validate image upload
     function isValidImage() {
       return request.resource.contentType.matches('image/.*')
-        && request.resource.size <= 5 * 1024 * 1024; // 5MB max
+        && request.resource.size <= 10 * 1024 * 1024; // Increased to 10MB max
+    }
+
+    // Function to check if user is email verified (for storage)
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
     }
 
     // Function to check if dealer owns the vehicle
@@ -38,8 +43,9 @@ service firebase.storage {
       // Allow read for everyone (public listings)
       allow read: if true;
       
-      // Allow write for authenticated dealers and users
+      // Allow write for authenticated, verified users and dealers
       allow write: if isAuthenticated() 
+        && isEmailVerified()
         && isDealerOrUser()
         && isValidImage();
     }

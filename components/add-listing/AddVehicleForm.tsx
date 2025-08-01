@@ -17,6 +17,7 @@ import { db, storage, auth } from "@/lib/firebase"
 import { doc, collection, setDoc, serverTimestamp } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { useAuthState } from 'react-firebase-hooks/auth'
+import { useAuth } from '@/hooks/useAuth'
 import { getTokenErrorMessage } from "@/lib/utils/tokenUtils"
 
 // OneAuto API interfaces
@@ -198,6 +199,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 export default function AddVehicleForm() {
   const router = useRouter()
   const [user, loading, error] = useAuthState(auth)
+  const { user: authUser } = useAuth() // This includes role information
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
   const [isFetchingCoordinates, setIsFetchingCoordinates] = useState(false)
@@ -230,6 +232,15 @@ export default function AddVehicleForm() {
     engineCapacity: "",
     co2Emissions: "0",
     co2Band: "",
+    bodyType: "",
+    doors: "",
+    seats: "",
+    cargoVolume: "",
+    maxPayload: "",
+    length: "",
+    height: "",
+    axles: "",
+    cabType: "",
     previousKeepers: "0",
     lastKeeperChangeDate: "",
     colorChanges: "0",
@@ -246,6 +257,9 @@ export default function AddVehicleForm() {
   })
   const [formErrors, setFormErrors] = useState<FormErrors>({})
 
+  // Get user role from auth context
+  const userRole = authUser?.role || 'user'
+
   // Check token availability when component mounts
   useEffect(() => {
     const checkTokenAvailability = async () => {
@@ -253,7 +267,7 @@ export default function AddVehicleForm() {
 
       try {
         // Use the admin API to check plan information
-        const response = await fetch('/api/plan-info?userType=dealer', {
+        const response = await fetch(`/api/plan-info?userType=${userRole}`, {
           headers: {
             'Authorization': `Bearer ${await user.getIdToken()}`
           }
@@ -569,7 +583,7 @@ export default function AddVehicleForm() {
 
     try {
       // Double-check token availability at submission time
-      const response = await fetch('/api/plan-info?userType=dealer', {
+      const response = await fetch(`/api/plan-info?userType=${userRole}`, {
         headers: {
           'Authorization': `Bearer ${await user.getIdToken()}`
         }
@@ -1642,7 +1656,13 @@ export default function AddVehicleForm() {
           {formData.images.map((file, index) => (
             <div key={index} className="relative group">
               <img src={URL.createObjectURL(file)} alt={`Preview ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
-              <button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                type="button" 
+                onClick={() => removeImage(index)} 
+                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Remove image"
+                aria-label="Remove image"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
