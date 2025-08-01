@@ -4,6 +4,7 @@ import { Header } from "@/components/header"
 import { CarImageSection } from "@/components/car/car-image-section"
 import { DealerInformation } from "@/components/car/dealer-information"
 import { CarDetailsPayment } from "@/components/car/car-details-payment"
+import { VehicleSpecsBar } from "@/components/vehicle/vehicle-specs-bar"
 import { Footer } from "@/components/footer"
 import { FileSearch, Calendar, Clock, MapPin, Tag, Car, Truck } from "lucide-react"
 import { Heart, Flag } from "lucide-react"
@@ -12,6 +13,9 @@ import { useEffect, useState, useCallback, Suspense } from "react"
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { submitOffer } from "@/lib/offers"
 import { GoogleMapComponent } from "@/components/ui/google-map"
+import { DetailItem } from "@/components/ui/detail-item"
+import { Card } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import { Vehicle, Car as CarType, UsedCar, Van as VanType, Truck as TruckType, VehicleStatus, VehicleType } from "@/types/vehicles"
 import { VehicleRepository } from "@/lib/db/repositories/vehicleRepository"
 import { FavoritesRepository } from "@/lib/db/repositories/favoritesRepository"
@@ -134,6 +138,19 @@ const ErrorState = ({ message }: { message: string }) => (
 import { DealerRepository } from "@/lib/db/repositories/dealerRepository";
 import { DealerProfile } from "@/lib/types/dealer";
 import Image from "next/image";
+
+// Helper function to safely format dates
+const formatDate = (dateString?: string | Date | null): string | undefined => {
+  if (!dateString) return undefined;
+  try {
+    const date = new Date(dateString);
+    // Check if the date is valid
+    if (isNaN(date.getTime())) return undefined;
+    return date.toLocaleDateString();
+  } catch (e) {
+    return undefined;
+  }
+};
 
 const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, user }: { 
   vehicle: Vehicle; 
@@ -304,16 +321,80 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
       {/* CarDetailsPayment for mobile */}
       <div className="lg:hidden mb-6">
-        <CarDetailsPayment {...carDetails} makeOfferButton={makeOfferButton} />
+        <CarDetailsPayment 
+          {...carDetails} 
+          makeOfferButton={makeOfferButton}
+          vehicleSpecs={{
+            engineSize: vehicle.engineCapacity || 'N/A',
+            mileage: vehicle.mileage,
+            fuelType: vehicle.fuel || 'N/A',
+            transmission: vehicle.transmission || 'N/A'
+          }}
+        />
       </div>
 <div className="lg:hidden mt-2 mb-4 px-2">
   <p className="text-base text-gray-700 whitespace-pre-line">{vehicle.description}</p>
 </div>
-      {/* Vehicle Details for mobile */}
-      <div className="lg:hidden">
-        <CommonVehicleDetails vehicle={vehicle} />
-        <VehicleDocumentation vehicle={vehicle} />
-        <VehicleSpecificDetails vehicle={vehicle} />
+      {/* Enhanced Vehicle Details for mobile */}
+      <div className="lg:hidden space-y-6">
+        {/* Main Vehicle Info Section */}
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b">
+            <h3 className="text-lg font-semibold">Vehicle Overview</h3>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-2 gap-4">
+              <DetailItem label="Make" value={vehicle.make} />
+              <DetailItem label="Model" value={vehicle.model} />
+              <DetailItem label="Year" value={vehicle.year?.toString()} />
+              <DetailItem label="Color" value={vehicle.color} />
+              <DetailItem 
+                label="Mileage" 
+                value={vehicle.mileage ? `${vehicle.mileage.toLocaleString()} miles` : 'N/A'} 
+              />
+              <DetailItem label="Fuel Type" value={vehicle.fuel || 'N/A'} />
+              <DetailItem label="Transmission" value={vehicle.transmission || 'N/A'} />
+              <DetailItem label="Status" value={vehicle.status} />
+              {vehicle.engineCapacity && (
+                <DetailItem label="Engine" value={vehicle.engineCapacity.toString()} />
+              )}
+              {vehicle.co2Emissions && (
+                <DetailItem label="CO2 Emissions" value={`${vehicle.co2Emissions}g/km`} />
+              )}
+              {vehicle.range && (
+                <DetailItem label="Range" value={`${vehicle.range} miles`} />
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Documentation & Specifics Section */}
+        <div className="space-y-6">
+          {/* Documentation */}
+          {(vehicle.taxStatus || vehicle.motStatus || vehicle.euroStatus || vehicle.dateOfLastV5CIssued) && (
+            <Card className="overflow-hidden">
+              <div className="p-4 border-b">
+                <h3 className="text-lg font-semibold">Documentation</h3>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {vehicle.taxStatus && <DetailItem label="Tax Status" value={vehicle.taxStatus} />}
+                  {vehicle.motStatus && <DetailItem label="MOT Status" value={vehicle.motStatus} />}
+                  {vehicle.euroStatus && <DetailItem label="Euro Status" value={vehicle.euroStatus} />}
+                  {vehicle.dateOfLastV5CIssued && (
+                    <DetailItem 
+                      label="Last V5C Issued" 
+                      value={formatDate(vehicle.dateOfLastV5CIssued) || 'N/A'}
+                    />
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Vehicle Specific Details */}
+          <VehicleSpecificDetails vehicle={vehicle} />
+        </div>
         {/* Show More Details directly under Car Specifications */}
         <div className="mt-2">
           <button
@@ -433,9 +514,18 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
         {/* Right Column */}
         <div className="lg:col-span-5">
-          {/* CarDetailsPayment for desktop - remains in right column, now with makeOfferButton */}
+          {/* CarDetailsPayment for desktop - remains in right column, now with makeOfferButton and vehicleSpecs */}
           <div className="hidden lg:block">
-            <CarDetailsPayment {...carDetails} makeOfferButton={makeOfferButton} />
+            <CarDetailsPayment 
+              {...carDetails} 
+              makeOfferButton={makeOfferButton}
+              vehicleSpecs={{
+                engineSize: vehicle.engineCapacity || 'N/A',
+                mileage: vehicle.mileage ? Number(vehicle.mileage).toLocaleString() : 'N/A',
+                fuelType: vehicle.fuel || 'N/A',
+                transmission: vehicle.transmission || 'N/A'
+              }}
+            />
           </div>
 
           <DealerInformation {...dealerInfo} />

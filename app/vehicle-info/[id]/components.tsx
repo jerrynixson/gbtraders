@@ -1,5 +1,6 @@
-import { memo } from 'react'
-import { Vehicle, Car as CarType, UsedCar, Van as VanType, Truck as TruckType, VehicleType } from "@/types/vehicles"
+import { memo } from 'react';
+import { format } from 'date-fns';
+import { Vehicle, Car as CarType, Van as VanType, Truck as TruckType, UsedCar, VehicleType } from "@/types/vehicles"
 import { Car, Truck, Calendar, Gauge, Fuel, Settings, BadgeCheck, Hash, Zap, CircleCheck, CircleX, Info, Palette, TrendingUp } from "lucide-react"
 
 // Common styles and layout components
@@ -51,15 +52,28 @@ const detailIcons: Record<string, React.ReactNode> = {
   'Last V5C Issued': <Calendar className="h-5 w-5 text-indigo-500" />,
 };
 
-const DetailItem = memo(({ label, value, icon }: { label: string; value: string | number; icon?: React.ReactNode }) => (
-  <div className="flex items-start gap-3 p-3 rounded-xl transition-shadow duration-200 border border-transparent bg-white text-gray-900 hover:shadow-md hover:border-indigo-200">
-    <div className="pt-1">{icon || detailIcons[label] || <CircleCheck className="h-5 w-5 text-gray-300" />}</div>
-    <div>
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="font-semibold text-base">{value}</p>
+interface DetailItemProps {
+  label: string;
+  value: string | number | null | undefined;
+  icon?: React.ReactNode;
+}
+
+const DetailItem = memo(({ label, value, icon }: DetailItemProps) => {
+  // Don't render if value is undefined, null, or empty string
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  
+  return (
+    <div className="flex items-start gap-3 p-3 rounded-xl transition-shadow duration-200 border border-transparent bg-white text-gray-900 hover:shadow-md hover:border-indigo-200">
+      <div className="pt-1">{icon || detailIcons[label] || <CircleCheck className="h-5 w-5 text-gray-300" />}</div>
+      <div>
+        <p className="text-xs text-gray-500">{label}</p>
+        <p className="font-semibold text-base">{value}</p>
+      </div>
     </div>
-  </div>
-));
+  );
+});
 
 // Helper function to render vehicle-specific details
 export const VehicleSpecificDetails = memo(({ vehicle }: { vehicle: Vehicle }) => {
@@ -79,23 +93,31 @@ export const VehicleSpecificDetails = memo(({ vehicle }: { vehicle: Vehicle }) =
     if (details.length === 0) return null;
 
     return (
-      <Card title="Car Specifications">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {details.filter(Boolean).map((detail, index) => detail && (
-            <DetailItem key={index} label={detail.label} value={detail.value as string | number} />
-          ))}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-4 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">Car Specifications</h3>
         </div>
-        {usedCar && usedCar.mot && usedCar.mot.advisories.length > 0 && (
-          <div className="mt-2">
-            <p className="text-sm text-gray-600">Advisories:</p>
-            <ul className="list-disc list-inside">
-              {usedCar.mot.advisories.map((advisory: string, index: number) => (
-                <li key={index} className="text-sm text-gray-600">{advisory}</li>
-              ))}
-            </ul>
+        <div className="p-4">
+          <div className="grid grid-cols-2 gap-4">
+            {details.filter(Boolean).map((detail, index) => detail && (
+              <DetailItem key={index} label={detail.label} value={detail.value as string | number} />
+            ))}
           </div>
-        )}
-      </Card>
+          {usedCar && usedCar.mot && usedCar.mot.advisories.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">MOT Advisories</h4>
+              <ul className="space-y-1">
+                {usedCar.mot.advisories.map((advisory: string, index: number) => (
+                  <li key={index} className="flex items-start">
+                    <span className="text-yellow-500 mr-2 mt-0.5">•</span>
+                    <span className="text-sm text-gray-600">{advisory}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
     );
   };
 
@@ -110,15 +132,22 @@ export const VehicleSpecificDetails = memo(({ vehicle }: { vehicle: Vehicle }) =
       { label: 'Gross Weight', value: van.grossWeight ? `${van.grossWeight}kg` : undefined },
       { label: 'Doors', value: van.doors }
     ].filter(d => d && d.value !== undefined && d.value !== null && d.value !== '' && d.value !== 'undefinedL' && d.value !== 'Invalid Date');
+    
     if (details.length === 0) return null;
+    
     return (
-      <Card title="Van Specifications">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {details.filter(Boolean).map((detail, index) => (
-            <DetailItem key={index} label={detail.label} value={detail.value as string | number} />
-          ))}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-4 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">Van Specifications</h3>
         </div>
-      </Card>
+        <div className="p-4">
+          <div className="grid grid-cols-2 gap-4">
+            {details.filter(Boolean).map((detail, index) => (
+              <DetailItem key={index} label={detail.label} value={detail.value as string | number} />
+            ))}
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -131,15 +160,22 @@ export const VehicleSpecificDetails = memo(({ vehicle }: { vehicle: Vehicle }) =
       { label: 'Gross Weight', value: truck.grossWeight ? `${truck.grossWeight}kg` : undefined },
       { label: 'Transmission', value: truck.transmission }
     ].filter(d => d && d.value !== undefined && d.value !== null && d.value !== '' && d.value !== 'undefinedL' && d.value !== 'Invalid Date');
+    
     if (details.length === 0) return null;
+    
     return (
-      <Card title="Truck Specifications">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {details.filter(Boolean).map((detail, index) => (
-            <DetailItem key={index} label={detail.label} value={detail.value as string | number} />
-          ))}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-4 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">Truck Specifications</h3>
         </div>
-      </Card>
+        <div className="p-4">
+          <div className="grid grid-cols-2 gap-4">
+            {details.filter(Boolean).map((detail, index) => (
+              <DetailItem key={index} label={detail.label} value={detail.value as string | number} />
+            ))}
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -163,66 +199,126 @@ export const CommonVehicleDetails = memo(({ vehicle }: { vehicle: Vehicle }) => 
     value: string | number | undefined | null;
   };
 
+  // Helper function to safely format dates
+  const formatDate = (dateString?: string | Date | null): string | undefined => {
+    if (!dateString) return undefined;
+    try {
+      const date = new Date(dateString);
+      // Check if the date is valid
+      if (isNaN(date.getTime())) return undefined;
+      return format(date, 'PP');
+    } catch (e) {
+      return undefined;
+    }
+  };
+
   const details: Detail[] = [
     { label: 'Make', value: vehicle.make },
     { label: 'Model', value: vehicle.model },
     { label: 'Year', value: vehicle.year },
+    { 
+      label: 'Mileage', 
+      value: vehicle.mileage !== undefined && vehicle.mileage !== null 
+        ? `${vehicle.mileage.toLocaleString()} miles` 
+        : undefined 
+    },
+    { label: 'Fuel Type', value: vehicle.fuel },
+    { label: 'Transmission', value: vehicle.transmission },
     { label: 'Color', value: vehicle.color },
-    { label: 'Mileage', value: vehicle.mileage ? `${vehicle.mileage.toLocaleString()} miles` : undefined },
-    { label: 'Fuel Type', value: vehicle.fuel || undefined },
-    { label: 'Transmission', value: vehicle.transmission || undefined },
-    // ...(vehicle.registrationNumber ? [{ label: 'Registration Number', value: vehicle.registrationNumber }] : []),
-    { label: 'Status', value: vehicle.status },
-    ...(vehicle.engineCapacity ? [{ label: 'Engine Capacity', value: vehicle.engineCapacity }] : []),
-    ...(vehicle.co2Emissions ? [{ label: 'CO2 Emissions', value: `${vehicle.co2Emissions}g/km` }] : []),
-    ...(vehicle.range ? [{ label: 'Range', value: `${vehicle.range} miles` }] : [])
-  ];
+    { label: 'Engine Size', value: vehicle.engineCapacity },
+    { 
+      label: 'CO2 Emissions', 
+      value: vehicle.co2Emissions ? `${vehicle.co2Emissions} g/km` : undefined 
+    },
+    { label: 'Tax Status', value: vehicle.taxStatus },
+    { label: 'MOT Status', value: vehicle.motStatus },
+    { label: 'Registration', value: vehicle.registrationNumber },
+    { 
+      label: 'V5C Issued', 
+      value: formatDate(vehicle.dateOfLastV5CIssued)
+    },
+    { label: 'Euro Status', value: vehicle.euroStatus },
+    { 
+      label: 'Range', 
+      value: vehicle.range ? `${vehicle.range} miles` : undefined 
+    },
+  ].filter(detail => {
+    // Filter out details with undefined values
+    if (detail.value === undefined) return false;
+    // Special handling for numeric values that might be 0
+    if (typeof detail.value === 'number' && isNaN(detail.value)) return false;
+    // Special handling for empty strings
+    if (typeof detail.value === 'string' && detail.value.trim() === '') return false;
+    return true;
+  });
 
-  const filtered = details.filter(Boolean).filter(
-    d => d.value !== undefined && d.value !== null && d.value !== '' && d.value !== 'undefinedL' && d.value !== 'Invalid Date'
-  );
-
-  if (filtered.length === 0) return null;
+  if (details.length === 0) return null;
 
   return (
-    <Card title="Vehicle Details">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filtered.map((detail, index) => (
-          <DetailItem key={index} label={detail.label} value={detail.value as string | number} />
-        ))}
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="p-4 border-b border-gray-100">
+        <h3 className="text-lg font-semibold text-gray-900">Vehicle Overview</h3>
       </div>
-    </Card>
+      <div className="p-4">
+        <div className="grid grid-cols-2 gap-4">
+          {details.map((detail, index) => (
+            <DetailItem key={index} label={detail.label} value={detail.value} />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 });
 
-// Add new component for vehicle documentation and status
+// Vehicle documentation and status component
 export const VehicleDocumentation = memo(({ vehicle }: { vehicle: Vehicle }) => {
-  type Doc = {
-    label: string;
-    value: string;
+  // Helper function to safely format dates
+  const formatDate = (dateString?: string | Date | null): string | undefined => {
+    if (!dateString) return undefined;
+    try {
+      const date = new Date(dateString);
+      // Check if the date is valid
+      if (isNaN(date.getTime())) return undefined;
+      return format(date, 'PP');
+    } catch (e) {
+      return undefined;
+    }
   };
 
-  const documentation: Doc[] = [
-    ...(vehicle.taxStatus ? [{ label: 'Tax Status', value: vehicle.taxStatus }] : []),
-    ...(vehicle.motStatus ? [{ label: 'MOT Status', value: vehicle.motStatus }] : []),
-    ...(vehicle.euroStatus ? [{ label: 'Euro Status', value: vehicle.euroStatus }] : []),
-    ...(vehicle.dateOfLastV5CIssued ? [{ 
-      label: 'Last V5C Issued', 
-      value: new Date(vehicle.dateOfLastV5CIssued).toLocaleDateString() 
-    }] : [])
-  ];
+  const docs = [
+    { 
+      label: 'V5C Issued', 
+      value: formatDate(vehicle.dateOfLastV5CIssued)
+    },
+    { label: 'MOT Status', value: vehicle.motStatus },
+    { label: 'Tax Status', value: vehicle.taxStatus },
+    { label: 'Euro Status', value: vehicle.euroStatus },
+  ].filter(doc => {
+    // Filter out undefined, null, empty strings, and 'Invalid Date' strings
+    if (doc.value === undefined || doc.value === null) return false;
+    if (typeof doc.value === 'string' && (doc.value.trim() === '' || doc.value === 'Invalid Date')) return false;
+    return true;
+  });
 
-  const filtered = documentation.filter(Boolean).filter(d => d.value !== undefined && d.value !== null && d.value !== '' && d.value !== 'Invalid Date');
-  if (filtered.length === 0) return null;
+  if (docs.length === 0) return null;
 
   return (
-    <Card title="Vehicle Documentation">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filtered.map((doc, index) => (
-          <DetailItem key={index} label={doc.label} value={doc.value as string | number} />
-        ))}
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="p-4 border-b border-gray-100">
+        <h3 className="text-lg font-semibold text-gray-900">Documentation</h3>
       </div>
-    </Card>
+      <div className="p-4">
+        <div className="grid grid-cols-2 gap-4">
+          {docs.map((doc, index) => (
+            <DetailItem 
+              key={index} 
+              label={doc.label} 
+              value={doc.value as string | number} 
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 });
 
