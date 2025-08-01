@@ -332,65 +332,140 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           }}
         />
       </div>
-<div className="lg:hidden mt-2 mb-4 px-2">
-  <p className="text-base text-gray-700 whitespace-pre-line">{vehicle.description}</p>
-</div>
+
+      {/* Vehicle Description for mobile */}
+      {vehicle.description && (
+        <div className="lg:hidden mb-6">
+          <Card className="overflow-hidden">
+            <div className="p-4 border-b">
+              <h3 className="text-lg font-semibold">Description</h3>
+            </div>
+            <div className="p-4">
+              <p className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{vehicle.description}</p>
+            </div>
+          </Card>
+        </div>
+      )}
       {/* Enhanced Vehicle Details for mobile */}
       <div className="lg:hidden space-y-6">
         {/* Main Vehicle Info Section */}
-        <Card className="overflow-hidden">
-          <div className="p-4 border-b">
-            <h3 className="text-lg font-semibold">Vehicle Overview</h3>
+        <div className="bg-white rounded-lg border border-gray-200">
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Vehicle Details</h3>
           </div>
           <div className="p-4">
-            <div className="grid grid-cols-2 gap-4">
-              <DetailItem label="Make" value={vehicle.make} />
-              <DetailItem label="Model" value={vehicle.model} />
-              <DetailItem label="Year" value={vehicle.year?.toString()} />
-              <DetailItem label="Color" value={vehicle.color} />
-              <DetailItem 
-                label="Mileage" 
-                value={vehicle.mileage ? `${vehicle.mileage.toLocaleString()} miles` : 'N/A'} 
-              />
-              <DetailItem label="Fuel Type" value={vehicle.fuel || 'N/A'} />
-              <DetailItem label="Transmission" value={vehicle.transmission || 'N/A'} />
-              <DetailItem label="Status" value={vehicle.status} />
+            <div className="space-y-3">
+              {/* Make */}
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-gray-600">Make</span>
+                <span className="text-sm font-medium text-gray-900 uppercase">{vehicle.make}</span>
+              </div>
+              
+              {/* Model */}
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-gray-600">Model</span>
+                <span className="text-sm font-medium text-gray-900 uppercase">{vehicle.model}</span>
+              </div>
+              
+              {/* Year */}
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-gray-600">Year</span>
+                <span className="text-sm font-medium text-gray-900">{vehicle.year}</span>
+              </div>
+              
+              {/* Color */}
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-gray-600">Color</span>
+                <span className="text-sm font-medium text-gray-900 uppercase">{vehicle.color}</span>
+              </div>
+              
+              {/* Mileage */}
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-gray-600">Mileage</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {vehicle.mileage ? `${vehicle.mileage.toLocaleString()} miles` : 'N/A'}
+                </span>
+              </div>
+              
+              {/* Fuel Type */}
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-gray-600">Fuel Type</span>
+                <span className="text-sm font-medium text-gray-900">{vehicle.fuel || 'N/A'}</span>
+              </div>
+              
+              {/* Transmission */}
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-gray-600">Transmission</span>
+                <span className="text-sm font-medium text-gray-900">{vehicle.transmission || 'N/A'}</span>
+              </div>
+              
+              {/* Status */}
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-gray-600">Status</span>
+                <span className="text-sm font-medium text-gray-900">{vehicle.status}</span>
+              </div>
+              
+              {/* Engine */}
               {vehicle.engineCapacity && (
-                <DetailItem label="Engine" value={vehicle.engineCapacity.toString()} />
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm text-gray-600">Engine</span>
+                  <span className="text-sm font-medium text-gray-900">{vehicle.engineCapacity}</span>
+                </div>
               )}
+              
+              {/* CO2 Emissions */}
               {vehicle.co2Emissions && (
-                <DetailItem label="CO2 Emissions" value={`${vehicle.co2Emissions}g/km`} />
-              )}
-              {vehicle.range && (
-                <DetailItem label="Range" value={`${vehicle.range} miles`} />
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm text-gray-600">CO2 Emissions</span>
+                  <span className="text-sm font-medium text-gray-900">{vehicle.co2Emissions}g/km</span>
+                </div>
               )}
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Documentation & Specifics Section */}
         <div className="space-y-6">
           {/* Documentation */}
-          {(vehicle.taxStatus || vehicle.motStatus || vehicle.euroStatus || vehicle.dateOfLastV5CIssued) && (
-            <Card className="overflow-hidden">
-              <div className="p-4 border-b">
-                <h3 className="text-lg font-semibold">Documentation</h3>
-              </div>
-              <div className="p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {vehicle.taxStatus && <DetailItem label="Tax Status" value={vehicle.taxStatus} />}
-                  {vehicle.motStatus && <DetailItem label="MOT Status" value={vehicle.motStatus} />}
-                  {vehicle.euroStatus && <DetailItem label="Euro Status" value={vehicle.euroStatus} />}
-                  {vehicle.dateOfLastV5CIssued && (
-                    <DetailItem 
-                      label="Last V5C Issued" 
-                      value={formatDate(vehicle.dateOfLastV5CIssued) || 'N/A'}
-                    />
-                  )}
+          {(() => {
+            // Helper function to check if a value is meaningful
+            const hasValue = (value: any) => {
+              if (value === undefined || value === null) return false;
+              if (typeof value === 'string') {
+                const trimmed = value.trim();
+                return trimmed !== '' && !['N/A', 'n/a', 'Unknown', 'unknown', '-'].includes(trimmed);
+              }
+              return true;
+            };
+
+            // Check if we have any valid documentation values
+            const hasValidDocs = 
+              hasValue(vehicle.taxStatus) || 
+              hasValue(vehicle.motStatus) || 
+              hasValue(vehicle.euroStatus) || 
+              (vehicle.dateOfLastV5CIssued && formatDate(vehicle.dateOfLastV5CIssued));
+
+            return hasValidDocs ? (
+              <Card className="overflow-hidden">
+                <div className="p-4 border-b">
+                  <h3 className="text-lg font-semibold">Documentation</h3>
                 </div>
-              </div>
-            </Card>
-          )}
+                <div className="p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {hasValue(vehicle.taxStatus) && <DetailItem label="Tax Status" value={vehicle.taxStatus} />}
+                    {hasValue(vehicle.motStatus) && <DetailItem label="MOT Status" value={vehicle.motStatus} />}
+                    {hasValue(vehicle.euroStatus) && <DetailItem label="Euro Status" value={vehicle.euroStatus} />}
+                    {vehicle.dateOfLastV5CIssued && formatDate(vehicle.dateOfLastV5CIssued) && (
+                      <DetailItem 
+                        label="Last V5C Issued" 
+                        value={formatDate(vehicle.dateOfLastV5CIssued)}
+                      />
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ) : null;
+          })()}
 
           {/* Vehicle Specific Details */}
           <VehicleSpecificDetails vehicle={vehicle} />

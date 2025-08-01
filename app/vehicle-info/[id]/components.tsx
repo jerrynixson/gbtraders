@@ -98,7 +98,67 @@ export const VehicleSpecificDetails = memo(({ vehicle }: { vehicle: Vehicle }) =
           <h3 className="text-lg font-semibold text-gray-900">Car Specifications</h3>
         </div>
         <div className="p-4">
-          <div className="grid grid-cols-2 gap-4">
+          {/* Mobile design matching the image */}
+          <div className="lg:hidden space-y-4">
+            {car.bodyStyle && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Body Style</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{car.bodyStyle}</span>
+              </div>
+            )}
+            
+            {car.doors && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Doors</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{car.doors}</span>
+              </div>
+            )}
+            
+            {car.seats && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Seats</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{car.seats}</span>
+              </div>
+            )}
+            
+            {car.engineSize !== undefined && car.engineSize !== null && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Engine Size</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{car.engineSize}L</span>
+              </div>
+            )}
+            
+            {car.safetyRating && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Safety Rating</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{car.safetyRating}/5</span>
+              </div>
+            )}
+            
+            {usedCar && usedCar.previousOwners && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Previous Owners</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{usedCar.previousOwners}</span>
+              </div>
+            )}
+            
+            {usedCar && usedCar.serviceHistory !== undefined && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Service History</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{usedCar.serviceHistory ? 'Available' : 'Not Available'}</span>
+              </div>
+            )}
+            
+            {usedCar && usedCar.mot && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">MOT Expiry</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{new Date(usedCar.mot.expiryDate).toLocaleDateString()}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Desktop grid layout - hidden on mobile */}
+          <div className="hidden lg:grid grid-cols-2 gap-4">
             {details.filter(Boolean).map((detail, index) => detail && (
               <DetailItem key={index} label={detail.label} value={detail.value as string | number} />
             ))}
@@ -141,7 +201,67 @@ export const VehicleSpecificDetails = memo(({ vehicle }: { vehicle: Vehicle }) =
           <h3 className="text-lg font-semibold text-gray-900">Van Specifications</h3>
         </div>
         <div className="p-4">
-          <div className="grid grid-cols-2 gap-4">
+          {/* Mobile design matching the car specifications */}
+          <div className="lg:hidden space-y-4">
+            {van.bodyType && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Body Type</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{van.bodyType}</span>
+              </div>
+            )}
+            
+            {van.loadVolume && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Load Volume</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{van.loadVolume}m³</span>
+              </div>
+            )}
+            
+            {van.loadLength && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Load Length</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{van.loadLength}m</span>
+              </div>
+            )}
+            
+            {van.roofHeight && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Roof Height</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{van.roofHeight}m</span>
+              </div>
+            )}
+            
+            {van.wheelbase && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Wheelbase</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{van.wheelbase}m</span>
+              </div>
+            )}
+            
+            {van.payload && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Payload</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{van.payload}kg</span>
+              </div>
+            )}
+            
+            {van.grossWeight && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Gross Weight</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{van.grossWeight}kg</span>
+              </div>
+            )}
+            
+            {van.doors && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Doors</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{van.doors}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Desktop grid layout - hidden on mobile */}
+          <div className="hidden lg:grid grid-cols-2 gap-4">
             {details.filter(Boolean).map((detail, index) => (
               <DetailItem key={index} label={detail.label} value={detail.value as string | number} />
             ))}
@@ -169,7 +289,53 @@ export const VehicleSpecificDetails = memo(({ vehicle }: { vehicle: Vehicle }) =
           <h3 className="text-lg font-semibold text-gray-900">Truck Specifications</h3>
         </div>
         <div className="p-4">
-          <div className="grid grid-cols-2 gap-4">
+          {/* Mobile design matching the car specifications */}
+          <div className="lg:hidden space-y-4">
+            {truck.bodyType && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Body Type</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{truck.bodyType}</span>
+              </div>
+            )}
+            
+            {truck.cabType && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Cab Type</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{truck.cabType}</span>
+              </div>
+            )}
+            
+            {truck.axles && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Axles</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{truck.axles}</span>
+              </div>
+            )}
+            
+            {truck.maxPayload && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Max Payload</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{truck.maxPayload}kg</span>
+              </div>
+            )}
+            
+            {truck.grossWeight && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Gross Weight</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{truck.grossWeight}kg</span>
+              </div>
+            )}
+            
+            {truck.transmission && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Transmission</span>
+                <span className="text-sm font-medium text-gray-900 text-right">{truck.transmission}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Desktop grid layout - hidden on mobile */}
+          <div className="hidden lg:grid grid-cols-2 gap-4">
             {details.filter(Boolean).map((detail, index) => (
               <DetailItem key={index} label={detail.label} value={detail.value as string | number} />
             ))}
@@ -232,7 +398,6 @@ export const CommonVehicleDetails = memo(({ vehicle }: { vehicle: Vehicle }) => 
     },
     { label: 'Tax Status', value: vehicle.taxStatus },
     { label: 'MOT Status', value: vehicle.motStatus },
-    { label: 'Registration', value: vehicle.registrationNumber },
     { 
       label: 'V5C Issued', 
       value: formatDate(vehicle.dateOfLastV5CIssued)
@@ -257,10 +422,21 @@ export const CommonVehicleDetails = memo(({ vehicle }: { vehicle: Vehicle }) => 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div className="p-4 border-b border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900">Vehicle Overview</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Vehicle Details</h3>
       </div>
       <div className="p-4">
-        <div className="grid grid-cols-2 gap-4">
+        {/* Mobile design matching the image */}
+        <div className="lg:hidden space-y-4">
+          {details.map((detail, index) => (
+            <div key={index} className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">{detail.label}</span>
+              <span className="text-sm font-medium text-gray-900 text-right">{detail.value}</span>
+            </div>
+          ))}
+        </div>
+        
+        {/* Desktop grid layout - hidden on mobile */}
+        <div className="hidden lg:grid grid-cols-2 gap-4">
           {details.map((detail, index) => (
             <DetailItem key={index} label={detail.label} value={detail.value} />
           ))}
@@ -297,9 +473,12 @@ export const VehicleDocumentation = memo(({ vehicle }: { vehicle: Vehicle }) => 
     // Filter out undefined, null, empty strings, and 'Invalid Date' strings
     if (doc.value === undefined || doc.value === null) return false;
     if (typeof doc.value === 'string' && (doc.value.trim() === '' || doc.value === 'Invalid Date')) return false;
+    // Also filter out common "no data" values
+    if (typeof doc.value === 'string' && ['N/A', 'n/a', 'Unknown', 'unknown', '-'].includes(doc.value.trim())) return false;
     return true;
   });
 
+  // Don't render the component if there are no valid documents to show
   if (docs.length === 0) return null;
 
   return (
