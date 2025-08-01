@@ -198,7 +198,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
   const carDetails = {
     carName: `${vehicle.make} ${vehicle.model}`,
-    carDescription: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+    carDescription: vehicle.title || `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
     price: `£${vehicle.price.toLocaleString()}`,
     dealerName: dealerInfo.name,
     dealerLocation: vehicle.location.city,
@@ -538,9 +538,16 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           <Suspense fallback={<div>Loading images...</div>}>
             <CarImageSection images={vehicle.images} />
           </Suspense>
-<div className="mt-2 mb-4 px-2">
-  <p className="text-base text-gray-700 whitespace-pre-line">{vehicle.description}</p>
-</div>
+          {vehicle.description && (
+            <div className="bg-white border border-gray-200 rounded-lg mt-4 mb-4 overflow-hidden">
+              <div className="p-4 border-b">
+                <h3 className="text-lg font-semibold">Description</h3>
+              </div>
+              <div className="p-4">
+                <p className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{vehicle.description}</p>
+              </div>
+            </div>
+          )}
           <CommonVehicleDetails vehicle={vehicle} />
           <VehicleDocumentation vehicle={vehicle} />
           <VehicleSpecificDetails vehicle={vehicle} />
