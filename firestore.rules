@@ -58,6 +58,29 @@ service cloud.firestore {
       return resource.data.dealerUid == request.auth.uid;
     }
 
+    // Function to validate image data
+    function isValidImage() {
+      return request.resource.data.keys().hasAll(['url', 'uploadedAt'])
+        && request.resource.data.url is string
+        && request.resource.data.uploadedAt is timestamp;
+    }
+
+    // Function to validate offer data
+    function isValidOfferData() {
+      let requiredFields = ['name', 'email', 'phone', 'offer', 'timestamp'];
+      return request.resource.data.keys().hasAll(requiredFields)
+        && request.resource.data.offer is number
+        && request.resource.data.offer > 0
+        && request.resource.data.timestamp is timestamp;
+    }
+
+    // Helper function to check if user owns vehicle for given offer
+    function ownsVehicleByOfferId(vehicleId) {
+      let vehicleDoc = get(/databases/(default)/documents/vehicles/$(vehicleId));
+      return vehicleDoc != null && vehicleDoc.data != null 
+        && vehicleDoc.data.dealerUid == request.auth.uid;
+    }
+
     // Users collection rules
     match /users/{userId} {
       // Allow read if user is authenticated
@@ -144,10 +167,36 @@ service cloud.firestore {
       allow write: if (isAuthenticated() 
         && isEmailVerified()
         && request.auth.uid == userId
-        && isDealerUser()
+        && isDealer()
         && isValidImage()
         // Ensure imageType is either 'logo' or 'banner'
         && (imageType == 'logo' || imageType == 'banner')) || isAdmin();
+    }
+
+    // Offers collection rules
+    match /offers/{vehicleId} {
+      // Allow read for vehicle owner and offer maker
+      allow read: if isAuthenticated() 
+        && isEmailVerified()
+        && (
+          // Vehicle owner can read all offers for their vehicle
+          (isDealerOrUser() && ownsVehicleByOfferId(vehicleId))
+          // Or admin can read all
+          || isAdmin()
+        );
+      
+      // Allow create for authenticated and verified users making offers
+      allow create: if isAuthenticated() 
+        && isEmailVerified()
+        && isValidOfferData();
+      
+      // Allow update/delete for offer maker or vehicle owner or admin
+      allow update, delete: if isAuthenticated() 
+        && isEmailVerified()
+        && (
+          isDealerOrUser() && ownsVehicleByOfferId(vehicleId)
+          || isAdmin()
+        );
     }
 
     // Favorites collection rules
