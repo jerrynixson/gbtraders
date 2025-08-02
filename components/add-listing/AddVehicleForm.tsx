@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator"
 import { useDropzone } from "react-dropzone"
 import { VehicleType, Car as CarType, Van as VanType, Truck as TruckType } from "@/types/vehicles"
 import { db, storage, auth } from "@/lib/firebase"
-import { doc, collection, setDoc, serverTimestamp } from "firebase/firestore"
+import { doc, collection, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { useAuth } from '@/hooks/useAuth'
@@ -196,7 +196,12 @@ const TRANSMISSION_TYPES = [
 const MAX_IMAGES = 30
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
-export default function AddVehicleForm() {
+interface AddVehicleFormProps {
+  vehicleId?: string // Optional vehicle ID for editing
+  isEditMode?: boolean // Flag to indicate if we're editing
+}
+
+export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVehicleFormProps) {
   const router = useRouter()
   const [user, loading, error] = useAuthState(auth)
   const { user: authUser } = useAuth() // This includes role information
@@ -255,6 +260,7 @@ export default function AddVehicleForm() {
       }
     }
   })
+  const [existingImages, setExistingImages] = useState<string[]>([])
   const [formErrors, setFormErrors] = useState<FormErrors>({})
 
   // Get user role from auth context
@@ -318,6 +324,125 @@ export default function AddVehicleForm() {
     }
   }, [user, loading])
 
+  // Load existing vehicle data when in edit mode
+  useEffect(() => {
+    const loadVehicleData = async () => {
+      if (!isEditMode || !vehicleId || !user) return
+
+      try {
+        const vehicleRef = doc(db, "vehicles", vehicleId)
+        const vehicleDoc = await getDoc(vehicleRef)
+
+        if (!vehicleDoc.exists()) {
+          toast.error("Vehicle not found")
+          router.push("/dashboard")
+          return
+        }
+
+        const vehicleData = vehicleDoc.data()
+        console.log("Loading vehicle data for editing:", vehicleData)
+
+        // Helper function to format dates for HTML date inputs (yyyy-MM-dd)
+        const formatDateForInput = (dateValue: any): string => {
+          if (!dateValue) return ""
+          
+          try {
+            let date: Date
+            
+            // Handle Firestore Timestamp objects
+            if (dateValue && typeof dateValue.toDate === 'function') {
+              date = dateValue.toDate()
+            } else if (typeof dateValue === 'string') {
+              date = new Date(dateValue)
+            } else if (dateValue instanceof Date) {
+              date = dateValue
+            } else {
+              console.warn("Unknown date format:", dateValue)
+              return ""
+            }
+            
+            if (isNaN(date.getTime())) {
+              console.warn("Invalid date:", dateValue)
+              return ""
+            }
+            
+            // Format as yyyy-MM-dd
+            const year = date.getFullYear()
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            const day = String(date.getDate()).padStart(2, '0')
+            return `${year}-${month}-${day}`
+          } catch (error) {
+            console.warn("Error formatting date:", dateValue, error)
+            return ""
+          }
+        }
+
+        // Map the vehicle data to form data
+        setFormData({
+          type: vehicleData.type || 'car',
+          title: vehicleData.title || "",
+          price: vehicleData.price?.toString() || "",
+          make: vehicleData.make || "",
+          model: vehicleData.model || "",
+          year: vehicleData.year?.toString() || "",
+          mileage: vehicleData.mileage?.toString() || "",
+          fuelType: vehicleData.fuelType || "",
+          transmission: vehicleData.transmission || "",
+          description: vehicleData.description || "",
+          images: [], // New images will be added here
+          registrationNumber: vehicleData.registrationNumber || "",
+          vehicleIdentificationNumber: vehicleData.vehicleIdentificationNumber || "",
+          engineNumber: vehicleData.engineNumber || "",
+          color: vehicleData.color || "",
+          originalColor: vehicleData.originalColor || "",
+          range: vehicleData.range?.toString() || "0",
+          dateOfLastV5CIssued: formatDateForInput(vehicleData.dateOfLastV5CIssued) || new Date().toISOString().split('T')[0],
+          registrationDate: formatDateForInput(vehicleData.registrationDate),
+          firstRegistrationDate: formatDateForInput(vehicleData.firstRegistrationDate),
+          v5cQty: vehicleData.v5cQty?.toString() || "1",
+          engineCapacity: vehicleData.engineCapacity || "",
+          co2Emissions: vehicleData.co2Emissions?.toString() || "0",
+          co2Band: vehicleData.co2Band || "",
+          bodyType: vehicleData.bodyStyle || "",
+          doors: vehicleData.doors?.toString() || "",
+          seats: vehicleData.seats?.toString() || "",
+          cargoVolume: vehicleData.cargoVolume?.toString() || "",
+          maxPayload: vehicleData.maxPayload?.toString() || "",
+          length: vehicleData.length?.toString() || "",
+          height: vehicleData.height?.toString() || "",
+          axles: vehicleData.axles?.toString() || "",
+          cabType: vehicleData.cabType || "",
+          previousKeepers: vehicleData.previousKeepers?.toString() || "0",
+          lastKeeperChangeDate: formatDateForInput(vehicleData.lastKeeperChangeDate),
+          colorChanges: vehicleData.colorChanges?.toString() || "0",
+          lastColorChangeDate: formatDateForInput(vehicleData.lastColorChangeDate),
+          location: {
+            city: vehicleData.location?.city || "",
+            country: vehicleData.location?.country || "",
+            pincode: vehicleData.location?.pincode || "",
+            coordinates: {
+              latitude: vehicleData.location?.coordinates?.latitude?.toString() || "",
+              longitude: vehicleData.location?.coordinates?.longitude?.toString() || ""
+            }
+          }
+        })
+
+        // Set existing images
+        setExistingImages(vehicleData.images || [])
+
+        toast.success("Vehicle data loaded successfully")
+      } catch (error) {
+        console.error("Error loading vehicle data:", error)
+        toast.error("Failed to load vehicle data")
+        router.push("/dashboard")
+      }
+    }
+
+    if (isEditMode && vehicleId && user && !loading) {
+      loadVehicleData()
+    }
+  }, [isEditMode, vehicleId, user, loading, router])
+
   const validateForm = (): boolean => {
     const errors: FormErrors = {}
     
@@ -331,7 +456,7 @@ export default function AddVehicleForm() {
     if (!formData.fuelType) errors.fuelType = "Fuel type is required"
     if (!formData.transmission) errors.transmission = "Transmission is required"
     if (!formData.description.trim()) errors.description = "Description is required"
-    if (formData.images.length === 0) errors.images = "At least one image is required"
+    if (formData.images.length === 0 && existingImages.length === 0) errors.images = "At least one image is required"
     if (!formData.registrationNumber.trim()) errors.registrationNumber = "Registration number is required"
     if (!formData.color.trim()) errors.color = "Color is required"
     if (!formData.engineCapacity.trim()) errors.engineCapacity = "Engine capacity is required"
@@ -503,6 +628,29 @@ export default function AddVehicleForm() {
       else if (fuelTypeLower.includes('electric')) mappedFuelType = 'electric'
       else if (fuelTypeLower.includes('hybrid')) mappedFuelType = 'hybrid'
 
+      // Helper function to format dates for HTML date inputs (yyyy-MM-dd)
+      const formatDateForInput = (dateString: string): string => {
+        if (!dateString) return ""
+        
+        try {
+          // Try to parse the date and format it as yyyy-MM-dd
+          const date = new Date(dateString)
+          if (isNaN(date.getTime())) {
+            console.warn("Invalid date:", dateString)
+            return ""
+          }
+          
+          // Format as yyyy-MM-dd
+          const year = date.getFullYear()
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const day = String(date.getDate()).padStart(2, '0')
+          return `${year}-${month}-${day}`
+        } catch (error) {
+          console.warn("Error formatting date:", dateString, error)
+          return ""
+        }
+      }
+
       setFormData((prev: any) => ({
         ...prev,
         make: vehicleData.make,
@@ -516,14 +664,15 @@ export default function AddVehicleForm() {
         originalColor: vehicleData.originalColor || "",
         co2Emissions: vehicleData.co2Emissions.toString(),
         co2Band: vehicleData.co2Band || "",
+        bodyType: vehicleData.bodyType || "",
         v5cQty: vehicleData.v5cQty.toString(),
-        dateOfLastV5CIssued: vehicleData.dateV5cIssued,
-        registrationDate: vehicleData.registrationDate,
-        firstRegistrationDate: vehicleData.firstRegistrationDate,
+        dateOfLastV5CIssued: formatDateForInput(vehicleData.dateV5cIssued),
+        registrationDate: formatDateForInput(vehicleData.registrationDate),
+        firstRegistrationDate: formatDateForInput(vehicleData.firstRegistrationDate),
         previousKeepers: (vehicleData.previousKeepers || 0).toString(),
-        lastKeeperChangeDate: vehicleData.lastKeeperChangeDate || "",
+        lastKeeperChangeDate: formatDateForInput(vehicleData.lastKeeperChangeDate || ""),
         colorChanges: (vehicleData.colorChanges || 0).toString(),
-        lastColorChangeDate: vehicleData.lastColorChangeDate || ""
+        lastColorChangeDate: formatDateForInput(vehicleData.lastColorChangeDate || "")
       }))
       
       toast.success("Vehicle data fetched successfully")
@@ -547,12 +696,12 @@ export default function AddVehicleForm() {
       }
       return true
     })
-    if (formData.images.length + validFiles.length > MAX_IMAGES) {
+    if (existingImages.length + formData.images.length + validFiles.length > MAX_IMAGES) {
       toast.error(`Maximum ${MAX_IMAGES} images allowed`)
       return
     }
     setFormData((prev: any) => ({ ...prev, images: [...prev.images, ...validFiles] }))
-  }, [formData.images])
+  }, [formData.images, existingImages])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop, accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp'] }, maxSize: MAX_FILE_SIZE
@@ -562,6 +711,10 @@ export default function AddVehicleForm() {
     setFormData((prev: any) => ({ ...prev, images: prev.images.filter((_: any, i: any) => i !== index) }))
   }
 
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     if (!user) {
@@ -569,19 +722,14 @@ export default function AddVehicleForm() {
       return
     }
 
-    // Check token availability before proceeding
-    if (!canCreateNewListing) {
-      toast.error(tokenCheckError || "Cannot create listing. Please check your plan.")
-      return
-    }
+    // Skip token availability check for edit mode
+    if (!isEditMode) {
+      // Check token availability before proceeding (only for new listings)
+      if (!canCreateNewListing) {
+        toast.error(tokenCheckError || "Cannot create listing. Please check your plan.")
+        return
+      }
 
-    if (!validateForm()) {
-      toast.error("Please fix the form errors")
-      return
-    }
-    setIsLoading(true)
-
-    try {
       // Double-check token availability at submission time
       const response = await fetch(`/api/plan-info?userType=${userRole}`, {
         headers: {
@@ -618,7 +766,15 @@ export default function AddVehicleForm() {
         setIsLoading(false);
         return;
       }
-      
+    }
+
+    if (!validateForm()) {
+      toast.error("Please fix the form errors")
+      return
+    }
+    setIsLoading(true)
+
+    try {
       // Use existing coordinates or fetch if not available
       let coordinates = formData.location.coordinates
       
@@ -658,12 +814,13 @@ export default function AddVehicleForm() {
         }
       }))
 
-      const vehicleId = doc(collection(db, "vehicles")).id
+      // Use existing vehicle ID for edit mode, or generate new one for create mode
+      const currentVehicleId = isEditMode && vehicleId ? vehicleId : doc(collection(db, "vehicles")).id
 
-      // Upload images
-      const imageUrls: string[] = []
+      // Upload new images and combine with existing ones
+      const imageUrls: string[] = [...existingImages] // Start with existing images
       for (const image of formData.images) {
-        const imagePath = `vehicles/${vehicleId}/${image.name}`
+        const imagePath = `vehicles/${currentVehicleId}/${image.name}`
         const imageRef = ref(storage, imagePath)
         try {
           await uploadBytes(imageRef, image)
@@ -686,12 +843,22 @@ export default function AddVehicleForm() {
         transmission: formData.transmission,
         description: formData.description,
         registrationNumber: formData.registrationNumber,
+        vehicleIdentificationNumber: formData.vehicleIdentificationNumber,
+        engineNumber: formData.engineNumber,
         color: formData.color,
+        originalColor: formData.originalColor,
         range: Number(formData.range),
-        dateOfLastV5CIssued: new Date(formData.dateOfLastV5CIssued),
+        dateOfLastV5CIssued: formData.dateOfLastV5CIssued ? new Date(formData.dateOfLastV5CIssued) : new Date(),
         registrationDate: formData.registrationDate,
+        firstRegistrationDate: formData.firstRegistrationDate,
+        v5cQty: Number(formData.v5cQty),
         engineCapacity: formData.engineCapacity,
         co2Emissions: Number(formData.co2Emissions),
+        co2Band: formData.co2Band,
+        previousKeepers: Number(formData.previousKeepers),
+        lastKeeperChangeDate: formData.lastKeeperChangeDate,
+        colorChanges: Number(formData.colorChanges),
+        lastColorChangeDate: formData.lastColorChangeDate,
       }
 
       let vehicleToSubmit: CarType | VanType | TruckType
@@ -700,7 +867,7 @@ export default function AddVehicleForm() {
         case 'car':
           vehicleToSubmit = {
             ...vehicleDataFromForm,
-            id: vehicleId,
+            id: currentVehicleId,
             type: 'car',
             bodyStyle: formData.bodyType as CarType['bodyStyle'],
             doors: Number(formData.doors),
@@ -709,13 +876,14 @@ export default function AddVehicleForm() {
             location: {
               city: formData.location.city,
               country: formData.location.country,
+              pincode: formData.location.pincode,
               coordinates: {
                 latitude: Number(formData.location.coordinates.latitude),
                 longitude: Number(formData.location.coordinates.longitude)
               }
             },
             images: imageUrls,
-            createdAt: new Date(),
+            createdAt: isEditMode ? undefined : new Date(), // Don't overwrite createdAt when editing
             updatedAt: new Date(),
             status: 'available' as const,
             dealerUid: user?.uid || "N/A"
@@ -724,7 +892,7 @@ export default function AddVehicleForm() {
         case 'van':
           vehicleToSubmit = {
             ...vehicleDataFromForm,
-            id: vehicleId,
+            id: currentVehicleId,
             type: 'van',
             cargoVolume: Number(formData.cargoVolume!),
             maxPayload: Number(formData.maxPayload!),
@@ -734,13 +902,14 @@ export default function AddVehicleForm() {
             location: {
               city: formData.location.city,
               country: formData.location.country,
+              pincode: formData.location.pincode,
               coordinates: {
                 latitude: Number(formData.location.coordinates.latitude),
                 longitude: Number(formData.location.coordinates.longitude)
               }
             },
             images: imageUrls,
-            createdAt: new Date(),
+            createdAt: isEditMode ? undefined : new Date(),
             updatedAt: new Date(),
             status: 'available' as const,
             dealerUid: user?.uid || "N/A"
@@ -749,7 +918,7 @@ export default function AddVehicleForm() {
         case 'truck':
           vehicleToSubmit = {
             ...vehicleDataFromForm,
-            id: vehicleId,
+            id: currentVehicleId,
             type: 'truck',
             maxPayload: Number(formData.maxPayload!),
             axles: Number(formData.axles!),
@@ -758,13 +927,14 @@ export default function AddVehicleForm() {
             location: {
               city: formData.location.city,
               country: formData.location.country,
+              pincode: formData.location.pincode,
               coordinates: {
                 latitude: Number(formData.location.coordinates.latitude),
                 longitude: Number(formData.location.coordinates.longitude)
               }
             },
             images: imageUrls,
-            createdAt: new Date(),
+            createdAt: isEditMode ? undefined : new Date(),
             updatedAt: new Date(),
             status: 'available' as const,
             dealerUid: user?.uid || "N/A"
@@ -776,44 +946,52 @@ export default function AddVehicleForm() {
           return
       }
 
-      console.log("Creating vehicle data in Firestore:", vehicleToSubmit)
+      console.log(isEditMode ? "Updating vehicle data in Firestore:" : "Creating vehicle data in Firestore:", vehicleToSubmit)
       
-      // Add token status to vehicle data
-      const vehicleWithTokenData = {
-        ...vehicleToSubmit,
-        tokenStatus: 'inactive', // Default to inactive until token is activated
-        tokenActivatedDate: null,
-        tokenExpiryDate: null
-      }
-
-      // Save the vehicle to Firestore
-      await setDoc(doc(db, "vehicles", vehicleId), vehicleWithTokenData)
-
-      // Activate the token for this vehicle using the API
-      const activateResponse = await fetch('/api/activate-vehicle', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await user.getIdToken()}`
-        },
-        body: JSON.stringify({
-          vehicleId,
-          action: 'activate'
-        })
-      });
-
-      const tokenResult = await activateResponse.json();
-      
-      if (tokenResult.success) {
-        toast.success("Listing created and activated successfully")
+      if (isEditMode) {
+        // Update existing vehicle - preserve existing token data
+        const updateData = { ...vehicleToSubmit }
+        delete updateData.createdAt // Don't update createdAt
+        await updateDoc(doc(db, "vehicles", currentVehicleId), updateData)
+        toast.success("Vehicle updated successfully")
       } else {
-        toast.warning(`Listing created but token activation failed: ${tokenResult.error}`)
+        // Create new vehicle with token data
+        const vehicleWithTokenData = {
+          ...vehicleToSubmit,
+          tokenStatus: 'inactive', // Default to inactive until token is activated
+          tokenActivatedDate: null,
+          tokenExpiryDate: null
+        }
+
+        // Save the vehicle to Firestore
+        await setDoc(doc(db, "vehicles", currentVehicleId), vehicleWithTokenData)
+
+        // Activate the token for this vehicle using the API
+        const activateResponse = await fetch('/api/activate-vehicle', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await user.getIdToken()}`
+          },
+          body: JSON.stringify({
+            vehicleId: currentVehicleId,
+            action: 'activate'
+          })
+        });
+
+        const tokenResult = await activateResponse.json();
+        
+        if (tokenResult.success) {
+          toast.success("Listing created and activated successfully")
+        } else {
+          toast.warning(`Listing created but token activation failed: ${tokenResult.error}`)
+        }
       }
 
       router.push("/dashboard")
     } catch (error) {
-      console.error("Error creating listing:", error)
-      let errorMessage = "Failed to create listing."
+      console.error(isEditMode ? "Error updating listing:" : "Error creating listing:", error)
+      let errorMessage = isEditMode ? "Failed to update listing." : "Failed to create listing."
       if (error instanceof Error) {
         errorMessage += ` ${error.message}`
       }
@@ -1263,6 +1441,19 @@ export default function AddVehicleForm() {
               <p className="text-sm text-red-500">{formErrors.co2Emissions}</p>
             )}
           </div>
+          <div className="space-y-2">
+            <Label>V5C Quantity</Label>
+            <Input
+              type="number"
+              value={formData.v5cQty}
+              onChange={(e) => handleFormChange("v5cQty", e.target.value)}
+              placeholder="Enter V5C quantity"
+              className={formErrors.v5cQty ? "border-red-500" : ""}
+            />
+            {formErrors.v5cQty && (
+              <p className="text-sm text-red-500">{formErrors.v5cQty}</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1344,19 +1535,6 @@ export default function AddVehicleForm() {
                 />
                 {formErrors.firstRegistrationDate && (
                   <p className="text-sm text-red-500">{formErrors.firstRegistrationDate}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>V5C Quantity</Label>
-                <Input
-                  type="number"
-                  value={formData.v5cQty}
-                  onChange={(e) => handleFormChange("v5cQty", e.target.value)}
-                  placeholder="Enter V5C quantity"
-                  className={formErrors.v5cQty ? "border-red-500" : ""}
-                />
-                {formErrors.v5cQty && (
-                  <p className="text-sm text-red-500">{formErrors.v5cQty}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -1640,8 +1818,32 @@ export default function AddVehicleForm() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Label>Images</Label>
-          <p className="text-sm text-gray-500">{formData.images.length}/{MAX_IMAGES} images</p>
+          <p className="text-sm text-gray-500">{existingImages.length + formData.images.length}/{MAX_IMAGES} images</p>
         </div>
+        
+        {/* Existing Images */}
+        {existingImages.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-700">Current Images</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {existingImages.map((imageUrl, index) => (
+                <div key={`existing-${index}`} className="relative group">
+                  <img src={imageUrl} alt={`Current ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
+                  <button 
+                    type="button" 
+                    onClick={() => removeExistingImage(index)} 
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove existing image"
+                    aria-label="Remove existing image"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
@@ -1652,32 +1854,44 @@ export default function AddVehicleForm() {
           <p className="text-xs text-gray-400 mt-1">Max {MAX_IMAGES} images, up to 5MB each</p>
         </div>
         {formErrors.images && <p className="text-sm text-red-500">{formErrors.images}</p>}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {formData.images.map((file, index) => (
-            <div key={index} className="relative group">
-              <img src={URL.createObjectURL(file)} alt={`Preview ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
-              <button 
-                type="button" 
-                onClick={() => removeImage(index)} 
-                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Remove image"
-                aria-label="Remove image"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        
+        {/* New Images */}
+        {formData.images.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-700">New Images</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {formData.images.map((file, index) => (
+                <div key={`new-${index}`} className="relative group">
+                  <img src={URL.createObjectURL(file)} alt={`New ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
+                  <button 
+                    type="button" 
+                    onClick={() => removeImage(index)} 
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove new image"
+                    aria-label="Remove new image"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end gap-4">
         <Button type="button" variant="outline" onClick={() => router.push("/dashboard")}>Cancel</Button>
         <Button 
           type="submit" 
-          disabled={isLoading || !canCreateNewListing} 
+          disabled={isLoading || (!canCreateNewListing && !isEditMode)} 
           className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
         >
-          {isLoading ? "Creating..." : !canCreateNewListing ? "Cannot Create Listing" : "Create Listing"}
+          {isLoading 
+            ? (isEditMode ? "Updating..." : "Creating...") 
+            : isEditMode 
+            ? "Update Listing" 
+            : (!canCreateNewListing ? "Cannot Create Listing" : "Create Listing")
+          }
         </Button>
       </div>
     </form>
