@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,12 +20,23 @@ function PaymentSuccessContent() {
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
+  const hasVerified = useRef(false);
 
   const verifyPayment = async () => {
     if (!sessionId || !user) return;
 
+    // Prevent duplicate verification attempts
+    const verificationKey = `verifying_${sessionId}`;
+    if (sessionStorage.getItem(verificationKey)) {
+      console.log('Payment verification already in progress for session:', sessionId);
+      return;
+    }
+
     try {
       setVerifying(true);
+      
+      // Mark as verifying to prevent duplicate calls
+      sessionStorage.setItem(verificationKey, 'true');
       
       // Store session ID for later verification if needed
       localStorage.setItem('recent_payment_session', sessionId);
@@ -63,7 +74,13 @@ function PaymentSuccessContent() {
         const data = await response.json();
         setVerified(true);
         setError(null);
-        toast.success('Payment verified and plan activated!');
+        
+        if (data.alreadyProcessed) {
+          toast.success('Payment already verified!');
+        } else {
+          toast.success('Payment verified and plan activated!');
+        }
+        
         // Remove from localStorage on successful verification
         localStorage.removeItem('recent_payment_session');
       } else {
@@ -76,14 +93,17 @@ function PaymentSuccessContent() {
       setError('Network error during verification');
       toast.error('Network error during verification');
     } finally {
+      // Clear the verification flag
+      sessionStorage.removeItem(verificationKey);
       setVerifying(false);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log('PaymentSuccess - sessionId:', sessionId, 'user:', !!user);
-    if (sessionId && user) {
+    console.log('PaymentSuccess - sessionId:', sessionId, 'user:', !!user, 'hasVerified:', hasVerified.current);
+    if (sessionId && user && !hasVerified.current) {
+      hasVerified.current = true;
       verifyPayment();
     } else if (!sessionId) {
       setLoading(false);

@@ -26,7 +26,6 @@ import { auth } from "@/lib/firebase"
 import { DealerProfileSection } from "@/components/dealer/profile"
 import { PlanInfoSection } from "@/components/dashboard/PlanInfoSection"
 import { TokenizedVehicleCard } from "@/components/dashboard/TokenizedVehicleCard"
-import { getDealerProfile } from "@/lib/dealer/profile"
 import { doc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Avatar } from "@/components/ui/avatar"
@@ -37,9 +36,14 @@ interface UserPlanInfo {
   planPrice: number
   totalTokens: number
   usedTokens: number
-  planStartDate: Date
-  planEndDate: Date
+  planStartDate?: Date
+  planEndDate?: Date
   userId: string
+  lastPaymentDate?: Date
+  purchaseHistory?: Array<{
+    purchaseDate?: Date
+    [key: string]: any
+  }>
 }
 
 interface Listing {
@@ -186,7 +190,7 @@ function StatsCards({ stats, planInfo }: { stats: any, planInfo: any }) {
 
 export default function DealerDashboard() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [allVehicles, setAllVehicles] = useState<any[]>([])
   const [activeVehicles, setActiveVehicles] = useState<any[]>([])
   const [inactiveVehicles, setInactiveVehicles] = useState<any[]>([])
@@ -234,7 +238,6 @@ export default function DealerDashboard() {
       }
       
       loadDashboardData();
-      fetchDealerName();
     } else {
       setIsLoading(false);
     }
@@ -269,30 +272,67 @@ export default function DealerDashboard() {
         return;
       }
 
-      // Load plan information using API
-      const userRole = user?.role || 'user'; // Get user role, default to 'user'
-      const planResponse = await fetch(`/api/plan-info?userType=${userRole}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      // Fetch user data from Firestore directly (includes plan info, name, role, etc.)
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      let userData = null;
+      let userPlanInfo = null;
+      
+      if (userDoc.exists()) {
+        userData = userDoc.data();
+        
+        // Extract plan information directly from user document
+        if (userData.planName || userData.totalTokens) {
+          userPlanInfo = {
+            planName: userData.planName || '',
+            planPrice: userData.planPrice || 0,
+            totalTokens: userData.totalTokens || 0,
+            usedTokens: userData.usedTokens || 0,
+            planStartDate: userData.planStartDate ? (userData.planStartDate.toDate ? new Date(userData.planStartDate.toDate()) : new Date(userData.planStartDate)) : undefined,
+            planEndDate: userData.planEndDate ? (userData.planEndDate.toDate ? new Date(userData.planEndDate.toDate()) : new Date(userData.planEndDate)) : undefined,
+            lastPaymentDate: userData.lastPaymentDate ? (userData.lastPaymentDate.toDate ? new Date(userData.lastPaymentDate.toDate()) : new Date(userData.lastPaymentDate)) : undefined,
+            purchaseHistory: (userData.purchaseHistory || []).map((record: any) => ({
+              ...record,
+              purchaseDate: record.purchaseDate ? (record.purchaseDate.toDate ? new Date(record.purchaseDate.toDate()) : new Date(record.purchaseDate)) : undefined
+            })),
+            userId: user.uid
+          };
         }
-      });
-
-      if (planResponse.ok) {
-        const planData = await planResponse.json();
-        // Convert date strings back to Date objects
-        const planInfo = planData.planInfo ? {
-          ...planData.planInfo,
-          planStartDate: planData.planInfo.planStartDate ? new Date(planData.planInfo.planStartDate) : undefined,
-          planEndDate: planData.planInfo.planEndDate ? new Date(planData.planInfo.planEndDate) : undefined,
-          lastPaymentDate: planData.planInfo.lastPaymentDate ? new Date(planData.planInfo.lastPaymentDate) : undefined,
-          purchaseHistory: (planData.planInfo.purchaseHistory || []).map((record: any) => ({
-            ...record,
-            purchaseDate: record.purchaseDate ? new Date(record.purchaseDate) : undefined
-          }))
-        } : null;
-        setPlanInfo(planInfo);
+        
+        // Set dealer name from user data
+        let displayName = '';
+        if (userData.role === 'dealer') {
+          localStorage.setItem(`dealer_${user.uid}`, "true");
+          
+          // Try dealer profile business name first, then firstName + lastName
+          if (userData.businessName) {
+            displayName = userData.businessName;
+          } else if (userData.firstName || userData.lastName) {
+            displayName = `${userData.firstName || ""} ${userData.lastName || ""}`.trim();
+          }
+        } else {
+          localStorage.setItem(`dealer_${user.uid}`, "false");
+          if (userData.firstName || userData.lastName) {
+            displayName = `${userData.firstName || ""} ${userData.lastName || ""}`.trim();
+          }
+        }
+        
+        if (displayName) {
+          setDealerName(displayName);
+          localStorage.setItem(`dealerName_${user.uid}`, displayName);
+          localStorage.setItem(`dealerNameFetchTime_${user.uid}`, Date.now().toString());
+        } else {
+          // Fallback to user object displayName or email
+          const fallbackName = user.displayName || user.email?.split("@")[0] || (userData.role === 'dealer' ? "Dealer" : "User");
+          setDealerName(fallbackName);
+          localStorage.setItem(`dealerName_${user.uid}`, fallbackName);
+          localStorage.setItem(`dealerNameFetchTime_${user.uid}`, Date.now().toString());
+        }
+        
+        setIsDealerNameLoading(false);
       }
+      
+      // Set plan info
+      setPlanInfo(userPlanInfo);
 
       // Load vehicle data using API
       const vehicleResponse = await fetch('/api/dealer-vehicles', {
@@ -351,104 +391,6 @@ export default function DealerDashboard() {
       toast.error("Failed to load dashboard data")
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const fetchDealerName = async () => {
-    if (!user) return;
-    setIsDealerNameLoading(true);
-    
-    // Use a flag to avoid duplicate API calls during this render cycle
-    if (typeof window !== 'undefined' && (window as any)._dealerProfileFetchInProgress) {
-      // Removed console log for duplicate requests
-      setIsDealerNameLoading(false);
-      return;
-    }
-    
-    if (typeof window !== 'undefined') {
-      (window as any)._dealerProfileFetchInProgress = true;
-    }
-    
-    try {
-      // First try to get name from localStorage to avoid any API calls
-      const cachedName = localStorage.getItem(`dealerName_${user.uid}`);
-      const lastFetchTime = localStorage.getItem(`dealerNameFetchTime_${user.uid}`);
-      const isCacheValid = lastFetchTime && (Date.now() - parseInt(lastFetchTime)) < 3600000; // Cache valid for 1 hour
-      
-      if (cachedName && isCacheValid) {
-        setDealerName(cachedName);
-        setIsDealerNameLoading(false);
-        if (typeof window !== 'undefined') {
-          (window as any)._dealerProfileFetchInProgress = false;
-        }
-        return;
-      }
-      
-      // Skip dealer profile check if user is not marked as dealer in localStorage
-      const isKnownDealer = localStorage.getItem(`dealer_${user.uid}`);
-      
-      // 1. Try user profile (Firestore) firstName + lastName first to avoid unnecessary dealer profile requests
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        
-        // Check and save dealer status to localStorage for future checks
-        if (userData.role === 'dealer') {
-          localStorage.setItem(`dealer_${user.uid}`, "true");
-          
-          // Only try to get dealer profile if the user is a dealer
-          if (isKnownDealer !== "false") {
-            try {
-              const profile = await getDealerProfile(user.uid);
-              if (profile && profile.businessName) {
-                setDealerName(profile.businessName);
-                localStorage.setItem(`dealerName_${user.uid}`, profile.businessName);
-                localStorage.setItem(`dealerNameFetchTime_${user.uid}`, Date.now().toString());
-                setIsDealerNameLoading(false);
-                if (typeof window !== 'undefined') {
-                  (window as any)._dealerProfileFetchInProgress = false;
-                }
-                return;
-              }
-            } catch (profileError) {
-              // Silently fail and continue with other name options
-              // Removed console log
-            }
-          }
-        } else {
-          localStorage.setItem(`dealer_${user.uid}`, "false");
-        }
-        
-        if (userData.firstName || userData.lastName) {
-          const fullName = `${userData.firstName || ""} ${userData.lastName || ""}`.trim();
-          setDealerName(fullName);
-          localStorage.setItem(`dealerName_${user.uid}`, fullName);
-          localStorage.setItem(`dealerNameFetchTime_${user.uid}`, Date.now().toString());
-          setIsDealerNameLoading(false);
-          if (typeof window !== 'undefined') {
-            (window as any)._dealerProfileFetchInProgress = false;
-          }
-          return;
-        }
-      }
-      // 3. Fallback to user object displayName or email
-      const fallbackName = user.displayName || user.email?.split("@")[0] || "Dealer";
-      setDealerName(fallbackName);
-      localStorage.setItem(`dealerName_${user.uid}`, fallbackName);
-      localStorage.setItem(`dealerNameFetchTime_${user.uid}`, Date.now().toString());
-    } catch (error) {
-      const fallbackName = user.displayName || user.email?.split("@")[0] || "Dealer";
-      setDealerName(fallbackName);
-      localStorage.setItem(`dealerName_${user.uid}`, fallbackName);
-      localStorage.setItem(`dealerNameFetchTime_${user.uid}`, Date.now().toString());
-    } finally {
-      setIsDealerNameLoading(false);
-      // Reset the flag after a short timeout to prevent race conditions
-      setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          (window as any)._dealerProfileFetchInProgress = false;
-        }
-      }, 500);
     }
   }
 
@@ -559,6 +501,63 @@ export default function DealerDashboard() {
     availableTokens: planInfo ? Math.max(0, planInfo.totalTokens - planInfo.usedTokens) : 0
   }), [allVehicles, activeVehicles, planInfo]);
 
+  // Show loading spinner while authentication is being checked
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-6">
+        <div className="flex gap-4 w-full max-w-4xl">
+          <Skeleton className="h-24 w-1/3 rounded-lg" />
+          <Skeleton className="h-24 w-1/3 rounded-lg" />
+          <Skeleton className="h-24 w-1/3 rounded-lg" />
+        </div>
+        <Skeleton className="h-10 w-1/2 rounded-lg" />
+        <Skeleton className="h-96 w-full max-w-4xl rounded-lg" />
+      </div>
+    )
+  }
+
+  // Show sign-in prompt if user is not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
+        <Header />
+        <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
+          <div className="max-w-md w-full text-center space-y-6">
+            <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-6">
+              <Car className="w-12 h-12 text-blue-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">Access Restricted</h1>
+            <p className="text-gray-600 text-lg">
+              You need to be signed in to access the dashboard.
+            </p>
+            <p className="text-gray-500">
+              Sign in to manage your vehicle listings, select plans, and more.
+            </p>
+            <div className="space-y-3 pt-4">
+              <Button 
+                onClick={() => router.push('/signin')}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg"
+                size="lg"
+              >
+                Sign In
+              </Button>
+              <p className="text-sm text-gray-500">
+                Don't have an account?{' '}
+                <button 
+                  onClick={() => router.push('/signup')}
+                  className="text-blue-600 hover:text-blue-700 font-medium underline"
+                >
+                  Sign up here
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
   if (isLoading) {
     // Skeleton loader for dashboard
     return (
@@ -587,9 +586,13 @@ export default function DealerDashboard() {
           </div>*/}
           <div className="text-center xs:text-left">
             <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">
-              Welcome back, {isDealerNameLoading ? "..." : dealerName || "Dealer"}
+              Welcome back, {isDealerNameLoading ? "..." : dealerName || (user?.role === 'dealer' ? "Dealer" : "User")}
             </h1>
-            <p className="text-gray-600 text-sm sm:text-base">Manage your dealership and listings</p>
+            <p className="text-gray-600 text-sm sm:text-base">
+              {user?.role === 'dealer' 
+                ? "Manage your dealership and listings" 
+                : "Manage your vehicle listings"}
+            </p>
           </div>
         </div>
 
@@ -616,7 +619,9 @@ export default function DealerDashboard() {
               <TabsTrigger value="analytics" className="rounded-md data-[state=active]:bg-gray-100 w-full min-w-[100px] sm:w-auto">Analytics</TabsTrigger>
               <TabsTrigger value="inquiries" className="rounded-md data-[state=active]:bg-gray-100 w-full min-w-[100px] sm:w-auto">Inquiries</TabsTrigger>
               */}
-              <TabsTrigger value="profile" className="rounded-md data-[state=active]:bg-gray-100 w-full min-w-[100px] sm:w-auto">Profile</TabsTrigger>
+              {user?.role === 'dealer' && (
+                <TabsTrigger value="profile" className="rounded-md data-[state=active]:bg-gray-100 w-full min-w-[100px] sm:w-auto">Profile</TabsTrigger>
+              )}
             </TabsList>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
               <Button onClick={handleAddListing} className="bg-blue-600 hover:bg-blue-700 shadow-sm w-full sm:w-auto text-base py-2">
@@ -1008,9 +1013,11 @@ export default function DealerDashboard() {
           </TabsContent>
           */}
 
-          <TabsContent value="profile">
-            <DealerProfileSection />
-          </TabsContent>
+          {user?.role === 'dealer' && (
+            <TabsContent value="profile">
+              <DealerProfileSection />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
       <Footer />
