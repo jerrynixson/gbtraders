@@ -60,7 +60,11 @@ export function DealerInformation({
           {phoneNumber && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
               <Phone className="w-4 h-4" />
-              <a href={`tel:${phoneNumber}`} className="hover:text-primary">{phoneNumber}</a>
+              {phoneNumber.includes("not available") || phoneNumber.includes("Contact information") ? (
+                <span className="text-muted-foreground">{phoneNumber}</span>
+              ) : (
+                <a href={`tel:${phoneNumber}`} className="hover:text-primary">{phoneNumber}</a>
+              )}
             </div>
           )}
           {email && (

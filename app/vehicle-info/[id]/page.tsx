@@ -6,7 +6,7 @@ import { DealerInformation } from "@/components/car/dealer-information"
 import { CarDetailsPayment } from "@/components/car/car-details-payment"
 import { VehicleSpecsBar } from "@/components/vehicle/vehicle-specs-bar"
 import { Footer } from "@/components/footer"
-import { FileSearch, Calendar, Clock, MapPin, Tag, Car, Truck } from "lucide-react"
+import { FileSearch, Calendar, Clock, MapPin, Tag, Car, Truck, Phone } from "lucide-react"
 import { Heart, Flag } from "lucide-react"
 import { useParams } from "next/navigation"
 import { useEffect, useState, useCallback, Suspense } from "react"
@@ -22,6 +22,34 @@ import { FavoritesRepository } from "@/lib/db/repositories/favoritesRepository"
 import { useAuth } from "@/hooks/useAuth"
 import { CommonVehicleDetails, VehicleDocumentation, VehicleSpecificDetails } from "./components"
 import { useRouter } from "next/navigation"
+import { doc, getDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import Image from "next/image"
+
+// Dealer profile interface matching Firebase structure
+interface DealerProfile {
+  businessName: string;
+  contact: {
+    email: string;
+    phone: string;
+    website: string;
+  };
+  description: string;
+  location: {
+    lat: number;
+    long: number;
+    addressLines: string[];
+  };
+  businessHours: {
+    mondayToFriday: string;
+    saturday: string;
+    sunday: string;
+  };
+  socialMedia: string[];
+  dealerLogoUrl?: string;
+  dealerBannerUrl?: string;
+  updatedAt?: string;
+}
 
 interface VehicleSpecifications {
   fuelType: string;
@@ -135,9 +163,6 @@ const ErrorState = ({ message }: { message: string }) => (
 );
 
 // Vehicle content component
-import { DealerRepository } from "@/lib/db/repositories/dealerRepository";
-import { DealerProfile } from "@/lib/types/dealer";
-import Image from "next/image";
 
 // Helper function to safely format dates
 const formatDate = (dateString?: string | Date | null): string | undefined => {
@@ -170,12 +195,21 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
       }
 
       try {
-        const dealerRepo = new DealerRepository();
-        const profile = await dealerRepo.getDealerProfile(vehicle.dealerUid);
-        console.log('Dealer profile fetched:', profile);
-        setDealerProfile(profile);
+        // Fetch dealer profile directly from Firestore
+        const dealerRef = doc(db, 'dealers', vehicle.dealerUid);
+        const dealerDoc = await getDoc(dealerRef);
+        
+        if (dealerDoc.exists()) {
+          const profile = dealerDoc.data() as DealerProfile;
+          console.log('Dealer profile fetched:', profile);
+          setDealerProfile(profile);
+        } else {
+          console.log('Dealer profile not found');
+          setDealerProfile(null);
+        }
       } catch (error) {
         console.error("Error fetching dealer profile:", error);
+        setDealerProfile(null);
       } finally {
         setLoadingDealer(false);
       }
@@ -186,19 +220,23 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
   const dealerInfo = {
     name: dealerProfile?.businessName || "Dealer information not available",
-    location: dealerProfile?.city || vehicle.location.city,
-    phoneNumber: dealerProfile?.phone || "Contact information not available",
+    location: dealerProfile?.location?.addressLines?.[0] || vehicle.location.city,
+    phoneNumber: dealerProfile?.contact?.phone || "Contact information not available",
     description: dealerProfile?.description || "Dealer description not available",
-    email: dealerProfile?.email,
+    email: dealerProfile?.contact?.email,
     logo: dealerProfile?.dealerLogoUrl || "/placeholder-logo.png", // was dealerLogoURL
     coverImage: dealerProfile?.dealerBannerUrl || "/banner/default-banner.jpg", // was dealerBannerURL
-    website: dealerProfile?.website,
-    socialMedia: dealerProfile?.socialMedia,
+    website: dealerProfile?.contact?.website,
+    socialMedia: dealerProfile?.socialMedia ? {
+      facebook: dealerProfile.socialMedia[0],
+      twitter: dealerProfile.socialMedia[1],
+      instagram: dealerProfile.socialMedia[2]
+    } : undefined,
   };
 
   const carDetails = {
     carName: `${vehicle.make} ${vehicle.model}`,
-    carDescription: vehicle.title || `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+    carDescription: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
     price: `£${vehicle.price.toLocaleString()}`,
     dealerName: dealerInfo.name,
     dealerLocation: vehicle.location.city,
@@ -247,12 +285,32 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
   // Make Offer button and dialog/modal
   const makeOfferButton = (
-    <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
-      <DialogTrigger asChild>
-        <button className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" onClick={() => setOfferOpen(true)}>
-          Make Offer
-        </button>
-      </DialogTrigger>
+    <div className="flex gap-2">
+      {/* Phone Button */}
+      <button 
+        className={`inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+          dealerInfo.phoneNumber && !dealerInfo.phoneNumber.includes("not available") && !dealerInfo.phoneNumber.includes("Contact information")
+            ? 'bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-500'
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+        }`}
+        onClick={() => {
+          if (dealerInfo.phoneNumber && !dealerInfo.phoneNumber.includes("not available") && !dealerInfo.phoneNumber.includes("Contact information")) {
+            window.location.href = `tel:${dealerInfo.phoneNumber}`;
+          }
+        }}
+        disabled={!dealerInfo.phoneNumber || dealerInfo.phoneNumber.includes("not available") || dealerInfo.phoneNumber.includes("Contact information")}
+        title={dealerInfo.phoneNumber && !dealerInfo.phoneNumber.includes("not available") && !dealerInfo.phoneNumber.includes("Contact information") ? `Call ${dealerInfo.phoneNumber}` : 'Phone not available'}
+      >
+        <Phone className="h-4 w-4" />
+      </button>
+      
+      {/* Make Offer Button */}
+      <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
+        <DialogTrigger asChild>
+          <button className="flex-1 inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2" onClick={() => setOfferOpen(true)}>
+            Make Offer
+          </button>
+        </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Make an Offer</DialogTitle>
@@ -291,6 +349,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
         )}
       </DialogContent>
     </Dialog>
+    </div>
   );
 
   const [showMoreDetails, setShowMoreDetails] = useState(false);
@@ -345,8 +404,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
             </div>
           </Card>
         </div>
-      )}
-      {/* Enhanced Vehicle Details for mobile */}
+      )}{/* Enhanced Vehicle Details for mobile */}
       <div className="lg:hidden space-y-6">
         {/* Main Vehicle Info Section */}
         <div className="bg-white rounded-lg border border-gray-200">
@@ -538,6 +596,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           <Suspense fallback={<div>Loading images...</div>}>
             <CarImageSection images={vehicle.images} />
           </Suspense>
+
           {vehicle.description && (
             <div className="bg-white border border-gray-200 rounded-lg mt-4 mb-4 overflow-hidden">
               <div className="p-4 border-b">
@@ -548,6 +607,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
               </div>
             </div>
           )}
+
           <CommonVehicleDetails vehicle={vehicle} />
           <VehicleDocumentation vehicle={vehicle} />
           <VehicleSpecificDetails vehicle={vehicle} />

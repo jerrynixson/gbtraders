@@ -31,6 +31,7 @@ export interface BaseVehicle {
   features: string[];
   images: string[];
   imageUrls?: string[];
+  description?: string;
   dealerUid: string;
   createdAt: Date;
   updatedAt: Date;
