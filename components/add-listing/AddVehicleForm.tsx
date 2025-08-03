@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Database, RefreshCw, AlertCircle, X, Image as ImageIcon } from "lucide-react"
+import { Database, RefreshCw, AlertCircle, X, Image as ImageIcon, GripVertical } from "lucide-react"
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
@@ -19,6 +19,26 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { getTokenErrorMessage } from "@/lib/utils/tokenUtils"
+
+// Drag and Drop imports
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  horizontalListSortingStrategy,
+  arrayMove,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 // OneAuto API interfaces
 interface OneAutoApiResponse {
@@ -201,6 +221,43 @@ interface AddVehicleFormProps {
   isEditMode?: boolean // Flag to indicate if we're editing
 }
 
+// Sortable Image Item Component
+interface SortableImageItemProps {
+  id: string
+  children: React.ReactNode
+}
+
+function SortableImageItem({ id, children }: SortableImageItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      className={`relative group ${isDragging ? 'opacity-50' : 'opacity-100'}`}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+    >
+      <div
+        className="absolute top-1 left-1 z-10 cursor-grab active:cursor-grabbing bg-black/50 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-4 h-4 text-white" />
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVehicleFormProps) {
   const router = useRouter()
   const [user, loading, error] = useAuthState(auth)
@@ -263,8 +320,46 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
   const [existingImages, setExistingImages] = useState<string[]>([])
   const [formErrors, setFormErrors] = useState<FormErrors>({})
 
+  // Drag and Drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
   // Get user role from auth context
   const userRole = authUser?.role || 'user'
+
+  // Drag and Drop handlers
+  const handleExistingImageDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (active.id !== over?.id) {
+      setExistingImages((images) => {
+        const oldIndex = images.findIndex((_, index) => `existing-${index}` === active.id)
+        const newIndex = images.findIndex((_, index) => `existing-${index}` === over?.id)
+
+        return arrayMove(images, oldIndex, newIndex)
+      })
+    }
+  }
+
+  const handleNewImageDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (active.id !== over?.id) {
+      setFormData((prev) => {
+        const oldIndex = prev.images.findIndex((_, index) => `new-${index}` === active.id)
+        const newIndex = prev.images.findIndex((_, index) => `new-${index}` === over?.id)
+
+        return {
+          ...prev,
+          images: arrayMove(prev.images, oldIndex, newIndex)
+        }
+      })
+    }
+  }
 
   // Check token availability when component mounts
   useEffect(() => {
@@ -950,8 +1045,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
       
       if (isEditMode) {
         // Update existing vehicle - preserve existing token data
-        const updateData = { ...vehicleToSubmit }
-        delete updateData.createdAt // Don't update createdAt
+        const { createdAt, ...updateData } = vehicleToSubmit
         await updateDoc(doc(db, "vehicles", currentVehicleId), updateData)
         toast.success("Vehicle updated successfully")
       } else {
@@ -1825,22 +1919,35 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
         {existingImages.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-700">Current Images</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {existingImages.map((imageUrl, index) => (
-                <div key={`existing-${index}`} className="relative group">
-                  <img src={imageUrl} alt={`Current ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
-                  <button 
-                    type="button" 
-                    onClick={() => removeExistingImage(index)} 
-                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove existing image"
-                    aria-label="Remove existing image"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleExistingImageDragEnd}
+            >
+              <SortableContext
+                items={existingImages.map((_, index) => `existing-${index}`)}
+                strategy={horizontalListSortingStrategy}
+              >
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {existingImages.map((imageUrl, index) => (
+                    <SortableImageItem key={`existing-${index}`} id={`existing-${index}`}>
+                      <div className="relative group">
+                        <img src={imageUrl} alt={`Current ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
+                        <button 
+                          type="button" 
+                          onClick={() => removeExistingImage(index)} 
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove existing image"
+                          aria-label="Remove existing image"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </SortableImageItem>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           </div>
         )}
         
@@ -1859,22 +1966,35 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
         {formData.images.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-700">New Images</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {formData.images.map((file, index) => (
-                <div key={`new-${index}`} className="relative group">
-                  <img src={URL.createObjectURL(file)} alt={`New ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
-                  <button 
-                    type="button" 
-                    onClick={() => removeImage(index)} 
-                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove new image"
-                    aria-label="Remove new image"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleNewImageDragEnd}
+            >
+              <SortableContext
+                items={formData.images.map((_, index) => `new-${index}`)}
+                strategy={horizontalListSortingStrategy}
+              >
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {formData.images.map((file, index) => (
+                    <SortableImageItem key={`new-${index}`} id={`new-${index}`}>
+                      <div className="relative group">
+                        <img src={URL.createObjectURL(file)} alt={`New ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
+                        <button 
+                          type="button" 
+                          onClick={() => removeImage(index)} 
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove new image"
+                          aria-label="Remove new image"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </SortableImageItem>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           </div>
         )}
       </div>
