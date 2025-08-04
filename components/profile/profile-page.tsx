@@ -144,6 +144,20 @@ export function ProfilePage() {
   const handleEditClick = () => {
     setIsEditing(true);
     setEditedProfile({ ...userProfile! });
+    
+    // Ensure the profile tab is active first
+    setActiveTab("profile");
+    
+    // Use setTimeout to ensure the tab content is rendered before scrolling
+    setTimeout(() => {
+      const profileSection = document.getElementById('profile-edit-section');
+      if (profileSection) {
+        profileSection.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }
+    }, 100);
   };
 
   const handleCancelEdit = () => {
@@ -439,7 +453,7 @@ export function ProfilePage() {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="profile">
+                <TabsContent value="profile" id="profile-edit-section">
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-xl font-bold text-gray-900">Personal Information</CardTitle>
