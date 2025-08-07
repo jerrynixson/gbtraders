@@ -89,10 +89,10 @@ export function Hero() {
   }
 
   const images = [
-    '/banner_prop/prop1.png',
-    '/banner_prop/prop2.png',
-    '/banner_prop/prop3.png',
-    '/banner_prop/prop4.png',
+    '/banner_prop/prop1.webp',
+    '/banner_prop/prop2.webp',
+    '/banner_prop/prop3.webp',
+    '/banner_prop/prop4.webp',
   ]
 
   useEffect(() => {
