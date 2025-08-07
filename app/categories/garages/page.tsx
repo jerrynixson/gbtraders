@@ -351,7 +351,7 @@ export default function SearchGaragesPage() {
                   <label className="text-sm font-medium text-gray-700">
                     Services
                   </label>
-                  <div className="max-h-[200px] overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+                  <div className="space-y-2">
                     {allServices.map(service => (
                       <label 
                         key={service} 
@@ -369,21 +369,24 @@ export default function SearchGaragesPage() {
                   </div>
                 </div>
 
-                {/* Content Filter */}
+                {/* Content Type Filter - Checkbox group */}
                 <div className="space-y-2">
-                  <label htmlFor="content-select" className="text-sm font-medium text-gray-700">
+                  <label className="text-sm font-medium text-gray-700">
                     Content Type
                   </label>
-                  <select
-                    id="content-select"
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    value={selectedContent}
-                    onChange={e => setSelectedContent(e.target.value)}
-                  >
+                  <div className="flex flex-col gap-2">
                     {contentTypes.map(content => (
-                      <option key={content} value={content}>{content}</option>
+                      <label key={content} className="flex items-center gap-2 py-1 px-1 rounded hover:bg-gray-50 transition-colors cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedContent === content}
+                          onChange={() => setSelectedContent(content)}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{content}</span>
+                      </label>
                     ))}
-                  </select>
+                  </div>
                 </div>
               </div>
             </div>
