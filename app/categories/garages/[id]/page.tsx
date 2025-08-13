@@ -7,12 +7,16 @@ import Link from "next/link";
 import { GoogleMapComponent } from "@/components/ui/google-map"
 
 // Mock data for demonstration
+// Using a single cover image and a single main image (logo/photo) similar to dealers page
 const garage = {
   id: "amg-motors",
   name: "AMG Mechanical engineering",
   address: "B12 0DF, Birmingham, West Midlands, England, United Kingdom",
   phone: "+44 121 446 5777",
-  image: "/garages/garage1.jpg",
+  // Main (logo/profile) image
+  image: "/garages/logo-amg.jpg",
+  // Cover/banner image
+  coverImage: "/garages/garage1.jpg",
   price: "£0.00",
   description:
     "The mechanics at our shop have over 60 years of experience between them. They are dedicated to providing high-quality repairs to keep you safe and happy.",
@@ -116,29 +120,29 @@ export default function GarageInfoPage() {
       <div className="container mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
         {/* Left: Main Info (2/3 width) */}
         <div className="flex-1 bg-white/70 rounded-3xl shadow-xl p-8">
-          {/* Main Image */}
-          <div className="w-full h-72 relative mb-4">
+          {/* Cover Image with overlaid main image (logo/photo) */}
+          <div className="w-full h-72 relative mb-6">
             <Image
-              src={garage.image}
-              alt={garage.name}
+              src={garage.coverImage || garage.image}
+              alt={`${garage.name} cover`}
               fill
               className="object-contain bg-white rounded-2xl"
               style={{ objectFit: "contain" }}
             />
-          </div>
-
-          {/* Image Gallery/Slider */}
-          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-            {[1, 2, 3, 4].map((num) => (
-              <div key={num} className="w-24 h-24 relative flex-shrink-0">
-                <Image
-                  src={`/garages/garage${num}.jpg`}
-                  alt={`Gallery image ${num}`}
-                  fill
-                  className="object-cover rounded-lg"
-                />
+            {/* Main image overlay */}
+            {garage.image && (
+              <div className="absolute top-12 left-4 z-10">
+                <div className="w-32 h-32 bg-white rounded-xl shadow-lg p-2 border border-gray-200 flex items-center justify-center">
+                  <Image
+                    src={garage.image}
+                    alt={`${garage.name} main`}
+                    width={112}
+                    height={112}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               </div>
-            ))}
+            )}
           </div>
 
           {/* Action Buttons */}
