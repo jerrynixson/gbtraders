@@ -150,6 +150,15 @@ export async function POST(request: NextRequest) {
     const finalPrice = Math.max(0, originalPrice - discountAmount);
     const priceInCents = Math.round(finalPrice * 100);
     
+    // Get the base URL from headers (x-forwarded-host and x-forwarded-proto)
+    const forwardedHost = request.headers.get('x-forwarded-host');
+    const forwardedProto = request.headers.get('x-forwarded-proto');
+    
+    // Fallback to request URL if forwarded headers are not available
+    const host = forwardedHost || request.nextUrl.host;
+    const protocol = forwardedProto || request.nextUrl.protocol.replace(':', '');
+    const baseUrl = `${protocol}://${host}`;
+    
     // Create checkout session with the final discounted price
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -167,12 +176,8 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'payment',
-      success_url: process.env.NODE_ENV === 'production'
-        ? `${process.env.NEXT_PUBLIC_SITE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}${isUpgrade ? '&upgrade=true' : ''}${isRenewal ? '&renewal=true' : ''}`
-        : `${request.nextUrl.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}${isUpgrade ? '&upgrade=true' : ''}${isRenewal ? '&renewal=true' : ''}`,
-      cancel_url: process.env.NODE_ENV === 'production'
-        ? `${process.env.NEXT_PUBLIC_SITE_URL}/payment-plans?cancelled=true`
-        : `${request.nextUrl.origin}/payment-plans?cancelled=true`,
+      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}${isUpgrade ? '&upgrade=true' : ''}${isRenewal ? '&renewal=true' : ''}`,
+      cancel_url: `${baseUrl}/payment-plans?cancelled=true`,
       allow_promotion_codes: false, // Disable since we're applying discount directly
       metadata: {
         userId: userId,
