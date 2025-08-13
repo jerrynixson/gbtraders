@@ -115,8 +115,8 @@ export function Header() {
       label: "Vehicles", 
       items: vehicleNavItems 
     },
-    // { href: "/categories/garages", label: "Garages" },
     { href: "/categories/dealers", label: "Dealers" },
+    { href: "/categories/garages", label: "Garages" },
     // { href: "/categories/breakdown-services", label: "Breakdown Services" },
     // { href: "/categories/shop", label: "Shop" },
   ]
@@ -188,7 +188,7 @@ export function Header() {
                     )
                   )
                 )}
-                {/* Simple 'Search' text link with small icon after Dealers link */}
+                {/* Simple 'Search' text link with small icon after navigation items */}
                 <Link href="/search" className="text-sm font-medium hover:text-primary ml-2 flex items-center gap-1">
                   <Search className="h-4 w-4" />
                   Search

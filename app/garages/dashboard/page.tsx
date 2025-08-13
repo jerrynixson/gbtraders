@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,181 +30,61 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { 
+  getUserGarages, 
+  softDeleteGarage, 
+  subscribeToUserGarages
+} from "@/lib/garage";
+import { type Garage } from "@/lib/types/garage";
 
-// Available services list (from reference garage pages)
-const availableServices = [
-  "Electric issue repair",
-  "Programming",
-  "Commercial vehicle repair",
-  "Sunroof repair",
-  "Suspension repair",
-  "Vehicle diagnostics",
-  "Manual Gearbox repair",
-  "Automatic Gearbox repair",
-  "DPF Cleaning",
-  "Starter motor/Alternator Repair",
-  "Battery servicing",
-  "Air conditioning",
-  "Brakes and Clutches",
-  "Electric car/van Repair",
-  "Hybrid car repair",
-  "LPG Repair",
-  "Range Rover Specialist",
-  "Wheel Alignment",
-  "Tyre Change",
-  "Car Accessories and Parts",
-  "Garage Equipment",
-  "Body Repair",
-  "MOT",
-  "Welding",
-  "Turbochargers Repair",
-  "Motorcycle repairs & services",
-  "Engine repair",
-  "Transmission repair",
-  "Exhaust repair",
-  "Clutch replacement",
-  "Brake pad replacement",
-  "Oil change",
-  "Radiator repair",
-  "Windscreen replacement",
-  "Paint protection",
-  "Detailing services"
-];
 
-// Garage type (from reference)
-interface Garage {
-  id: string;
-  name: string;
-  address: string;
-  phone: string;
-  image: string;
-  price: string;
-  description: string;
-  services: string[];
-  rating: number;
-  openingHours: {
-    weekdays: { start: string; end: string };
-    saturday: { start: string; end: string };
-    sunday: { start: string; end: string };
-  };
-  website: string;
-  email: string;
-  paymentMethods: string[];
-  socialMedia: {
-    facebook?: string;
-    twitter?: string;
-    instagram?: string;
-  };
-}
-
-// Initial mock data with more comprehensive data
-const initialGarages: Garage[] = [
-  {
-    id: "amg-motors",
-    name: "AMG Mechanical engineering",
-    address: "B12 0DF, Birmingham, West Midlands, England, United Kingdom",
-    phone: "+44 121 446 5777",
-    image: "/garages/garage1.jpg",
-    price: "£0.00",
-    description:
-      "The mechanics at our shop have over 60 years of experience between them. They are dedicated to providing high-quality repairs to keep you safe and happy.",
-    services: [
-      "Electric issue repair",
-      "Programming",
-      "Commercial vehicle repair",
-      "Sunroof repair",
-      "Suspension repair",
-      "Vehicle diagnostics",
-      "Manual Gearbox repair",
-      "Automatic Gearbox repair",
-      "DPF Cleaning",
-      "Starter motor/Alternator Repair",
-      "Battery servicing",
-      "Air conditioning",
-      "Brakes and Clutches",
-      "Electric car/van Repair",
-      "Hybrid car repair",
-      "LPG Repair",
-      "Range Rover Specialist",
-      "Wheel Alignment",
-      "Tyre Change",
-      "Car Accessories and Parts",
-      "Garage Equipment",
-      "Body Repair",
-      "MOT",
-      "Welding",
-      "Turbochargers Repair",
-      "Motorcycle repairs & services"
-    ],
-    rating: 4.8,
-    openingHours: {
-      weekdays: { start: "08:00", end: "18:00" },
-      saturday: { start: "09:00", end: "17:00" },
-      sunday: { start: "10:00", end: "16:00" }
-    },
-    website: "www.amgmotors.com",
-    email: "info@amgmotors.com",
-    paymentMethods: ["Cash", "Credit Card", "Debit Card", "PayPal"],
-    socialMedia: {
-      facebook: "https://facebook.com/AMGMotors",
-      twitter: "https://twitter.com/AMGMotors",
-      instagram: "https://instagram.com/AMGMotors"
-    }
-  },
-  {
-    id: "quick-fix-garage",
-    name: "QuickFix Auto Services",
-    address: "15 High Street, Manchester M1 2AB",
-    phone: "+44 161 234 5678",
-    image: "/garages/garage2.jpg",
-    price: "£50.00",
-    description: "Fast and reliable automotive services with modern diagnostic equipment and experienced technicians.",
-    services: ["MOT", "Servicing", "Brakes", "Tyres", "Engine diagnostics", "Air conditioning"],
-    rating: 4.5,
-    openingHours: {
-      weekdays: { start: "07:30", end: "19:00" },
-      saturday: { start: "08:00", end: "18:00" },
-      sunday: { start: "10:00", end: "16:00" }
-    },
-    website: "www.quickfixauto.co.uk",
-    email: "contact@quickfixauto.co.uk",
-    paymentMethods: ["Cash", "Credit Card", "Debit Card"],
-    socialMedia: {
-      facebook: "https://facebook.com/QuickFixAuto",
-      twitter: "https://twitter.com/QuickFixAuto"
-    }
-  },
-  {
-    id: "elite-motors",
-    name: "Elite Motors Ltd",
-    address: "78 Business Park, London E14 9PP",
-    phone: "+44 20 7890 1234",
-    image: "/garages/garage3.jpg",
-    price: "£75.00",
-    description: "Premium automotive services specializing in luxury and performance vehicles with certified technicians.",
-    services: ["Luxury car servicing", "Performance tuning", "MOT", "Diagnostics", "Body repair"],
-    rating: 4.9,
-    openingHours: {
-      weekdays: { start: "08:00", end: "18:00" },
-      saturday: { start: "09:00", end: "17:00" },
-      sunday: { start: "Closed", end: "Closed" }
-    },
-    website: "www.elitemotors.co.uk",
-    email: "info@elitemotors.co.uk",
-    paymentMethods: ["Cash", "Credit Card", "Debit Card", "Bank Transfer"],
-    socialMedia: {
-      facebook: "https://facebook.com/EliteMotorsLtd",
-      instagram: "https://instagram.com/EliteMotorsLtd"
-    }
-  }
-];
 
 export default function GarageManagerDashboard() {
   const router = useRouter();
-  const [garages, setGarages] = useState<Garage[]>(initialGarages);
+  const { user } = useAuth();
+  const [garages, setGarages] = useState<Garage[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
   const [filterStatus, setFilterStatus] = useState("all");
+
+  // Load garages on component mount and when user changes
+  useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    let unsubscribe: (() => void) | null = null;
+
+    const loadGarages = async () => {
+      try {
+        setLoading(true);
+        
+        // Set up real-time subscription
+        unsubscribe = subscribeToUserGarages(user.uid, (userGarages) => {
+          setGarages(userGarages);
+          setLoading(false);
+        });
+        
+      } catch (error) {
+        console.error('Error loading garages:', error);
+        toast.error('Failed to load garages');
+        setLoading(false);
+      }
+    };
+
+    loadGarages();
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [user]);
 
   const filteredGarages = garages.filter(garage => {
     const matchesSearch = garage.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -212,32 +92,43 @@ export default function GarageManagerDashboard() {
     return matchesSearch;
   });
 
-  const handleSave = (garage: Garage) => {
-    setGarages(gs => {
-      const exists = gs.findIndex(g => g.id === garage.id);
-      if (exists >= 0) {
-        const updated = [...gs];
-        updated[exists] = garage;
-        return updated;
-      }
-      return [...gs, garage];
-    });
-  };
-
   const handleEdit = (garage: Garage) => {
     router.push(`/garages/dashboard/add?edit=${garage.id}`);
   };
-  const handleDelete = (id: string) => {
+
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this garage?')) {
-      setGarages(gs => gs.filter(g => g.id !== id));
+      try {
+        await softDeleteGarage(id);
+        toast.success('Garage deleted successfully');
+      } catch (error) {
+        console.error('Error deleting garage:', error);
+        toast.error('Failed to delete garage');
+      }
     }
   };
 
   const stats = {
     total: garages.length,
-    avgRating: garages.reduce((acc, g) => acc + g.rating, 0) / garages.length,
+    avgRating: garages.length > 0 ? garages.reduce((acc, g) => acc + g.rating, 0) / garages.length : 0,
     totalServices: garages.reduce((acc, g) => acc + g.services.length, 0)
   };
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Header />
+        <div className="container mx-auto px-6 py-16 text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Please sign in to manage your garages</h1>
+          <Button onClick={() => router.push('/signin')} className="bg-blue-600 hover:bg-blue-700">
+            Sign In
+          </Button>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -357,14 +248,24 @@ export default function GarageManagerDashboard() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-gray-600 mt-4">Loading your garages...</p>
+          </div>
+        )}
+
         {/* Enhanced Content */}
-        {viewMode === "cards" ? (
+        {!loading && (
+          <>
+            {viewMode === "cards" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredGarages.map(garage => (
               <div key={garage.id} className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 hover:scale-105">
                 <div className="relative h-52 overflow-hidden">
                   <Image 
-                    src={garage.image} 
+                    src={garage.image || '/placeholder.jpg'} 
                     alt={garage.name} 
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -469,7 +370,7 @@ export default function GarageManagerDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <Image 
-                            src={garage.image} 
+                            src={garage.image || '/placeholder.jpg'} 
                             alt={garage.name} 
                             width={64} 
                             height={48} 
@@ -542,6 +443,8 @@ export default function GarageManagerDashboard() {
               )}
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
 

@@ -62,6 +62,24 @@ service firebase.storage {
         && (imageType == 'logo' || imageType == 'banner');  // Must be logo or banner
     }
 
+    // Garage images rules
+    match /garages/{garageId}/{imageFile} {
+      // Allow read for everyone (public garage listings)
+      allow read: if true;
+      
+      // Allow write for authenticated and verified users who can create/edit garages
+      allow write: if isAuthenticated() 
+        && isEmailVerified()
+        && isDealerOrUser()
+        && isValidImage()
+        && (imageFile.matches('main_image_.*') || imageFile.matches('cover_image_.*')); // Only allow main and cover images
+      
+      // Allow delete for garage owners (when updating images)
+      allow delete: if isAuthenticated() 
+        && isEmailVerified()
+        && isDealerOrUser();
+    }
+
     // Deny access to all other paths by default
     match /{allPaths=**} {
       allow read, write: if false;
