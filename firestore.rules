@@ -81,6 +81,31 @@ service cloud.firestore {
         && vehicleDoc.data.dealerUid == request.auth.uid;
     }
 
+    // Function to validate garage data
+    function isValidGarageData() {
+      let requiredFields = ['name', 'description', 'location', 'contact', 'services', 'ownerId', 'createdAt', 'updatedAt', 'isActive'];
+      let data = request.resource.data;
+      
+      return data.keys().hasAll(requiredFields)
+        && data.name is string && data.name.size() > 0
+        && data.description is string && data.description.size() > 0
+        && data.location.keys().hasAll(['address', 'city', 'state', 'zipCode'])
+        && data.contact.keys().hasAll(['phone', 'email'])
+        && data.services is list && data.services.size() > 0
+        && data.ownerId == request.auth.uid
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && data.isActive is bool
+        // Image field is optional - if present, must be a string
+        && (!('image' in data) || data.image is string)
+        && (!('coverImage' in data) || data.coverImage is string);
+    }
+
+    // Function to check if user owns the garage
+    function ownsGarage() {
+      return resource.data.ownerId == request.auth.uid;
+    }
+
     // Users collection rules
     match /users/{userId} {
       // Allow read if user is authenticated
@@ -205,6 +230,33 @@ service cloud.firestore {
       allow read, write: if (isAuthenticated() 
         && isEmailVerified() 
         && request.auth.uid == userId) || isAdmin();
+    }
+
+    // Garages collection rules
+    match /garages/{garageId} {
+      // Allow read for everyone (public garage listings)
+      allow read: if true;
+      
+      // Allow list operation for everyone (public garage listings) with query limits for security
+      allow list: if true && request.query.limit <= 200;
+      
+      // Allow create for authenticated and verified users with valid data
+      allow create: if (isAuthenticated() 
+        && isEmailVerified()
+        && isDealerOrUser()
+        && isValidGarageData()) || isAdmin();
+      
+      // Allow update/delete for verified users who own the garage or admins
+      allow update: if (isAuthenticated() 
+        && isEmailVerified()
+        && isDealerOrUser()
+        && ownsGarage()
+        && isValidGarageData()) || isAdmin();
+        
+      allow delete: if (isAuthenticated() 
+        && isEmailVerified()
+        && isDealerOrUser()
+        && ownsGarage()) || isAdmin();
     }
 
     // Keep existing rules for other collections

@@ -4,24 +4,46 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, MapPin, Filter, Grid, List, Star, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield } from "lucide-react"
 import { Footer } from "@/components/footer"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Header } from "@/components/header"
 import { GoogleMapComponent } from "@/components/ui/google-map"
 import { useIsMobile } from "@/hooks/use-mobile"
 import Link from "next/link"
 import Image from "next/image"
-import { 
-  getAllPublicGarages, 
-  searchPublicGarages,
-  filterGaragesByServices,
-  filterGaragesByLocation 
-} from "@/lib/garage"
-import { type Garage } from "@/lib/types/garage"
+import { searchGarages, getAllActiveGarages, type GarageSearchFilters } from "@/lib/garage"
 import { AVAILABLE_SERVICES } from "@/lib/types/garage"
+import { debounce } from "lodash"
+
+interface Garage {
+  id: string;
+  name: string;
+  address: string;
+  image: string;
+  rating: number;
+  description: string;
+  services: string[];
+  phone: string;
+  email: string;
+  website: string;
+  openingHours: {
+    weekdays: { start: string; end: string };
+    saturday: { start: string; end: string };
+    sunday: { start: string; end: string };
+  };
+  paymentMethods: string[];
+  socialMedia: {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+  };
+  price: string;
+  ownerId: string;
+  isActive: boolean;
+}
 
 export default function SearchGaragesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [sortBy, setSortBy] = useState("rating")
+  const [sortBy, setSortBy] = useState("name")
   const [selectedCategory, setSelectedCategory] = useState<string>("All Services")
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [selectedContent, setSelectedContent] = useState("Websites")
@@ -29,143 +51,88 @@ export default function SearchGaragesPage() {
   const [priceRange, setPriceRange] = useState([0, 1000])
   const [selectedDistance, setSelectedDistance] = useState("all")
   const [selectedRating, setSelectedRating] = useState("all")
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
   const [garages, setGarages] = useState<Garage[]>([])
-  const [filteredGarages, setFilteredGarages] = useState<Garage[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedService, setSelectedService] = useState('')
-  const [locationFilter, setLocationFilter] = useState('')
+  const [filteredGarages, setFilteredGarages] = useState<Garage[]>([])
   const isMobile = useIsMobile();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Load garages on component mount
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounceSearch((searchTerm: string, filters: any) => {
+      performSearch(searchTerm, filters);
+    }, 300),
+    []
+  );
+
+  // Perform search with filters
+  const performSearch = async (searchTerm: string, additionalFilters: any = {}) => {
+    try {
+      setLoading(true);
+      const filters: GarageSearchFilters = {
+        searchTerm,
+        services: selectedServices.length > 0 ? selectedServices : undefined,
+        sortBy: sortBy === 'name' ? 'name' : sortBy === 'rating' ? 'rating' : 'recent',
+        sortOrder: 'asc',
+        ...additionalFilters
+      };
+
+      const results = await searchGarages(filters);
+      setFilteredGarages(results);
+    } catch (error) {
+      console.error('Error searching garages:', error);
+      setFilteredGarages([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load initial garages
   useEffect(() => {
     const loadGarages = async () => {
       try {
-        setLoading(true)
-        const garagesData = await getAllPublicGarages()
-        setGarages(garagesData)
-        setFilteredGarages(garagesData)
+        setLoading(true);
+        const allGarages = await getAllActiveGarages();
+        setGarages(allGarages);
+        setFilteredGarages(allGarages);
       } catch (error) {
-        console.error('Error loading garages:', error)
+        console.error('Error loading garages:', error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadGarages()
-  }, [])
+    loadGarages();
+  }, []);
 
-  // Search effect
+  // Handle search input changes
   useEffect(() => {
-    const performSearch = async () => {
-      if (!searchQuery.trim()) {
-        setFilteredGarages(garages)
-        return
-      }
+    debouncedSearch(searchTerm, {});
+  }, [searchTerm, selectedServices, sortBy, debouncedSearch]);
 
-      try {
-        const searchResults = await searchPublicGarages(searchQuery)
-        setFilteredGarages(searchResults)
-      } catch (error) {
-        console.error('Error searching garages:', error)
-        setFilteredGarages([])
-      }
-    }
-
-    const debounceTimeout = setTimeout(performSearch, 300)
-    return () => clearTimeout(debounceTimeout)
-  }, [searchQuery, garages])
-
-  // Filter garages based on selected filters
-  useEffect(() => {
-    let filtered = [...filteredGarages]
-
-    // Category filter
-    if (selectedCategory !== "All Services") {
-      filtered = filtered.filter(garage => 
-        garage.services.includes(selectedCategory)
-      )
-    }
-
-    // Services filter
-    if (selectedServices.length > 0) {
-      filtered = filtered.filter(garage =>
-        selectedServices.every(service => garage.services.includes(service))
-      )
-    }
-
-    // Rating filter
-    if (selectedRating !== "all") {
-      const minRating = parseFloat(selectedRating)
-      filtered = filtered.filter(garage => garage.rating >= minRating)
-    }
-
-    setFilteredGarages(filtered)
-  }, [selectedCategory, selectedServices, selectedRating])
-
-  // Handle search form submission
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    
-    try {
-      let results = garages
-      
-      // Apply search term filter
-      if (searchTerm.trim()) {
-        results = await searchPublicGarages(searchTerm.trim())
-      }
-      
-      // Apply service filter
-      if (selectedService) {
-        const serviceResults = await filterGaragesByServices([selectedService])
-        // If we have search results, intersect them with service results
-        if (searchTerm.trim()) {
-          results = results.filter(garage => 
-            serviceResults.some(sr => sr.id === garage.id)
-          )
-        } else {
-          results = serviceResults
-        }
-      }
-      
-      // Apply location filter
-      if (locationFilter.trim()) {
-        const locationResults = await filterGaragesByLocation(locationFilter.trim())
-        // If we have previous results, intersect them with location results
-        if (searchTerm.trim() || selectedService) {
-          results = results.filter(garage => 
-            locationResults.some(lr => lr.id === garage.id)
-          )
-        } else {
-          results = locationResults
-        }
-      }
-      
-      setFilteredGarages(results)
-    } catch (error) {
-      console.error('Error searching garages:', error)
-      setFilteredGarages([])
-    } finally {
-      setLoading(false)
-    }
+  // Simple debounce implementation
+  function debounceSearch(func: Function, wait: number) {
+    let timeout: NodeJS.Timeout;
+    return function executedFunction(...args: any[]) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
   }
 
-  // Use AVAILABLE_SERVICES from the imported types
-  const allServices = AVAILABLE_SERVICES
-
-  // Dynamic categories based on available garages
   const categories = [
-    { name: "All Services", count: garages.length },
-    { name: "MOT", count: garages.filter(g => g.services.includes("MOT")).length },
-    { name: "Electric issue repair", count: garages.filter(g => g.services.includes("Electric issue repair")).length },
-    { name: "Programming", count: garages.filter(g => g.services.includes("Programming")).length },
-    { name: "Vehicle diagnostics", count: garages.filter(g => g.services.includes("Vehicle diagnostics")).length },
-    { name: "Brakes and Clutches", count: garages.filter(g => g.services.includes("Brakes and Clutches")).length },
-    { name: "Body Repair", count: garages.filter(g => g.services.includes("Body Repair")).length },
-    { name: "Air conditioning", count: garages.filter(g => g.services.includes("Air conditioning")).length }
+    { name: "All Services", count: 156 },
+    { name: "MOT", count: 89 },
+    { name: "Servicing", count: 142 },
+    { name: "Diagnostics", count: 67 },
+    { name: "Brakes", count: 98 },
+    { name: "Tyres", count: 78 },
+    { name: "Body Repair", count: 45 },
+    { name: "Engine", count: 112 }
   ]
 
   const contentTypes = [
@@ -186,72 +153,82 @@ export default function SearchGaragesPage() {
     setSelectedContent("Websites")
     setSelectedDistance("all")
     setSelectedRating("all")
-    setSearchQuery("")
+    setSearchTerm("")
   }
 
-  // Pagination logic: show only first 9 garages per page
+  // Pagination logic: show only first 9 garages per page  
   const garagesToShow = filteredGarages.slice(0, 9)
 
   const GarageCard = ({ garage }: { garage: Garage }) => (
-    <Link href={`/categories/garages/${garage.id}`} className="block">
+    <Link href={`/categories/garages/${garage.id}`} className="block group cursor-pointer">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 group">
         <div className="relative">
           <Image 
-            src={garage.image || '/placeholder.jpg'} 
+            src={garage.image} 
             alt={garage.name} 
             width={300}
             height={200}
             className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-sm font-medium">
-            {garage.price || 'Contact for pricing'}
+            {garage.price}
           </div>
         </div>
 
         <div className="p-4">
           <div className="flex items-start justify-between mb-2">
-            <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
-              {garage.name}
-            </h3>
-            <div className="flex items-center gap-1 text-sm">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium">{garage.rating ? garage.rating.toFixed(1) : '0.0'}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center text-sm text-gray-600 mb-3">
-            <MapPin className="h-4 w-4 mr-1" />
-            <span>{garage.address}</span>
-          </div>
-
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {garage.description}
-          </p>
-
-          <div className="flex flex-wrap gap-1 mb-3">
-            {garage.services.slice(0, 3).map((service: string, i: number) => (
-              <span key={i} className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
-                {service}
-              </span>
-            ))}
-            {garage.services.length > 3 && (
-              <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-1 rounded-full">
-                +{garage.services.length - 3} more
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Clock className="h-4 w-4" />
-            <span>
-              {garage.openingHours?.weekdays?.start && garage.openingHours?.weekdays?.end 
-                ? `${garage.openingHours.weekdays.start} - ${garage.openingHours.weekdays.end}` 
-                : 'See hours'}
-            </span>
+          <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
+            {garage.name}
+          </h3>
+          <div className="flex items-center gap-1 text-sm">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="font-medium">{garage.rating.toFixed(1)}</span>
           </div>
         </div>
+
+        <div className="flex items-center text-sm text-gray-600 mb-3">
+          <MapPin className="h-4 w-4 mr-1" />
+          <span>{garage.address}</span>
+        </div>
+
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          {garage.description}
+        </p>
+
+        <div className="flex flex-wrap gap-1 mb-3">
+          {garage.services.slice(0, 3).map((service: string, i: number) => (
+            <span key={i} className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
+              {service}
+            </span>
+          ))}
+          {garage.services.length > 3 && (
+            <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-1 rounded-full">
+              +{garage.services.length - 3} more
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Clock className="h-4 w-4" />
+            <span>Open until {garage.openingHours.weekdays.end}</span>
+          </div>
+          <Button 
+            size="sm" 
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+          >
+            View Details
+          </Button>
+        </div>
       </div>
+    </div>
     </Link>
+  )
+            View Details
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 
   return (
@@ -261,18 +238,16 @@ export default function SearchGaragesPage() {
       <div className="flex justify-center items-center py-4 mb-2">
         <div className="w-full max-w-4xl flex flex-col md:flex-row rounded-none md:rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-blue-200 relative">
           <div className="hidden md:block md:w-2 md:h-full bg-gradient-to-b from-blue-400 to-blue-700 md:rounded-l-3xl md:rounded-t-none"></div>
-          <form className="flex-1 flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4 p-4" onSubmit={handleSearch}>
-            {/* Garage Name Field */}
+          <form className="flex-1 flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4 p-4">
+            {/* Reg Number Field */}
             <div className="flex-1 min-w-[140px]">
-              <label htmlFor="garage-name" className="block text-xs font-semibold text-gray-700 mb-1 ml-1">Garage Name</label>
+              <label htmlFor="reg-number" className="block text-xs font-semibold text-gray-700 mb-1 ml-1">Enter Reg Number</label>
               <Input
-                id="garage-name"
-                placeholder="Search garages..."
+                id="reg-number"
+                placeholder="e.g. AB12 CDE"
                 className="w-full h-12 rounded-full bg-white/80 border border-blue-200 px-4 text-base"
                 type="text"
                 autoComplete="off"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             {/* Service Dropdown */}
@@ -281,8 +256,7 @@ export default function SearchGaragesPage() {
               <select
                 id="service-filter"
                 className="w-full pl-4 pr-4 py-2.5 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 h-12"
-                value={selectedService}
-                onChange={(e) => setSelectedService(e.target.value)}
+                defaultValue=""
               >
                 <option value="">All Services</option>
                 {allServices.map(service => (
@@ -290,27 +264,24 @@ export default function SearchGaragesPage() {
                 ))}
               </select>
             </div>
-            {/* Location Field */}
+            {/* Postcode Field */}
             <div className="flex-1 min-w-[140px]">
-              <label htmlFor="location" className="block text-xs font-semibold text-gray-700 mb-1 ml-1">Location</label>
+              <label htmlFor="postcode" className="block text-xs font-semibold text-gray-700 mb-1 ml-1">Your Postcode</label>
               <Input
-                id="location"
-                placeholder="City or postcode"
+                id="postcode"
+                placeholder="Postcode"
                 className="w-full h-12 rounded-full bg-white/80 border border-blue-200 px-4 text-base"
                 type="text"
                 autoComplete="off"
-                value={locationFilter}
-                onChange={(e) => setLocationFilter(e.target.value)}
               />
             </div>
             {/* Search Button */}
             <Button
               type="submit"
               className="rounded-full bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold px-8 h-12 shadow-lg hover:scale-105 transition-transform duration-200 w-full md:w-auto"
-              disabled={loading}
             >
               <Search className="mr-2 h-5 w-5" />
-              {loading ? 'Searching...' : 'Search'}
+              Search
             </Button>
           </form>
         </div>
@@ -514,20 +485,7 @@ export default function SearchGaragesPage() {
             </div>
 
             {/* Garage listings */}
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading garages...</p>
-                </div>
-              </div>
-            ) : filteredGarages.length === 0 ? (
-              <div className="text-center py-12">
-                <MapPin className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No garages found</h3>
-                <p className="text-gray-600">Try adjusting your search criteria or filters.</p>
-              </div>
-            ) : viewMode === "grid" ? (
+            {viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                 {garagesToShow.map((garage: Garage) => (
                   <GarageCard key={garage.id} garage={garage} />
@@ -540,9 +498,9 @@ export default function SearchGaragesPage() {
                     {/* ...existing code for list view card... */}
                     <div className="flex">
                       <div className="w-64 h-48 flex-shrink-0 relative">
-                        <img src={garage.image || '/placeholder.jpg'} alt={garage.name} className="w-full h-full object-cover" />
+                        <img src={garage.image} alt={garage.name} className="w-full h-full object-cover" />
                         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-sm font-medium">
-                          {garage.price || 'Contact for pricing'}
+                          {garage.priceRange}
                         </div>
                       </div>
                       
@@ -554,12 +512,13 @@ export default function SearchGaragesPage() {
                             </h3>
                             <div className="flex items-center text-sm text-gray-600 mb-2">
                               <MapPin className="h-4 w-4 mr-1" />
-                              <span>{garage.address}</span>
+                              <span>{garage.location} • {garage.distance}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-1 text-sm">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">{garage.rating ? garage.rating.toFixed(1) : '0.0'}</span>
+                            <span className="font-medium">{garage.rating.toFixed(1)}</span>
+                            <span className="text-gray-500">({garage.reviewCount})</span>
                           </div>
                         </div>
 
@@ -580,20 +539,15 @@ export default function SearchGaragesPage() {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-4 mb-3 text-sm text-gray-600">
-                          {garage.phone && (
-                            <div className="flex items-center gap-1">
-                              <Phone className="h-4 w-4" />
-                              <span>{garage.phone}</span>
-                            </div>
-                          )}
-                          {garage.openingHours && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              <span>Open today</span>
-                            </div>
-                          )}
-                        </div>
+                        {garage.certifications.length > 0 && (
+                          <div className="flex items-center gap-2 mb-3">
+                            {garage.certifications.map((cert: string, i: number) => (
+                              <span key={i} className="bg-green-50 text-green-700 text-xs font-medium px-2 py-1 rounded-full border border-green-200">
+                                ✓ {cert}
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4 text-sm text-gray-600">

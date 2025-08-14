@@ -18,113 +18,32 @@ import {
   Upload,
   Camera
 } from "lucide-react";
-
-// Available services list (from reference garage pages)
-const availableServices = [
-  "Electric issue repair",
-  "Programming",
-  "Commercial vehicle repair",
-  "Sunroof repair",
-  "Suspension repair",
-  "Vehicle diagnostics",
-  "Manual Gearbox repair",
-  "Automatic Gearbox repair",
-  "DPF Cleaning",
-  "Starter motor/Alternator Repair",
-  "Battery servicing",
-  "Air conditioning",
-  "Brakes and Clutches",
-  "Electric car/van Repair",
-  "Hybrid car repair",
-  "LPG Repair",
-  "Range Rover Specialist",
-  "Wheel Alignment",
-  "Tyre Change",
-  "Car Accessories and Parts",
-  "Garage Equipment",
-  "Body Repair",
-  "MOT",
-  "Welding",
-  "Turbochargers Repair",
-  "Motorcycle repairs & services",
-  "Engine repair",
-  "Transmission repair",
-  "Exhaust repair",
-  "Clutch replacement",
-  "Brake pad replacement",
-  "Oil change",
-  "Radiator repair",
-  "Windscreen replacement",
-  "Paint protection",
-  "Detailing services"
-];
-
-// Garage type (from reference)
-interface Garage {
-  id: string;
-  name: string;
-  address: string;
-  phone: string;
-  image: string;
-  coverImage?: string;
-  price: string;
-  description: string;
-  services: string[];
-  rating: number;
-  openingHours: {
-    weekdays: { start: string; end: string };
-    saturday: { start: string; end: string };
-    sunday: { start: string; end: string };
-  };
-  website: string;
-  email: string;
-  paymentMethods: string[];
-  socialMedia: {
-    facebook?: string;
-    twitter?: string;
-    instagram?: string;
-  };
-}
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { 
+  createGarage, 
+  updateGarage, 
+  getGarageById 
+} from "@/lib/garage";
+import { type Garage, AVAILABLE_SERVICES } from "@/lib/types/garage";
 
 export default function AddGaragePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
   const isEditing = !!editId;
 
-  // Mock data for editing (in real app, this would come from API/database)
-  const mockGarages = [
-    {
-      id: "amg-motors",
-      name: "AMG Mechanical engineering",
-      address: "B12 0DF, Birmingham, West Midlands, England, United Kingdom",
-      phone: "+44 121 446 5777",
-      image: "/garages/garage1.jpg",
-      coverImage: "/garages/garage1-cover.jpg",
-      price: "£0.00",
-      description: "The mechanics at our shop have over 60 years of experience between them. They are dedicated to providing high-quality repairs to keep you safe and happy.",
-      services: ["Electric issue repair", "Programming", "MOT", "Servicing"],
-      rating: 4.8,
-      openingHours: {
-        weekdays: { start: "08:00", end: "18:00" },
-        saturday: { start: "09:00", end: "17:00" },
-        sunday: { start: "10:00", end: "16:00" }
-      },
-      website: "www.amgmotors.com",
-      email: "info@amgmotors.com",
-      paymentMethods: ["Cash", "Credit Card", "Debit Card", "PayPal"],
-      socialMedia: {
-        facebook: "https://facebook.com/AMGMotors",
-        twitter: "https://twitter.com/AMGMotors",
-        instagram: "https://instagram.com/AMGMotors"
-      }
-    }
-  ];
-
   const [form, setForm] = useState<Partial<Garage>>({
-    id: "",
     name: "",
+    address: "",
+    phone: "",
+    email: "",
+    website: "",
+    description: "",
     services: [],
+    rating: 0,
+    price: "£0.00",
     paymentMethods: [],
     socialMedia: {},
     openingHours: {
@@ -132,18 +51,70 @@ export default function AddGaragePage() {
       saturday: { start: "09:00", end: "17:00" },
       sunday: { start: "10:00", end: "16:00" }
     }
+    // DO NOT include image or coverImage in initial state - they'll be handled separately
   });
+  
+  // File handling states
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [coverImagePreview, setCoverImagePreview] = useState<string>('');
+  
   const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add submission guard
 
   // Load garage data for editing
   useEffect(() => {
-    if (isEditing && editId) {
-      const garageToEdit = mockGarages.find(g => g.id === editId);
-      if (garageToEdit) {
-        setForm(garageToEdit);
-      }
+    if (!user) {
+      router.push('/signin');
+      return;
     }
-  }, [editId, isEditing]);
+
+    if (isEditing && editId) {
+      const loadGarageData = async () => {
+        try {
+          setLoading(true);
+          const garage = await getGarageById(editId);
+          if (garage && garage.ownerId === user.uid) {
+            // Clean the garage data before setting form state
+            const cleanGarageData = Object.fromEntries(
+              Object.entries(garage).filter(([key, value]) => {
+                // Keep all fields except id and image fields
+                if (key === 'id') return false;
+                if (key === 'image' || key === 'coverImage') return false;
+                return value !== undefined;
+              })
+            );
+            
+            setForm(cleanGarageData);
+            
+            // Handle existing images separately - don't put them in form data
+            if (garage.image) {
+              console.log('Existing main image:', garage.image);
+              // Store reference for display but don't set in form
+            }
+            if (garage.coverImage) {
+              console.log('Existing cover image:', garage.coverImage);
+              // Store reference for display but don't set in form
+            }
+          } else {
+            toast.error('Garage not found or access denied');
+            router.push('/garages/dashboard');
+          }
+        } catch (error) {
+          console.error('Error loading garage:', error);
+          toast.error('Failed to load garage data');
+          router.push('/garages/dashboard');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      loadGarageData();
+    }
+  }, [user, isEditing, editId, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -175,30 +146,116 @@ export default function AddGaragePage() {
   const handleImageUpload = (type: 'main' | 'cover', event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // In a real app, you would upload to a server/cloud storage
-      // For now, we'll create a local URL for preview
-      const imageUrl = URL.createObjectURL(file);
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select a valid image file');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      
       if (type === 'main') {
-        setForm(f => ({ ...f, image: imageUrl }));
+        setImageFile(file);
+        // Create preview URL for display only
+        const previewUrl = URL.createObjectURL(file);
+        setImagePreview(previewUrl);
+        
+        // Clean up previous preview URL
+        if (imagePreview) {
+          URL.revokeObjectURL(imagePreview);
+        }
+        
+        console.log('Main image file selected:', file.name);
+        // DO NOT modify form data with blob URLs or undefined values
       } else {
-        setForm(f => ({ ...f, coverImage: imageUrl }));
+        setCoverImageFile(file);
+        // Create preview URL for display only
+        const previewUrl = URL.createObjectURL(file);
+        setCoverImagePreview(previewUrl);
+        
+        // Clean up previous preview URL
+        if (coverImagePreview) {
+          URL.revokeObjectURL(coverImagePreview);
+        }
+        
+        console.log('Cover image file selected:', file.name);
+        // DO NOT modify form data with blob URLs or undefined values
       }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Clean up preview URLs on component unmount
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+      if (coverImagePreview) {
+        URL.revokeObjectURL(coverImagePreview);
+      }
+    };
+  }, [imagePreview, coverImagePreview]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.name && form.address && form.phone && form.email && form.image && (form.services || []).length > 0) {
-      // Auto-generate ID from name if not editing
-      if (!isEditing && !form.id) {
-        const generatedId = form.name?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        setForm(f => ({ ...f, id: generatedId }));
+    
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      console.log('Submission already in progress, ignoring...');
+      return;
+    }
+    
+    if (!user) {
+      toast.error('Please sign in to save your garage');
+      return;
+    }
+
+    if (!form.name || !form.address || !form.phone || !form.email || !form.services?.length) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true); // Set submission guard
+      setSaving(true);
+      
+      // Clean form data to remove undefined fields and image fields
+      const cleanFormData = Object.fromEntries(
+        Object.entries(form).filter(([key, value]) => {
+          // Remove undefined values
+          if (value === undefined) return false;
+          // Remove image fields - they'll be handled separately as files
+          if (key === 'image' || key === 'coverImage') return false;
+          return true;
+        })
+      ) as Partial<Garage>;
+
+      console.log('Submitting clean form data:', cleanFormData);
+      console.log('Image file:', imageFile);
+      console.log('Cover image file:', coverImageFile);
+      
+      if (isEditing && editId) {
+        // Update existing garage with image files
+        await updateGarage(editId, cleanFormData, user.uid, imageFile || undefined, coverImageFile || undefined);
+        toast.success('Garage updated successfully!');
+      } else {
+        // Create new garage with image files
+        const newGarageId = await createGarage(cleanFormData, user.uid, imageFile || undefined, coverImageFile || undefined);
+        console.log('Garage created with ID:', newGarageId);
+        toast.success('Garage created successfully!');
       }
       
-      // TODO: Implement garage save logic (API call, etc.)
-      console.log(isEditing ? 'Updating garage:' : 'Saving garage:', form);
-      alert(isEditing ? 'Garage updated successfully!' : 'Garage created successfully!');
       router.push('/garages/dashboard');
+    } catch (error) {
+      console.error('Error saving garage:', error);
+      toast.error('Failed to save garage. Please try again.');
+    } finally {
+      setSaving(false);
+      setIsSubmitting(false); // Clear submission guard
     }
   };
 
@@ -233,7 +290,7 @@ export default function AddGaragePage() {
   const validateStep = (stepIndex: number) => {
     switch (stepIndex) {
       case 0: // Basic Info
-        return form.name && form.description && form.image;
+        return form.name && form.description; // Remove image requirement
       case 1: // Contact
         return form.address && form.phone && form.email;
       case 2: // Services
@@ -254,7 +311,6 @@ export default function AddGaragePage() {
       step: currentStep,
       name: !!form.name,
       description: !!form.description,
-      image: !!form.image,
       address: !!form.address,
       phone: !!form.phone,
       email: !!form.email,
@@ -384,17 +440,17 @@ export default function AddGaragePage() {
 
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-4">Images *</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-4">Images (Optional)</label>
                       
                       {/* Main Image Upload */}
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm text-gray-600 mb-2">Main Image *</label>
+                          <label className="block text-sm text-gray-600 mb-2">Main Image</label>
                           <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-blue-400 transition-colors">
-                            {form.image ? (
+                            {imagePreview || form.image ? (
                               <div className="relative">
                                 <img 
-                                  src={form.image} 
+                                  src={imagePreview || form.image} 
                                   alt="Main garage image" 
                                   className="w-full h-40 object-cover rounded-lg"
                                 />
@@ -402,7 +458,15 @@ export default function AddGaragePage() {
                                   type="button"
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => setForm(f => ({ ...f, image: "" }))}
+                                  onClick={() => {
+                                    setImageFile(null);
+                                    setImagePreview('');
+                                    // Clean up preview URL
+                                    if (imagePreview) {
+                                      URL.revokeObjectURL(imagePreview);
+                                    }
+                                    // DO NOT modify form data - let it remain without image field
+                                  }}
                                   className="absolute top-2 right-2 bg-white/90 hover:bg-white"
                                 >
                                   <X className="w-4 h-4" />
@@ -436,10 +500,10 @@ export default function AddGaragePage() {
                         <div>
                           <label className="block text-sm text-gray-600 mb-2">Cover Image (Optional)</label>
                           <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-blue-400 transition-colors">
-                            {form.coverImage ? (
+                            {coverImagePreview || form.coverImage ? (
                               <div className="relative">
                                 <img 
-                                  src={form.coverImage} 
+                                  src={coverImagePreview || form.coverImage} 
                                   alt="Cover garage image" 
                                   className="w-full h-32 object-cover rounded-lg"
                                 />
@@ -447,7 +511,15 @@ export default function AddGaragePage() {
                                   type="button"
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => setForm(f => ({ ...f, coverImage: "" }))}
+                                  onClick={() => {
+                                    setCoverImageFile(null);
+                                    setCoverImagePreview('');
+                                    // Clean up preview URL
+                                    if (coverImagePreview) {
+                                      URL.revokeObjectURL(coverImagePreview);
+                                    }
+                                    // DO NOT modify form data - let it remain without coverImage field
+                                  }}
                                   className="absolute top-2 right-2 bg-white/90 hover:bg-white"
                                 >
                                   <X className="w-4 h-4" />
@@ -623,7 +695,7 @@ export default function AddGaragePage() {
                     
                     {/* Services Grid - Uniform Width Small Boxes */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                      {availableServices.map((service, i) => {
+                      {AVAILABLE_SERVICES.map((service, i) => {
                         const isSelected = (form.services || []).includes(service);
                         return (
                           <button
@@ -810,11 +882,14 @@ export default function AddGaragePage() {
                     {isLastStep ? (
                       <Button 
                         type="submit" 
-                        disabled={!canProceed()}
+                        disabled={!canProceed() || isSubmitting}
                         className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:from-gray-300 disabled:to-gray-400 text-white px-6 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:transform-none disabled:cursor-not-allowed"
                       >
                         <Save className="w-4 h-4 mr-2" />
-                        {isEditing ? 'Update Garage' : 'Create Garage'}
+                        {isSubmitting 
+                          ? (isEditing ? 'Updating...' : 'Creating...') 
+                          : (isEditing ? 'Update Garage' : 'Create Garage')
+                        }
                       </Button>
                     ) : (
                       <Button 
