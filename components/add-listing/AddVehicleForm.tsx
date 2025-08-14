@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,6 @@ import { Database, RefreshCw, AlertCircle, X, Image as ImageIcon, GripVertical }
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
-import { useDropzone } from "react-dropzone"
 import { VehicleType, Car as CarType, Van as VanType, Truck as TruckType } from "@/types/vehicles"
 import { db, storage, auth } from "@/lib/firebase"
 import { doc, collection, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"
@@ -19,26 +18,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { getTokenErrorMessage } from "@/lib/utils/tokenUtils"
-
-// Drag and Drop imports
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  horizontalListSortingStrategy,
-  arrayMove,
-  useSortable,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { ImageUploadSection } from "./ImageUploadSection"
 
 // OneAuto API interfaces
 interface OneAutoApiResponse {
@@ -221,43 +201,6 @@ interface AddVehicleFormProps {
   isEditMode?: boolean // Flag to indicate if we're editing
 }
 
-// Sortable Image Item Component
-interface SortableImageItemProps {
-  id: string
-  children: React.ReactNode
-}
-
-function SortableImageItem({ id, children }: SortableImageItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id })
-
-  return (
-    <div 
-      ref={setNodeRef} 
-      className={`relative group ${isDragging ? 'opacity-50' : 'opacity-100'}`}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-    >
-      <div
-        className="absolute top-1 left-1 z-10 cursor-grab active:cursor-grabbing bg-black/50 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="w-4 h-4 text-white" />
-      </div>
-      {children}
-    </div>
-  )
-}
-
 export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVehicleFormProps) {
   const router = useRouter()
   const [user, loading, error] = useAuthState(auth)
@@ -318,48 +261,23 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     }
   })
   const [existingImages, setExistingImages] = useState<string[]>([])
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([])
+  const [currentVehicleId, setCurrentVehicleId] = useState<string>("")
   const [formErrors, setFormErrors] = useState<FormErrors>({})
-
-  // Drag and Drop sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
 
   // Get user role from auth context
   const userRole = authUser?.role || 'user'
 
-  // Drag and Drop handlers
-  const handleExistingImageDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (active.id !== over?.id) {
-      setExistingImages((images) => {
-        const oldIndex = images.findIndex((_, index) => `existing-${index}` === active.id)
-        const newIndex = images.findIndex((_, index) => `existing-${index}` === over?.id)
-
-        return arrayMove(images, oldIndex, newIndex)
-      })
+  // Generate vehicle ID when component mounts
+  useEffect(() => {
+    if (isEditMode && vehicleId) {
+      setCurrentVehicleId(vehicleId);
+    } else {
+      // Generate a new ID for new vehicles
+      const newVehicleId = doc(collection(db, "vehicles")).id;
+      setCurrentVehicleId(newVehicleId);
     }
-  }
-
-  const handleNewImageDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (active.id !== over?.id) {
-      setFormData((prev) => {
-        const oldIndex = prev.images.findIndex((_, index) => `new-${index}` === active.id)
-        const newIndex = prev.images.findIndex((_, index) => `new-${index}` === over?.id)
-
-        return {
-          ...prev,
-          images: arrayMove(prev.images, oldIndex, newIndex)
-        }
-      })
-    }
-  }
+  }, [isEditMode, vehicleId]);
 
   // Check token availability when component mounts
   useEffect(() => {
@@ -779,35 +697,20 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     }
   }
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const validFiles = acceptedFiles.filter((file: any) => {
-      if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} is not an image file`)
-        return false
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error(`${file.name} is too large (max 5MB)`)
-        return false
-      }
-      return true
-    })
-    if (existingImages.length + formData.images.length + validFiles.length > MAX_IMAGES) {
-      toast.error(`Maximum ${MAX_IMAGES} images allowed`)
-      return
-    }
-    setFormData((prev: any) => ({ ...prev, images: [...prev.images, ...validFiles] }))
-  }, [formData.images, existingImages])
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop, accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp'] }, maxSize: MAX_FILE_SIZE
-  })
-
   const removeImage = (index: number) => {
     setFormData((prev: any) => ({ ...prev, images: prev.images.filter((_: any, i: any) => i !== index) }))
   }
 
   const removeExistingImage = (index: number) => {
     setExistingImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleUploadComplete = (urls: string[]) => {
+    setUploadedImageUrls(prev => [...prev, ...urls])
+  }
+
+  const handleUploadedImageRemove = (url: string) => {
+    setUploadedImageUrls(prev => prev.filter(existingUrl => existingUrl !== url))
   }
 
   const handleSubmit = async (e: any) => {
@@ -909,23 +812,11 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
         }
       }))
 
-      // Use existing vehicle ID for edit mode, or generate new one for create mode
-      const currentVehicleId = isEditMode && vehicleId ? vehicleId : doc(collection(db, "vehicles")).id
+      // Use existing vehicle ID for edit mode, or the pre-generated one for create mode
+      const vehicleIdToUse = currentVehicleId;
 
-      // Upload new images and combine with existing ones
-      const imageUrls: string[] = [...existingImages] // Start with existing images
-      for (const image of formData.images) {
-        const imagePath = `vehicles/${currentVehicleId}/${image.name}`
-        const imageRef = ref(storage, imagePath)
-        try {
-          await uploadBytes(imageRef, image)
-          const downloadURL = await getDownloadURL(imageRef)
-          imageUrls.push(downloadURL)
-        } catch (uploadError) {
-          console.error(`Error uploading image ${image.name}:`, uploadError)
-          throw new Error(`Failed to upload image: ${image.name}`)
-        }
-      }
+      // Combine existing images and uploaded images
+      const imageUrls: string[] = [...existingImages, ...uploadedImageUrls]
 
       const vehicleDataFromForm = {
         title: formData.title,
@@ -962,7 +853,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
         case 'car':
           vehicleToSubmit = {
             ...vehicleDataFromForm,
-            id: currentVehicleId,
+            id: vehicleIdToUse,
             type: 'car',
             bodyStyle: formData.bodyType as CarType['bodyStyle'],
             doors: Number(formData.doors),
@@ -987,7 +878,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
         case 'van':
           vehicleToSubmit = {
             ...vehicleDataFromForm,
-            id: currentVehicleId,
+            id: vehicleIdToUse,
             type: 'van',
             cargoVolume: Number(formData.cargoVolume!),
             maxPayload: Number(formData.maxPayload!),
@@ -1013,7 +904,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
         case 'truck':
           vehicleToSubmit = {
             ...vehicleDataFromForm,
-            id: currentVehicleId,
+            id: vehicleIdToUse,
             type: 'truck',
             maxPayload: Number(formData.maxPayload!),
             axles: Number(formData.axles!),
@@ -1046,7 +937,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
       if (isEditMode) {
         // Update existing vehicle - preserve existing token data
         const { createdAt, ...updateData } = vehicleToSubmit
-        await updateDoc(doc(db, "vehicles", currentVehicleId), updateData)
+        await updateDoc(doc(db, "vehicles", vehicleIdToUse), updateData)
         toast.success("Vehicle updated successfully")
       } else {
         // Create new vehicle with token data
@@ -1058,7 +949,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
         }
 
         // Save the vehicle to Firestore
-        await setDoc(doc(db, "vehicles", currentVehicleId), vehicleWithTokenData)
+        await setDoc(doc(db, "vehicles", vehicleIdToUse), vehicleWithTokenData)
 
         // Activate the token for this vehicle using the API
         const activateResponse = await fetch('/api/activate-vehicle', {
@@ -1068,7 +959,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
             'Authorization': `Bearer ${await user.getIdToken()}`
           },
           body: JSON.stringify({
-            vehicleId: currentVehicleId,
+            vehicleId: vehicleIdToUse,
             action: 'activate'
           })
         });
@@ -1909,95 +1800,19 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
       </div>
 
       {/* Images */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label>Images</Label>
-          <p className="text-sm text-gray-500">{existingImages.length + formData.images.length}/{MAX_IMAGES} images</p>
-        </div>
-        
-        {/* Existing Images */}
-        {existingImages.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700">Current Images</p>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleExistingImageDragEnd}
-            >
-              <SortableContext
-                items={existingImages.map((_, index) => `existing-${index}`)}
-                strategy={horizontalListSortingStrategy}
-              >
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {existingImages.map((imageUrl, index) => (
-                    <SortableImageItem key={`existing-${index}`} id={`existing-${index}`}>
-                      <div className="relative group">
-                        <img src={imageUrl} alt={`Current ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
-                        <button 
-                          type="button" 
-                          onClick={() => removeExistingImage(index)} 
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Remove existing image"
-                          aria-label="Remove existing image"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </SortableImageItem>
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          </div>
-        )}
-        
-        <div
-          {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
-        >
-          <input {...getInputProps()} />
-          <ImageIcon className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-          <p className="text-sm text-gray-500">{isDragActive ? "Drop the images here" : "Drag and drop images here, or click to select"}</p>
-          <p className="text-xs text-gray-400 mt-1">Max {MAX_IMAGES} images, up to 5MB each</p>
-        </div>
-        {formErrors.images && <p className="text-sm text-red-500">{formErrors.images}</p>}
-        
-        {/* New Images */}
-        {formData.images.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700">New Images</p>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleNewImageDragEnd}
-            >
-              <SortableContext
-                items={formData.images.map((_, index) => `new-${index}`)}
-                strategy={horizontalListSortingStrategy}
-              >
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {formData.images.map((file, index) => (
-                    <SortableImageItem key={`new-${index}`} id={`new-${index}`}>
-                      <div className="relative group">
-                        <img src={URL.createObjectURL(file)} alt={`New ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
-                        <button 
-                          type="button" 
-                          onClick={() => removeImage(index)} 
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Remove new image"
-                          aria-label="Remove new image"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </SortableImageItem>
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          </div>
-        )}
-      </div>
+      <ImageUploadSection
+        images={formData.images}
+        existingImages={existingImages}
+        uploadedImageUrls={uploadedImageUrls}
+        onImagesChange={(images) => setFormData(prev => ({ ...prev, images }))}
+        onExistingImagesChange={setExistingImages}
+        onUploadComplete={handleUploadComplete}
+        onUploadedImageRemove={handleUploadedImageRemove}
+        maxImages={MAX_IMAGES}
+        maxFileSize={MAX_FILE_SIZE}
+        vehicleId={currentVehicleId}
+      />
+      {formErrors.images && <p className="text-sm text-red-500">{formErrors.images}</p>}
 
       <div className="flex justify-end gap-4">
         <Button type="button" variant="outline" onClick={() => router.push("/dashboard")}>Cancel</Button>

@@ -3,6 +3,7 @@ import './globals.css'
 import './styles/scroll.css'
 import { AuthProvider } from '@/hooks/useAuth'
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import { headers } from 'next/headers'
 import { LoadingIndicator } from "@/components/loading"
 import { Inter } from "next/font/google"
@@ -59,6 +60,7 @@ export default function RootLayout({
           <LoadingIndicator />
           {children}
           <Toaster />
+          <SonnerToaster />
           <CookieBanner />
         </AuthProvider>
       </body>
