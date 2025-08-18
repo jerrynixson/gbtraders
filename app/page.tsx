@@ -40,7 +40,7 @@ const categories = [
   },
   {
     title: "Garages",
-    href: "/coming-soon",
+    href: "/categories/garages",
     image: "/garages.webp",
   },
 ]
