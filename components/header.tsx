@@ -335,6 +335,9 @@ export function Header() {
   <Link href="/categories/dealers" className="bg-gray-100 rounded-full px-4 py-2 text-sm font-extrabold main-navigation-bubble md:min-w-[200px] md:h-16 md:px-10 md:py-0 md:flex md:items-center md:justify-center md:text-xl md:mb-0 flex-1 justify-center">
     Dealers
   </Link>
+  <Link href="/categories/garages" className="bg-gray-100 rounded-full px-4 py-2 text-sm font-extrabold main-navigation-bubble md:min-w-[200px] md:h-16 md:px-10 md:py-0 md:flex md:items-center md:justify-center md:text-xl md:mb-0 flex-1 justify-center">
+    Garages
+  </Link>
 </div>
 {/* Sub-bubbles for Vehicles */}
 <div className="flex flex-wrap gap-2 mt-2 md:gap-3 md:mt-3">
