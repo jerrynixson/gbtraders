@@ -11,10 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import Link from "next/link"
 import Image from "next/image"
 import { 
-  getAllPublicGarages, 
-  searchPublicGarages,
-  filterGaragesByServices,
-  filterGaragesByLocation 
+  getAllPublicGarages
 } from "@/lib/garage"
 import { type Garage } from "@/lib/types/garage"
 import { AVAILABLE_SERVICES } from "@/lib/types/garage"
@@ -34,6 +31,7 @@ export default function SearchGaragesPage() {
   const [filteredGarages, setFilteredGarages] = useState<Garage[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedService, setSelectedService] = useState('')
   const [locationFilter, setLocationFilter] = useState('')
   const isMobile = useIsMobile();
@@ -57,100 +55,99 @@ export default function SearchGaragesPage() {
     loadGarages()
   }, [])
 
-  // Search effect
+  // Debounce search term
   useEffect(() => {
-    const performSearch = async () => {
-      if (!searchQuery.trim()) {
-        setFilteredGarages(garages)
-        return
-      }
+    const debounceTimeout = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 300)
+    
+    return () => clearTimeout(debounceTimeout)
+  }, [searchTerm])
 
-      try {
-        const searchResults = await searchPublicGarages(searchQuery)
-        setFilteredGarages(searchResults)
-      } catch (error) {
-        console.error('Error searching garages:', error)
-        setFilteredGarages([])
-      }
+  // Client-side filtering logic
+  useEffect(() => {
+    let filtered = [...garages]
+
+    // Apply search term filter (from top search form) - using debounced version
+    if (debouncedSearchTerm.trim()) {
+      const searchLower = debouncedSearchTerm.toLowerCase()
+      filtered = filtered.filter(garage => 
+        garage.name.toLowerCase().includes(searchLower) ||
+        garage.description.toLowerCase().includes(searchLower) ||
+        garage.address.toLowerCase().includes(searchLower)
+      )
     }
 
-    const debounceTimeout = setTimeout(performSearch, 300)
-    return () => clearTimeout(debounceTimeout)
-  }, [searchQuery, garages])
+    // Apply service filter (from top search form)
+    if (selectedService) {
+      filtered = filtered.filter(garage =>
+        garage.services.some(service => 
+          service.toLowerCase().includes(selectedService.toLowerCase())
+        )
+      )
+    }
 
-  // Filter garages based on selected filters
-  useEffect(() => {
-    let filtered = [...filteredGarages]
+    // Apply location filter (from top search form)
+    if (locationFilter.trim()) {
+      const locationLower = locationFilter.toLowerCase()
+      filtered = filtered.filter(garage =>
+        garage.address.toLowerCase().includes(locationLower)
+      )
+    }
 
-    // Category filter
+    // Apply category filter (from sidebar)
     if (selectedCategory !== "All Services") {
       filtered = filtered.filter(garage => 
-        garage.services.includes(selectedCategory)
+        garage.services.some(service => 
+          service.toLowerCase().includes(selectedCategory.toLowerCase())
+        )
       )
     }
 
-    // Services filter
+    // Apply services filter (from sidebar checkboxes)
     if (selectedServices.length > 0) {
       filtered = filtered.filter(garage =>
-        selectedServices.every(service => garage.services.includes(service))
+        selectedServices.some(selectedService => 
+          garage.services.some(garageService => 
+            garageService.toLowerCase().includes(selectedService.toLowerCase())
+          )
+        )
       )
     }
 
-    // Rating filter
-    if (selectedRating !== "all") {
-      const minRating = parseFloat(selectedRating)
-      filtered = filtered.filter(garage => garage.rating >= minRating)
-    }
+    // Apply sorting
+    filtered = applySorting(filtered, sortBy)
 
     setFilteredGarages(filtered)
-  }, [selectedCategory, selectedServices, selectedRating])
+  }, [garages, debouncedSearchTerm, selectedService, locationFilter, selectedCategory, selectedServices, sortBy])
 
-  // Handle search form submission
+  // Sorting logic
+  const applySorting = (garageList: Garage[], sortOption: string) => {
+    const sorted = [...garageList]
+    
+    switch (sortOption) {
+      case 'rating':
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      case 'distance':
+        // For now, sort by name since we don't have distance calculation
+        return sorted.sort((a, b) => a.name.localeCompare(b.name))
+      case 'name':
+        return sorted.sort((a, b) => a.name.localeCompare(b.name))
+      case 'reviews':
+        // Sort by rating as proxy for reviews
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      default:
+        return sorted
+    }
+  }
+
+  // Remove old search effects - now using client-side filtering above
+
+  // Handle search form submission - now just triggers client-side filtering
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    
-    try {
-      let results = garages
-      
-      // Apply search term filter
-      if (searchTerm.trim()) {
-        results = await searchPublicGarages(searchTerm.trim())
-      }
-      
-      // Apply service filter
-      if (selectedService) {
-        const serviceResults = await filterGaragesByServices([selectedService])
-        // If we have search results, intersect them with service results
-        if (searchTerm.trim()) {
-          results = results.filter(garage => 
-            serviceResults.some(sr => sr.id === garage.id)
-          )
-        } else {
-          results = serviceResults
-        }
-      }
-      
-      // Apply location filter
-      if (locationFilter.trim()) {
-        const locationResults = await filterGaragesByLocation(locationFilter.trim())
-        // If we have previous results, intersect them with location results
-        if (searchTerm.trim() || selectedService) {
-          results = results.filter(garage => 
-            locationResults.some(lr => lr.id === garage.id)
-          )
-        } else {
-          results = locationResults
-        }
-      }
-      
-      setFilteredGarages(results)
-    } catch (error) {
-      console.error('Error searching garages:', error)
-      setFilteredGarages([])
-    } finally {
-      setLoading(false)
-    }
+    // Client-side filtering will automatically apply via useEffect dependencies
+    // No need for server calls since all filtering is now client-side
   }
 
   // Use AVAILABLE_SERVICES from the imported types
@@ -181,12 +178,17 @@ export default function SearchGaragesPage() {
   }
 
   const clearFilters = () => {
+    // Reset all filter states
     setSelectedCategory("All Services")
     setSelectedServices([])
     setSelectedContent("Websites")
     setSelectedDistance("all")
     setSelectedRating("all")
     setSearchQuery("")
+    setSearchTerm('')
+    setSelectedService('')
+    setLocationFilter('')
+    setSortBy("rating")
   }
 
   // Pagination logic: show only first 9 garages per page
