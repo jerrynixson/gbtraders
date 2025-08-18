@@ -115,8 +115,8 @@ export function Header() {
       label: "Vehicles", 
       items: vehicleNavItems 
     },
-    // { href: "/categories/garages", label: "Garages" },
     { href: "/categories/dealers", label: "Dealers" },
+    { href: "/categories/garages", label: "Garages" },
     // { href: "/categories/breakdown-services", label: "Breakdown Services" },
     // { href: "/categories/shop", label: "Shop" },
   ]
@@ -188,7 +188,7 @@ export function Header() {
                     )
                   )
                 )}
-                {/* Simple 'Search' text link with small icon after Dealers link */}
+                {/* Simple 'Search' text link with small icon after navigation items */}
                 <Link href="/search" className="text-sm font-medium hover:text-primary ml-2 flex items-center gap-1">
                   <Search className="h-4 w-4" />
                   Search
@@ -328,12 +328,15 @@ export function Header() {
               <div className="flex-grow pr-4">
                 <div className="mb-6">
                   <h3 className="text-xs uppercase text-gray-500 font-semibold mb-3">Main Navigation</h3>
-                  <div className="flex flex-row gap-x-3 w-full">
-  <Link href="/categories/vehicles" className="bg-gray-100 rounded-full px-4 py-2 text-sm font-extrabold main-navigation-bubble md:min-w-[200px] md:h-16 md:px-10 md:py-0 md:flex md:items-center md:justify-center md:text-xl md:mb-0 flex-1 justify-center">
+                  <div className="grid grid-cols-3 gap-2 w-full">
+  <Link href="/categories/vehicles" className="bg-gray-100 rounded-full px-3 py-2 text-sm font-extrabold main-navigation-bubble md:min-w-[200px] md:h-16 md:px-10 md:py-0 md:flex md:items-center md:justify-center md:text-xl md:mb-0 inline-flex items-center justify-center w-full" onClick={() => setMobileMenuOpen(false)}>
     Vehicles
   </Link>
-  <Link href="/categories/dealers" className="bg-gray-100 rounded-full px-4 py-2 text-sm font-extrabold main-navigation-bubble md:min-w-[200px] md:h-16 md:px-10 md:py-0 md:flex md:items-center md:justify-center md:text-xl md:mb-0 flex-1 justify-center">
+  <Link href="/categories/dealers" className="bg-gray-100 rounded-full px-3 py-2 text-sm font-extrabold main-navigation-bubble md:min-w-[200px] md:h-16 md:px-10 md:py-0 md:flex md:items-center md:justify-center md:text-xl md:mb-0 inline-flex items-center justify-center w-full" onClick={() => setMobileMenuOpen(false)}>
     Dealers
+  </Link>
+  <Link href="/categories/garages" className="bg-gray-100 rounded-full px-3 py-2 text-sm font-extrabold main-navigation-bubble md:min-w-[200px] md:h-16 md:px-10 md:py-0 md:flex md:items-center md:justify-center md:text-xl md:mb-0 inline-flex items-center justify-center w-full" onClick={() => setMobileMenuOpen(false)}>
+    Garages
   </Link>
 </div>
 {/* Sub-bubbles for Vehicles */}

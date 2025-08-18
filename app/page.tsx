@@ -21,27 +21,27 @@ const categories = [
   {
     title: "Vehicles",
     href: "/categories/vehicles",
-    image: "/car.jpg",
+    image: "/car.webp",
   },
   {
     title: "Dealers",
     href: "/dealers",
-    image: "/dealers.jpg",
+    image: "/dealers.webp",
   },
   {
     title: "Breakdown Services",
     href: "/coming-soon",
-    image: "/breakdown.png",
+    image: "/breakdown.webp",
   },
   {
     title: "Shop",
     href: "/coming-soon",
-    image: "/car-parts.jpg",
+    image: "/car-parts.webp",
   },
   {
     title: "Garages",
-    href: "/coming-soon",
-    image: "garages.jpg",
+    href: "/categories/garages",
+    image: "/garages.webp",
   },
 ]
 

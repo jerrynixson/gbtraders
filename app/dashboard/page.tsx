@@ -596,8 +596,20 @@ export default function DealerDashboard() {
           </div>
         </div>
 
+
         {/* Quick Stats */}
         <StatsCards stats={stats} planInfo={planInfo} />
+
+        {/* Garages Dashboard Button (above Plan Information Section) */}
+        <div className="mb-4">
+          <Button
+            variant="secondary"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md text-base font-medium"
+            onClick={() => router.push('/garages/dashboard')}
+          >
+            Garages Dashboard
+          </Button>
+        </div>
 
         {/* Plan Information Section */}
         {user && (

@@ -153,7 +153,7 @@ export default function BulkListing() {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push("/dealer/dashboard")}
+          onClick={() => router.push("/dashboard")}
         >
           Cancel
         </Button>
