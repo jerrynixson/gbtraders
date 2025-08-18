@@ -3,7 +3,7 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Star, Clock, Globe, Mail, Facebook, Twitter, Instagram } from "lucide-react";
+import { MapPin, Phone, Clock, Globe, Mail, Facebook, Twitter, Instagram } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { GoogleMapComponent } from "@/components/ui/google-map";
@@ -82,7 +82,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden sm:overflow-x-visible">
       <Header />
       <div className="container mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
         {/* Left: Main Info (2/3 width) */}
@@ -113,7 +113,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 mb-6">
+          <div className="flex gap-3 sm:gap-4 mb-6 flex-wrap sm:flex-nowrap">
             <Button 
               className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold"
               onClick={() => window.open(`mailto:${garage.email}`, '_self')}
@@ -141,6 +141,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
             <MapPin className="h-5 w-5 mr-2" />
             {garage.address}
           </div>
+          {/* Rating (temporarily disabled)
           <div className="flex items-center mb-6">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
@@ -150,6 +151,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
             ))}
             <span className="ml-2 text-blue-900 font-semibold">{garage.rating || 0}/5</span>
           </div>
+          */}
 
           {/* Business Overview */}
           <div className="mb-6">
@@ -185,7 +187,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
             </div>
           </div>
 
-          {/* Rating Summary */}
+          {/* Rating Summary (temporarily disabled)
           <div className="bg-white/80 rounded-3xl shadow-lg p-6">
             <h2 className="font-semibold text-blue-800 mb-3">Rating Summary</h2>
             <div className="flex items-center mb-2">
@@ -198,6 +200,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
               <span className="ml-2 text-blue-900 font-semibold">{garage.rating || 0}/5</span>
             </div>
           </div>
+          */}
 
           {/* Opening Hours */}
           <div className="bg-white/80 rounded-3xl shadow-lg p-6">
@@ -275,12 +278,14 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
                   <MapPin className="h-4 w-4 mr-1" />
                   {relatedGarage.address || 'Location not specified'}
                 </div>
+                {/* Rating in card (temporarily disabled)
                 <div className="flex items-center mb-2">
                   {Array.from({ length: 5 }).map((_, j) => (
                     <Star key={j} className={`h-4 w-4 ${j < Math.round(relatedGarage.rating || 0) ? "text-yellow-400 fill-yellow-400" : "text-gray-200"}`} />
                   ))}
                   <span className="ml-2 text-gray-700 font-medium">{relatedGarage.rating || 0}/5</span>
                 </div>
+                */}
                 <div className="flex flex-wrap gap-1 mb-2">
                   {(relatedGarage.services || []).slice(0, 3).map((service, k) => (
                     <span key={k} className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">{service}</span>
