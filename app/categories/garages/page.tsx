@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, MapPin, Filter, Grid, List, Star, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield } from "lucide-react"
+import { Search, MapPin, Filter, Grid, List, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
@@ -18,7 +18,7 @@ import { AVAILABLE_SERVICES } from "@/lib/types/garage"
 
 export default function SearchGaragesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [sortBy, setSortBy] = useState("rating")
+  const [sortBy, setSortBy] = useState("name")
   const [selectedCategory, setSelectedCategory] = useState<string>("All Services")
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [selectedContent, setSelectedContent] = useState("Websites")
@@ -188,7 +188,7 @@ export default function SearchGaragesPage() {
     setSearchTerm('')
     setSelectedService('')
     setLocationFilter('')
-    setSortBy("rating")
+  setSortBy("name")
   }
 
   // Pagination logic: show only first 9 garages per page
@@ -215,10 +215,12 @@ export default function SearchGaragesPage() {
             <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
               {garage.name}
             </h3>
+            {/** Rating UI disabled
             <div className="flex items-center gap-1 text-sm">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
               <span className="font-medium">{garage.rating ? garage.rating.toFixed(1) : '0.0'}</span>
             </div>
+            */}
           </div>
 
           <div className="flex items-center text-sm text-gray-600 mb-3">
@@ -507,10 +509,10 @@ export default function SearchGaragesPage() {
                   onChange={e => setSortBy(e.target.value)}
                   className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 transition-all duration-200 hover:bg-gray-50 min-w-[120px]"
                 >
-                  <option value="rating">Highest rated</option>
+                  {/* Rating-based sort removed */}
                   <option value="distance">Nearest</option>
                   <option value="name">Name A-Z</option>
-                  <option value="reviews">Most reviews</option>
+                  {/* <option value="reviews">Most reviews</option> */}
                 </select>
               </div>
             </div>
@@ -559,10 +561,12 @@ export default function SearchGaragesPage() {
                               <span>{garage.address}</span>
                             </div>
                           </div>
+                          {/** Rating UI disabled
                           <div className="flex items-center gap-1 text-sm">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                             <span className="font-medium">{garage.rating ? garage.rating.toFixed(1) : '0.0'}</span>
                           </div>
+                          */}
                         </div>
 
                         <p className="text-sm text-gray-600 mb-3">
