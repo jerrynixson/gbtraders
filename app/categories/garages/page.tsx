@@ -632,114 +632,119 @@ export default function SearchGaragesPage() {
 
         {/* Additional Content Container */}
         <div className="relative">
-          {/* Need Advice Section */}
+          {/* Need Advice Section (commented out) */}
+          {/*
           <div className="bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
             <h2 className="text-3xl font-bold mb-4">NEED ADVICE</h2>
-              <h3 className="text-2xl font-semibold mb-6">Not sure what's wrong?</h3>
-              <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                Our in-house mechanics team is here to assist. Share a brief description of the problem and they can help get it fixed.
-              </p>
-              <Button className="bg-blue-500 text-white hover:bg-blue-600 font-semibold px-8 py-3 rounded-full mb-8">
-                GET TECHNICAL ASSISTANCE →
-              </Button>
-              
-              <h3 className="text-2xl font-semibold mb-6">Book a mechanic online today</h3>
-              <p className="text-gray-600 mb-8">
-                Get an instant quote, then book a vetted mechanic to fix your car at your home or office.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className="flex flex-col items-center">
-                  <MapPin className="h-12 w-12 text-blue-600 mb-2" />
-                  <div className="text-sm font-medium">Maximum convenience</div>
-                  <div className="text-xs text-gray-500">See the garage before you come to you</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <PoundSterling className="h-12 w-12 text-blue-600 mb-2" />
-                  <div className="text-sm font-medium">No hidden costs</div>
-                  <div className="text-xs text-gray-500">All quotes include parts, labour and VAT</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Settings className="h-12 w-12 text-blue-600 mb-2" />
-                  <div className="text-sm font-medium">Mechanics you can trust</div>
-                  <div className="text-xs text-gray-500">Friendly local experts</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Shield className="h-12 w-12 text-blue-600 mb-2" />
-                  <div className="text-sm font-medium">Spread the cost</div>
-                  <div className="text-xs text-gray-500">With finance!</div>
-                </div>
+            <h3 className="text-2xl font-semibold mb-6">Not sure what's wrong?</h3>
+            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+              Our in-house mechanics team is here to assist. Share a brief description of the problem and they can help get it fixed.
+            </p>
+            <Button className="bg-blue-500 text-white hover:bg-blue-600 font-semibold px-8 py-3 rounded-full mb-8">
+              GET TECHNICAL ASSISTANCE →
+            </Button>
+
+            <h3 className="text-2xl font-semibold mb-6">Book a mechanic online today</h3>
+            <p className="text-gray-600 mb-8">
+              Get an instant quote, then book a vetted mechanic to fix your car at your home or office.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="flex flex-col items-center">
+                <MapPin className="h-12 w-12 text-blue-600 mb-2" />
+                <div className="text-sm font-medium">Maximum convenience</div>
+                <div className="text-xs text-gray-500">See the garage before you come to you</div>
               </div>
-              
-              <Button className="bg-orange-500 text-white hover:bg-orange-600 font-semibold px-8 py-3 rounded-lg mb-12">
-                Get a quote →
-              </Button>
+              <div className="flex flex-col items-center">
+                <PoundSterling className="h-12 w-12 text-blue-600 mb-2" />
+                <div className="text-sm font-medium">No hidden costs</div>
+                <div className="text-xs text-gray-500">All quotes include parts, labour and VAT</div>
+              </div>
+              <div className="flex flex-col items-center">
+                <Settings className="h-12 w-12 text-blue-600 mb-2" />
+                <div className="text-sm font-medium">Mechanics you can trust</div>
+                <div className="text-xs text-gray-500">Friendly local experts</div>
+              </div>
+              <div className="flex flex-col items-center">
+                <Shield className="h-12 w-12 text-blue-600 mb-2" />
+                <div className="text-sm font-medium">Spread the cost</div>
+                <div className="text-xs text-gray-500">With finance!</div>
+              </div>
             </div>
 
-            {/* Service Cards Section */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8 mb-12">
-              {/* Brake Service Card */}
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col">
-                <div className="relative">
-                  <div className="absolute top-6 left-6 bg-blue-600 text-white rounded-full px-5 py-4 flex flex-col items-center shadow-lg">
-                    <span className="text-2xl font-extrabold">£10</span>
-                    <span className="block text-base font-medium">OFF</span>
-                    <span className="text-sm tracking-wide">BRAKES</span>
+            <Button className="bg-orange-500 text-white hover:bg-orange-600 font-semibold px-8 py-3 rounded-lg mb-12">
+              Get a quote →
+            </Button>
+          </div>
+          */}
+
+            {/* Service Cards Section (disabled) */}
+            {false && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8 mb-12">
+                {/* Brake Service Card */}
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col">
+                  <div className="relative">
+                    <div className="absolute top-6 left-6 bg-blue-600 text-white rounded-full px-5 py-4 flex flex-col items-center shadow-lg">
+                      <span className="text-2xl font-extrabold">£10</span>
+                      <span className="block text-base font-medium">OFF</span>
+                      <span className="text-sm tracking-wide">BRAKES</span>
+                    </div>
+                    <img src="/garages/breakpad.jpg" alt="Brake service" className="w-full h-56 object-cover object-center rounded-t-2xl" />
                   </div>
-                  <img src="/garages/breakpad.jpg" alt="Brake service" className="w-full h-56 object-cover object-center rounded-t-2xl" />
+                  <div className="flex-1 flex flex-col justify-between p-8">
+                    <h3 className="text-2xl font-bold mb-3 text-gray-900">Brake pads and discs replacement</h3>
+                    <p className="text-lg text-gray-600 mb-6">From <span className="font-semibold text-blue-700">£139.99</span></p>
+                    <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-base py-3 rounded-xl shadow-md transition-transform duration-200 hover:scale-105">
+                      Get a quote →
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex-1 flex flex-col justify-between p-8">
-                  <h3 className="text-2xl font-bold mb-3 text-gray-900">Brake pads and discs replacement</h3>
-                  <p className="text-lg text-gray-600 mb-6">From <span className="font-semibold text-blue-700">£139.99</span></p>
-                  <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-base py-3 rounded-xl shadow-md transition-transform duration-200 hover:scale-105">
-                    Get a quote →
-                  </Button>
-                </div>
-              </div>
 
-              {/* Battery Service Card */}
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col">
-                <div className="relative">
-                  <img src="/garages/carbattery.jpg" alt="Battery service" className="w-full h-56 object-cover object-center rounded-t-2xl" />
+                {/* Battery Service Card */}
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col">
+                  <div className="relative">
+                    <img src="/garages/carbattery.jpg" alt="Battery service" className="w-full h-56 object-cover object-center rounded-t-2xl" />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-between p-8">
+                    <h3 className="text-2xl font-bold mb-3 text-gray-900">Car battery replacement</h3>
+                    <p className="text-lg text-gray-600 mb-6">From <span className="font-semibold text-blue-700">£140</span></p>
+                    <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-base py-3 rounded-xl shadow-md transition-transform duration-200 hover:scale-105">
+                      Get a quote →
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex-1 flex flex-col justify-between p-8">
-                  <h3 className="text-2xl font-bold mb-3 text-gray-900">Car battery replacement</h3>
-                  <p className="text-lg text-gray-600 mb-6">From <span className="font-semibold text-blue-700">£140</span></p>
-                  <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-base py-3 rounded-xl shadow-md transition-transform duration-200 hover:scale-105">
-                    Get a quote →
-                  </Button>
-                </div>
-              </div>
 
-              {/* Diagnostic Service Card */}
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col">
-                <div className="relative">
-                  <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80" alt="Diagnostic service" className="w-full h-56 object-cover object-center rounded-t-2xl" />
+                {/* Diagnostic Service Card */}
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col">
+                  <div className="relative">
+                    <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80" alt="Diagnostic service" className="w-full h-56 object-cover object-center rounded-t-2xl" />
+                  </div>
+                    <div className="flex-1 flex flex-col justify-between p-8">
+                      <h3 className="text-2xl font-bold mb-3 text-gray-900">Vehicle diagnostic check</h3>
+                      <p className="text-lg text-gray-600 mb-6"><span className="font-semibold text-blue-700">£99</span></p>
+                      <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-base py-3 rounded-xl shadow-md transition-transform duration-200 hover:scale-105">
+                        Get a quote →
+                      </Button>
+                    </div>
                 </div>
-                <div className="flex-1 flex flex-col justify-between p-8">
-                  <h3 className="text-2xl font-bold mb-3 text-gray-900">Vehicle diagnostic check</h3>
-                  <p className="text-lg text-gray-600 mb-6"><span className="font-semibold text-blue-700">£99</span></p>
-                  <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-base py-3 rounded-xl shadow-md transition-transform duration-200 hover:scale-105">
-                    Get a quote →
-                  </Button>
+                {/* Sample Service Card */}
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col">
+                  <div className="relative">
+                    <img src="/garages/aircondition.jpg" alt="Air Conditioning Service" className="w-full h-56 object-cover object-center rounded-t-2xl" />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-between p-8">
+                    <h3 className="text-2xl font-bold mb-3 text-gray-900">Air Conditioning Service</h3>
+                    <p className="text-lg text-gray-600 mb-6">From <span className="font-semibold text-blue-700">£89.99</span></p>
+                    <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-base py-3 rounded-xl shadow-md transition-transform duration-200 hover:scale-105">
+                      Get a quote →
+                    </Button>
+                  </div>
                 </div>
               </div>
-              {/* Sample Service Card */}
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col">
-                <div className="relative">
-                  <img src="/garages/aircondition.jpg" alt="Air Conditioning Service" className="w-full h-56 object-cover object-center rounded-t-2xl" />
-                </div>
-                <div className="flex-1 flex flex-col justify-between p-8">
-                  <h3 className="text-2xl font-bold mb-3 text-gray-900">Air Conditioning Service</h3>
-                  <p className="text-lg text-gray-600 mb-6">From <span className="font-semibold text-blue-700">£89.99</span></p>
-                  <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-base py-3 rounded-xl shadow-md transition-transform duration-200 hover:scale-105">
-                    Get a quote →
-                  </Button>
-                </div>
-              </div>
-            </div>
+            )}
 
-            {/* Apply to be a mechanic Section */}
+            {/* Apply to be a mechanic Section (commented out) */}
+            {/**
             <div className="flex flex-col md:flex-row items-center gap-8 mt-12 mb-12 bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
               <div className="md:w-1/2">
                 <h2 className="text-3xl font-extrabold mb-6 text-gray-900">Apply to be a mechanic</h2>
@@ -757,8 +762,10 @@ export default function SearchGaragesPage() {
                 />
               </div>
             </div>
+            */}
 
-            {/* Bottom CTA Section */}
+            {/* Bottom CTA Section (commented out) */}
+            {/**
             <div className="mt-12 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white text-center">
               <h2 className="text-3xl font-bold mb-4">Are you a garage owner?</h2>
               <p className="text-blue-100 mb-6 max-w-2xl mx-auto">Join our network of trusted mechanics and grow your business. Get access to new customers and manage your bookings easily.</p>
@@ -766,6 +773,7 @@ export default function SearchGaragesPage() {
                 Join as a Garage Partner
               </Button>
             </div>
+            */}
           </div>
         </div>
       </div>
