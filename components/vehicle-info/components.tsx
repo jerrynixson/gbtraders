@@ -524,4 +524,4 @@ DetailItem.displayName = 'DetailItem';
 VehicleSpecificDetails.displayName = 'VehicleSpecificDetails';
 CommonVehicleDetails.displayName = 'CommonVehicleDetails';
 VehicleDocumentation.displayName = 'VehicleDocumentation';
-VehicleTypeIcon.displayName = 'VehicleTypeIcon'; 
+VehicleTypeIcon.displayName = 'VehicleTypeIcon';

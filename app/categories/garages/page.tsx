@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, MapPin, Filter, Grid, List, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield } from "lucide-react"
+import { Search, MapPin, Filter, Grid, List, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield, Lock, CheckCircle, Timer } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
@@ -126,18 +126,38 @@ export default function SearchGaragesPage() {
     const sorted = [...garageList]
     
     switch (sortOption) {
-      case 'rating':
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0))
-      case 'distance':
-        // For now, sort by name since we don't have distance calculation
-        return sorted.sort((a, b) => a.name.localeCompare(b.name))
       case 'name':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name))
-      case 'reviews':
-        // Sort by rating as proxy for reviews
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case 'services':
+        return sorted.sort((a, b) => (b.services?.length || 0) - (a.services?.length || 0));
+      case 'recent':
+        return sorted.sort((a, b) => {
+          const getTimestamp = (obj: any) => {
+            if (obj?.toDate) return obj.toDate().getTime();
+            if (obj?.toMillis) return obj.toMillis();
+            if (typeof obj === 'number') return obj;
+            if (obj instanceof Date) return obj.getTime();
+            return 0;
+          };
+          const aTime = getTimestamp(a.createdAt);
+          const bTime = getTimestamp(b.createdAt);
+          return bTime - aTime;
+        });
+      case 'oldest':
+        return sorted.sort((a, b) => {
+          const getTimestamp = (obj: any) => {
+            if (obj?.toDate) return obj.toDate().getTime();
+            if (obj?.toMillis) return obj.toMillis();
+            if (typeof obj === 'number') return obj;
+            if (obj instanceof Date) return obj.getTime();
+            return 0;
+          };
+          const aTime = getTimestamp(a.createdAt);
+          const bTime = getTimestamp(b.createdAt);
+          return aTime - bTime;
+        });
       default:
-        return sorted
+        return sorted;
     }
   }
 
@@ -208,8 +228,8 @@ export default function SearchGaragesPage() {
   }
 
   const GarageCard = ({ garage }: { garage: Garage }) => (
-    <Link href={`/categories/garages/${garage.id}`} className="block">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 group">
+    <Link href={`/categories/garages/${garage.id}`} className="block h-full">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 group h-full flex flex-col">
         <div className="relative">
           <Image 
             src={garage.image || '/placeholder.jpg'} 
@@ -218,12 +238,14 @@ export default function SearchGaragesPage() {
             height={200}
             className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
           />
+          {/* Price badge hidden per request
           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-sm font-medium">
             {garage.price || 'Contact for pricing'}
           </div>
+          */}
         </div>
 
-        <div className="p-4">
+        <div className="p-4 flex-1 flex flex-col">
           <div className="flex items-start justify-between mb-2">
             <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
               {garage.name}
@@ -241,11 +263,11 @@ export default function SearchGaragesPage() {
             <span>{garage.address}</span>
           </div>
 
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">
             {garage.description}
           </p>
 
-          <div className="flex flex-wrap gap-1 mb-3">
+          <div className="flex flex-wrap gap-1 mb-3 mt-auto">
             {garage.services.slice(0, 3).map((service: string, i: number) => (
               <span key={i} className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
                 {service}
@@ -380,26 +402,8 @@ export default function SearchGaragesPage() {
                 </Button>
               </div>
 
-              {/* Category Filter */}
+              {/* Only Services Filter remains, Content Type removed */}
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="category-select" className="text-sm font-medium text-gray-700">
-                    Category
-                  </label>
-                  <select
-                    id="category-select"
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    value={selectedCategory}
-                    onChange={e => setSelectedCategory(e.target.value)}
-                  >
-                    {categories.map(cat => (
-                      <option key={cat.name} value={cat.name}>
-                        {cat.name} ({cat.count})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 {/* Services Filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
@@ -422,26 +426,6 @@ export default function SearchGaragesPage() {
                     ))}
                   </div>
                 </div>
-
-                {/* Content Type Filter - Checkbox group */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Content Type
-                  </label>
-                  <div className="flex flex-col gap-2">
-                    {contentTypes.map(content => (
-                      <label key={content} className="flex items-center gap-2 py-1 px-1 rounded hover:bg-gray-50 transition-colors cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedContent === content}
-                          onChange={() => setSelectedContent(content)}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{content}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -451,28 +435,28 @@ export default function SearchGaragesPage() {
             {/* Feature Bar - now above results header */}
             <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 px-2 sm:px-4 py-4 sm:py-6 bg-white/70 backdrop-blur rounded-2xl shadow mb-6">
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2z" /></svg>
+                <PoundSterling className="h-8 w-8 text-blue-600" />
                 <div>
                   <div className="font-bold text-gray-900">Up to 47% cheaper</div>
                   <div className="text-xs text-gray-500">Versus franchise garages</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <CheckCircle className="h-8 w-8 text-blue-600" />
                 <div>
                   <div className="font-bold text-gray-900">Vetted mechanics</div>
                   <div className="text-xs text-gray-500">Only qualified professionals</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <Shield className="h-8 w-8 text-blue-600" />
                 <div>
                   <div className="font-bold text-gray-900">Quality guarantee</div>
                   <div className="text-xs text-gray-500">12-month warranty on parts</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <Timer className="h-8 w-8 text-blue-600" />
                 <div>
                   <div className="font-bold text-gray-900">Same day service</div>
                   <div className="text-xs text-gray-500">Quick turnaround time</div>
@@ -520,12 +504,13 @@ export default function SearchGaragesPage() {
                 <select
                   value={sortBy}
                   onChange={e => setSortBy(e.target.value)}
-                  className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 transition-all duration-200 hover:bg-gray-50 min-w-[120px]"
+                  className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 transition-all duration-200 hover:bg-gray-50 min-w-[160px]"
+                  title="Sort garages"
                 >
-                  {/* Rating-based sort removed */}
-                  <option value="distance">Nearest</option>
                   <option value="name">Name A-Z</option>
-                  {/* <option value="reviews">Most reviews</option> */}
+                  <option value="services">Number of Services</option>
+                  <option value="recent">Recently Added</option>
+                  <option value="oldest">Oldest Added</option>
                 </select>
               </div>
             </div>
@@ -558,9 +543,11 @@ export default function SearchGaragesPage() {
                     <div className="flex">
                       <div className="w-64 h-48 flex-shrink-0 relative">
                         <img src={garage.image || '/placeholder.jpg'} alt={garage.name} className="w-full h-full object-cover" />
+                        {/* Price badge hidden per request
                         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-sm font-medium">
                           {garage.price || 'Contact for pricing'}
                         </div>
+                        */}
                       </div>
                       
                       <div className="flex-1 p-6">

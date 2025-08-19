@@ -51,14 +51,8 @@ export class TokenRepository {
    */
   async getUserPlanInfo(userId: string, userType: 'user' | 'dealer' = 'dealer'): Promise<UserPlanInfo | null> {
     try {
-      // Check the primary collection first
-      const collectionRef = userType === 'dealer' ? this.dealersCollection : this.usersCollection;
-      let userDoc = await getDoc(doc(collectionRef, userId));
-
-      // If not found and userType is 'dealer', try users collection as fallback
-      if (!userDoc.exists() && userType === 'dealer') {
-        userDoc = await getDoc(doc(this.usersCollection, userId));
-      }
+      // Always use the users collection regardless of userType
+      const userDoc = await getDoc(doc(this.usersCollection, userId));
 
       if (!userDoc.exists()) {
         return null;
@@ -102,18 +96,10 @@ export class TokenRepository {
     }
   ): Promise<void> {
     try {
-      const collectionRef = userType === 'dealer' ? this.dealersCollection : this.usersCollection;
-      let userRef = doc(collectionRef, userId);
-      
-      // Try to get the document from the primary collection first
-      let currentDoc = await getDoc(userRef);
-      
-      // If not found and userType is 'dealer', try users collection as fallback
-      if (!currentDoc.exists() && userType === 'dealer') {
-        userRef = doc(this.usersCollection, userId);
-        currentDoc = await getDoc(userRef);
-      }
-      
+      // Always use the users collection
+      const userRef = doc(this.usersCollection, userId);
+      const currentDoc = await getDoc(userRef);
+
       const now = new Date();
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + planData.validity);
@@ -174,9 +160,7 @@ export class TokenRepository {
       console.error('Error updating user plan:', error);
       throw error;
     }
-  }
-
-  /**
+  }  /**
    * Check if user's plan is active and has available tokens
    */
   async checkTokenAvailability(userId: string, userType: 'user' | 'dealer' = 'dealer'): Promise<{
@@ -247,9 +231,8 @@ export class TokenRepository {
         updatedAt: Timestamp.fromDate(now)
       });
 
-      // Update user's used token count
-      const collectionRef = userType === 'dealer' ? this.dealersCollection : this.usersCollection;
-      const userRef = doc(collectionRef, userId);
+      // Update user's used token count - always use users collection
+      const userRef = doc(this.usersCollection, userId);
       batch.update(userRef, {
         usedTokens: (availability.planInfo?.usedTokens || 0) + 1,
         updatedAt: Timestamp.fromDate(now)
@@ -309,8 +292,8 @@ export class TokenRepository {
       if (vehicleData.tokenStatus === 'active' && reason !== 'user_choice') {
         const planInfo = await this.getUserPlanInfo(userId, userType);
         if (planInfo) {
-          const collectionRef = userType === 'dealer' ? this.dealersCollection : this.usersCollection;
-          const userRef = doc(collectionRef, userId);
+          // Always use users collection
+          const userRef = doc(this.usersCollection, userId);
           batch.update(userRef, {
             usedTokens: Math.max(0, planInfo.usedTokens - 1),
             updatedAt: Timestamp.fromDate(now)

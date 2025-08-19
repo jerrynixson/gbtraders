@@ -31,14 +31,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userType = searchParams.get('userType') || 'dealer';
 
-    // Get user plan info using admin SDK
-    const collection = userType === 'dealer' ? 'dealers' : 'users';
-    let userDoc = await adminDb.collection(collection).doc(userId).get();
-
-    // If dealer document doesn't exist, try users collection as fallback
-    if (!userDoc.exists && userType === 'dealer') {
-      userDoc = await adminDb.collection('users').doc(userId).get();
-    }
+    // Always get user plan info from users collection
+    const userDoc = await adminDb.collection('users').doc(userId).get();
 
     if (!userDoc.exists) {
       return NextResponse.json({

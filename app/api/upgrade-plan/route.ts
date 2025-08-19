@@ -70,16 +70,9 @@ async function upgradeUserPlan(
   const batch = adminDb.batch();
   
   try {
-    // Determine collection based on user type
-    const userCollection = userType === 'dealer' ? 'dealers' : 'users';
-    let userRef = adminDb.collection(userCollection).doc(userId);
-    let userDoc = await userRef.get();
-
-    // Fallback to users collection if dealer not found
-    if (!userDoc.exists && userType === 'dealer') {
-      userRef = adminDb.collection('users').doc(userId);
-      userDoc = await userRef.get();
-    }
+    // Always use users collection
+    const userRef = adminDb.collection('users').doc(userId);
+    const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
       throw new Error(`User document not found for ID: ${userId}`);
@@ -215,13 +208,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userType = searchParams.get('userType') || 'dealer';
 
-    // Get current user plan
-    const userCollection = userType === 'dealer' ? 'dealers' : 'users';
-    let userDoc = await adminDb.collection(userCollection).doc(userId).get();
-
-    if (!userDoc.exists && userType === 'dealer') {
-      userDoc = await adminDb.collection('users').doc(userId).get();
-    }
+    // Always get current user plan from users collection
+    const userDoc = await adminDb.collection('users').doc(userId).get();
 
     if (!userDoc.exists) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

@@ -2,7 +2,7 @@
 
 import { Header } from "@/components/header"
 import { CarImageSection } from "@/components/car/car-image-section"
-import { DealerInformation } from "@/components/car/dealer-information"
+import { DealerInformation } from "@/components/vehicle-info/dealer-information"
 import { CarDetailsPayment } from "@/components/car/car-details-payment"
 import { VehicleSpecsBar } from "@/components/vehicle/vehicle-specs-bar"
 import { Footer } from "@/components/footer"
@@ -20,7 +20,7 @@ import { Vehicle, Car as CarType, UsedCar, Van as VanType, Truck as TruckType, V
 import { VehicleRepository } from "@/lib/db/repositories/vehicleRepository"
 import { FavoritesRepository } from "@/lib/db/repositories/favoritesRepository"
 import { useAuth } from "@/hooks/useAuth"
-import { CommonVehicleDetails, VehicleDocumentation, VehicleSpecificDetails } from "./components"
+import { CommonVehicleDetails, VehicleDocumentation, VehicleSpecificDetails } from "@/components/vehicle-info/components"
 import { useRouter } from "next/navigation"
 import { doc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -185,17 +185,18 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
   user: any;
 }) => {
   const [dealerProfile, setDealerProfile] = useState<DealerProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [loadingDealer, setLoadingDealer] = useState(true);
 
   useEffect(() => {
-    const fetchDealerProfile = async () => {
+    const fetchDealerAndUserProfile = async () => {
       if (!vehicle.dealerUid) {
         setLoadingDealer(false);
         return;
       }
 
       try {
-        // Fetch dealer profile directly from Firestore
+        // First, try to fetch dealer profile from dealers collection
         const dealerRef = doc(db, 'dealers', vehicle.dealerUid);
         const dealerDoc = await getDoc(dealerRef);
         
@@ -204,18 +205,28 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           console.log('Dealer profile fetched:', profile);
           setDealerProfile(profile);
         } else {
-          console.log('Dealer profile not found');
+          console.log('Dealer profile not found, fetching user profile...');
+          // If no dealer profile, fetch user profile as fallback
+          const userRef = doc(db, 'users', vehicle.dealerUid);
+          const userDoc = await getDoc(userRef);
+          
+          if (userDoc.exists()) {
+            const userProfileData = userDoc.data();
+            console.log('User profile fetched for fallback:', userProfileData);
+            setUserProfile(userProfileData);
+          }
           setDealerProfile(null);
         }
       } catch (error) {
-        console.error("Error fetching dealer profile:", error);
+        console.error("Error fetching dealer/user profile:", error);
         setDealerProfile(null);
+        setUserProfile(null);
       } finally {
         setLoadingDealer(false);
       }
     };
 
-    fetchDealerProfile();
+    fetchDealerAndUserProfile();
   }, [vehicle.dealerUid]);
 
   const dealerInfo = {
@@ -232,6 +243,14 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
       twitter: dealerProfile.socialMedia[1],
       instagram: dealerProfile.socialMedia[2]
     } : undefined,
+    userFallback: userProfile ? {
+      firstName: userProfile.firstName,
+      lastName: userProfile.lastName,
+      email: userProfile.email,
+      emailVerified: userProfile.emailVerified,
+      role: userProfile.role
+    } : undefined,
+    dealerUid: vehicle.dealerUid
   };
 
   const carDetails = {

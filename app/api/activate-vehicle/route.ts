@@ -26,12 +26,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`Processing ${action} request for vehicle ${vehicleId} by user ${userId}`);
 
-    // Get user plan info from users collection (with fallback logic)
-    let userDoc = await adminDb.collection('dealers').doc(userId).get();
-    
-    if (!userDoc.exists) {
-      userDoc = await adminDb.collection('users').doc(userId).get();
-    }
+    // Always get user plan info from users collection
+    const userDoc = await adminDb.collection('users').doc(userId).get();
 
     if (!userDoc.exists) {
       return NextResponse.json(

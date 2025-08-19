@@ -95,8 +95,8 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
         return;
       }
 
-      // Fetch plan info from API using admin SDK
-      const response = await fetch(`/api/plan-info?userType=${userType}`, {
+      // Fetch plan info from API - no longer need userType parameter
+      const response = await fetch(`/api/plan-info`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -160,7 +160,7 @@ export function PlanInfoSection({ userId, userType = 'dealer', onPlanUpdate }: P
         return;
       }
 
-      const response = await fetch(`/api/upgrade-plan?userType=${userType}`, {
+      const response = await fetch(`/api/upgrade-plan`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
