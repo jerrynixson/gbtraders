@@ -118,7 +118,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
               className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold"
               onClick={() => window.open(`mailto:${garage.email}`, '_self')}
             >
-              <Mail className="mr-2" /> Message
+              <Mail className="mr-2" /> Mail
             </Button>
             <Button 
               className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold"

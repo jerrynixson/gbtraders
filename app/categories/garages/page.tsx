@@ -208,8 +208,8 @@ export default function SearchGaragesPage() {
   }
 
   const GarageCard = ({ garage }: { garage: Garage }) => (
-    <Link href={`/categories/garages/${garage.id}`} className="block">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 group">
+    <Link href={`/categories/garages/${garage.id}`} className="block h-full">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 group h-full flex flex-col">
         <div className="relative">
           <Image 
             src={garage.image || '/placeholder.jpg'} 
@@ -218,12 +218,14 @@ export default function SearchGaragesPage() {
             height={200}
             className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
           />
+          {/* Price badge hidden per request
           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-sm font-medium">
             {garage.price || 'Contact for pricing'}
           </div>
+          */}
         </div>
 
-        <div className="p-4">
+        <div className="p-4 flex-1 flex flex-col">
           <div className="flex items-start justify-between mb-2">
             <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
               {garage.name}
@@ -241,11 +243,11 @@ export default function SearchGaragesPage() {
             <span>{garage.address}</span>
           </div>
 
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">
             {garage.description}
           </p>
 
-          <div className="flex flex-wrap gap-1 mb-3">
+          <div className="flex flex-wrap gap-1 mb-3 mt-auto">
             {garage.services.slice(0, 3).map((service: string, i: number) => (
               <span key={i} className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
                 {service}
@@ -422,26 +424,6 @@ export default function SearchGaragesPage() {
                     ))}
                   </div>
                 </div>
-
-                {/* Content Type Filter - Checkbox group */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Content Type
-                  </label>
-                  <div className="flex flex-col gap-2">
-                    {contentTypes.map(content => (
-                      <label key={content} className="flex items-center gap-2 py-1 px-1 rounded hover:bg-gray-50 transition-colors cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedContent === content}
-                          onChange={() => setSelectedContent(content)}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{content}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -515,19 +497,7 @@ export default function SearchGaragesPage() {
                   </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end">
-                <span className="text-sm font-medium">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={e => setSortBy(e.target.value)}
-                  className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 transition-all duration-200 hover:bg-gray-50 min-w-[120px]"
-                >
-                  {/* Rating-based sort removed */}
-                  <option value="distance">Nearest</option>
-                  <option value="name">Name A-Z</option>
-                  {/* <option value="reviews">Most reviews</option> */}
-                </select>
-              </div>
+              {/* Sort section commented out per request */}
             </div>
 
             {/* Garage listings */}
@@ -558,9 +528,11 @@ export default function SearchGaragesPage() {
                     <div className="flex">
                       <div className="w-64 h-48 flex-shrink-0 relative">
                         <img src={garage.image || '/placeholder.jpg'} alt={garage.name} className="w-full h-full object-cover" />
+                        {/* Price badge hidden per request
                         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-sm font-medium">
                           {garage.price || 'Contact for pricing'}
                         </div>
+                        */}
                       </div>
                       
                       <div className="flex-1 p-6">
