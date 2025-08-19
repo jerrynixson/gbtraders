@@ -126,18 +126,38 @@ export default function SearchGaragesPage() {
     const sorted = [...garageList]
     
     switch (sortOption) {
-      case 'rating':
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0))
-      case 'distance':
-        // For now, sort by name since we don't have distance calculation
-        return sorted.sort((a, b) => a.name.localeCompare(b.name))
       case 'name':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name))
-      case 'reviews':
-        // Sort by rating as proxy for reviews
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case 'services':
+        return sorted.sort((a, b) => (b.services?.length || 0) - (a.services?.length || 0));
+      case 'recent':
+        return sorted.sort((a, b) => {
+          const getTimestamp = (obj: any) => {
+            if (obj?.toDate) return obj.toDate().getTime();
+            if (obj?.toMillis) return obj.toMillis();
+            if (typeof obj === 'number') return obj;
+            if (obj instanceof Date) return obj.getTime();
+            return 0;
+          };
+          const aTime = getTimestamp(a.createdAt);
+          const bTime = getTimestamp(b.createdAt);
+          return bTime - aTime;
+        });
+      case 'oldest':
+        return sorted.sort((a, b) => {
+          const getTimestamp = (obj: any) => {
+            if (obj?.toDate) return obj.toDate().getTime();
+            if (obj?.toMillis) return obj.toMillis();
+            if (typeof obj === 'number') return obj;
+            if (obj instanceof Date) return obj.getTime();
+            return 0;
+          };
+          const aTime = getTimestamp(a.createdAt);
+          const bTime = getTimestamp(b.createdAt);
+          return aTime - bTime;
+        });
       default:
-        return sorted
+        return sorted;
     }
   }
 
@@ -440,14 +460,14 @@ export default function SearchGaragesPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <div>
                   <div className="font-bold text-gray-900">Vetted mechanics</div>
                   <div className="text-xs text-gray-500">Only qualified professionals</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <div>
                   <div className="font-bold text-gray-900">Quality guarantee</div>
                   <div className="text-xs text-gray-500">12-month warranty on parts</div>
@@ -497,7 +517,20 @@ export default function SearchGaragesPage() {
                   </Button>
                 </div>
               </div>
-              {/* Sort section commented out per request */}
+              <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end">
+                <span className="text-sm font-medium">Sort by:</span>
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value)}
+                  className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 transition-all duration-200 hover:bg-gray-50 min-w-[160px]"
+                  title="Sort garages"
+                >
+                  <option value="name">Name A-Z</option>
+                  <option value="services">Number of Services</option>
+                  <option value="recent">Recently Added</option>
+                  <option value="oldest">Oldest Added</option>
+                </select>
+              </div>
             </div>
 
             {/* Garage listings */}
