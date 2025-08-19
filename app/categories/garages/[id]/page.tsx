@@ -120,13 +120,14 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
             >
               <Mail className="mr-2" /> Mail
             </Button>
-            <Button 
+            <Button
               className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold"
-              as={garage.website ? 'a' : 'button'}
-              href={garage.website || undefined}
-              target={garage.website ? '_blank' : undefined}
-              rel={garage.website ? 'noopener noreferrer' : undefined}
-              disabled={!garage.website}
+              onClick={() => {
+                const url = garage.website?.startsWith('http://') || garage.website?.startsWith('https://')
+                  ? garage.website
+                  : `https://${garage.website}`;
+                window.open(url, '_blank', 'noopener,noreferrer');
+              }}
             >
               <Globe className="mr-2" /> Website
             </Button>
