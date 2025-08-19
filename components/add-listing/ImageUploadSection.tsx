@@ -75,7 +75,6 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    //transition,
     opacity: isDragging ? 0.5 : 1,
   };
 
