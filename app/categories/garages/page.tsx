@@ -191,8 +191,21 @@ export default function SearchGaragesPage() {
   setSortBy("name")
   }
 
-  // Pagination logic: show only first 9 garages per page
-  const garagesToShow = filteredGarages.slice(0, 9)
+  // Pagination logic
+  const garagesPerPage = 9;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(filteredGarages.length / garagesPerPage);
+  const garagesToShow = filteredGarages.slice(
+    (currentPage - 1) * garagesPerPage,
+    currentPage * garagesPerPage
+  );
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   const GarageCard = ({ garage }: { garage: Garage }) => (
     <Link href={`/categories/garages/${garage.id}`} className="block">
@@ -625,11 +638,32 @@ export default function SearchGaragesPage() {
 
             {/* Pagination */}
             <div className="flex flex-wrap justify-center mt-8 gap-2">
-              <Button variant="outline" className="px-4 hover:bg-blue-50">Previous</Button>
-              <Button variant="outline" className="px-4 bg-blue-600 text-white hover:bg-blue-700">1</Button>
-              <Button variant="outline" className="px-4 hover:bg-blue-50">2</Button>
-              <Button variant="outline" className="px-4 hover:bg-blue-50">3</Button>
-              <Button variant="outline" className="px-4 hover:bg-blue-50">Next</Button>
+              <Button
+                variant="outline"
+                className="px-4 hover:bg-blue-50"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                <Button
+                  key={pageNum}
+                  variant="outline"
+                  className={`px-4 ${currentPage === pageNum ? "bg-blue-600 text-white hover:bg-blue-700" : "hover:bg-blue-50"}`}
+                  onClick={() => handlePageChange(pageNum)}
+                >
+                  {pageNum}
+                </Button>
+              ))}
+              <Button
+                variant="outline"
+                className="px-4 hover:bg-blue-50"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                Next
+              </Button>
             </div>
           </div>
         </div>
