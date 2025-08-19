@@ -194,7 +194,7 @@ export function PaymentPlans() {
       }
 
       const token = await currentUser.getIdToken(false)
-      const response = await fetch(`/api/plan-info?userType=${userRole}`, {
+      const response = await fetch(`/api/plan-info`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -235,7 +235,7 @@ export function PaymentPlans() {
       if (!currentUser) return
 
       const token = await currentUser.getIdToken(false)
-      const response = await fetch(`/api/upgrade-plan?userType=${userRole}`, {
+      const response = await fetch(`/api/upgrade-plan`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`

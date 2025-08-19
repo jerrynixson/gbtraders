@@ -89,16 +89,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine the collection to use
-    const collection = userType === 'dealer' ? 'dealers' : 'users';
-    let userRef = adminDb.collection(collection).doc(userId);
+    // Always use the users collection
+    let userRef = adminDb.collection('users').doc(userId);
     let currentDoc = await userRef.get();
-    
-    // If dealer document doesn't exist, try users collection as fallback
-    if (!currentDoc.exists && userType === 'dealer') {
-      userRef = adminDb.collection('users').doc(userId);
-      currentDoc = await userRef.get();
-    }
 
     // Check if this session has already been processed
     if (currentDoc.exists) {
@@ -135,19 +128,11 @@ export async function POST(request: NextRequest) {
     try {
       // Use a transaction to ensure idempotency
       const result = await adminDb.runTransaction(async (transaction) => {
-        // Re-read the document within the transaction
-        const transactionUserRef = adminDb.collection(collection).doc(userId);
+        // Always use users collection within the transaction
+        const transactionUserRef = adminDb.collection('users').doc(userId);
         let transactionDoc = await transaction.get(transactionUserRef);
         
-        // If dealer document doesn't exist, try users collection as fallback
-        if (!transactionDoc.exists && userType === 'dealer') {
-          const fallbackRef = adminDb.collection('users').doc(userId);
-          transactionDoc = await transaction.get(fallbackRef);
-          if (transactionDoc.exists) {
-            // Update the reference to use users collection
-            userRef = fallbackRef;
-          }
-        }
+        // No fallback logic needed - users collection only
 
         // Final idempotency check within transaction
         if (transactionDoc.exists) {
@@ -195,7 +180,7 @@ export async function POST(request: NextRequest) {
         const currentData = transactionDoc.exists ? transactionDoc.data() || {} : {};
         const currentHistory = currentData.purchaseHistory || [];
 
-        console.log(`Transaction: Updating ${userType} ${userId} in collection ${collection}, document exists: ${transactionDoc.exists}`);
+        console.log(`Transaction: Updating ${userType} ${userId} in users collection, document exists: ${transactionDoc.exists}`);
 
         // Calculate tokens for upgrades and renewals
         let finalTotalTokens = parseInt(tokens);
