@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, MapPin, Filter, Grid, List, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield } from "lucide-react"
+import { Search, MapPin, Filter, Grid, List, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield, Lock, CheckCircle, Timer } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
@@ -435,28 +435,28 @@ export default function SearchGaragesPage() {
             {/* Feature Bar - now above results header */}
             <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 px-2 sm:px-4 py-4 sm:py-6 bg-white/70 backdrop-blur rounded-2xl shadow mb-6">
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2z" /></svg>
+                <PoundSterling className="h-8 w-8 text-blue-600" />
                 <div>
                   <div className="font-bold text-gray-900">Up to 47% cheaper</div>
                   <div className="text-xs text-gray-500">Versus franchise garages</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <CheckCircle className="h-8 w-8 text-blue-600" />
                 <div>
                   <div className="font-bold text-gray-900">Vetted mechanics</div>
                   <div className="text-xs text-gray-500">Only qualified professionals</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <Shield className="h-8 w-8 text-blue-600" />
                 <div>
                   <div className="font-bold text-gray-900">Quality guarantee</div>
                   <div className="text-xs text-gray-500">12-month warranty on parts</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <Timer className="h-8 w-8 text-blue-600" />
                 <div>
                   <div className="font-bold text-gray-900">Same day service</div>
                   <div className="text-xs text-gray-500">Quick turnaround time</div>
