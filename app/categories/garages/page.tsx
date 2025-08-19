@@ -402,26 +402,8 @@ export default function SearchGaragesPage() {
                 </Button>
               </div>
 
-              {/* Category Filter */}
+              {/* Only Services Filter remains, Content Type removed */}
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="category-select" className="text-sm font-medium text-gray-700">
-                    Category
-                  </label>
-                  <select
-                    id="category-select"
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    value={selectedCategory}
-                    onChange={e => setSelectedCategory(e.target.value)}
-                  >
-                    {categories.map(cat => (
-                      <option key={cat.name} value={cat.name}>
-                        {cat.name} ({cat.count})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 {/* Services Filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">

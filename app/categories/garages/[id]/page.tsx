@@ -122,7 +122,10 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
             </Button>
             <Button 
               className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold"
-              onClick={() => garage.website && window.open(garage.website, '_blank')}
+              as={garage.website ? 'a' : 'button'}
+              href={garage.website || undefined}
+              target={garage.website ? '_blank' : undefined}
+              rel={garage.website ? 'noopener noreferrer' : undefined}
               disabled={!garage.website}
             >
               <Globe className="mr-2" /> Website
