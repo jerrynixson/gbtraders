@@ -1,5 +1,7 @@
 "use client";
 
+import React, { useState, useEffect, use } from "react";
+
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -9,7 +11,6 @@ import Link from "next/link";
 import { GoogleMapComponent } from "@/components/ui/google-map";
 import { getGarageById, getAllPublicGarages } from "@/lib/garage";
 import { notFound } from "next/navigation";
-import { useState, useEffect } from "react";
 import { type Garage } from "@/lib/types/garage";
 
 interface GaragePageProps {
@@ -22,14 +23,19 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Next.js 14+ app router: params is a Promise, unwrap with use()
+  const unwrappedParams = (typeof (params as any)?.then === "function"
+    ? use(params)
+    : params) as { id: string };
+
   useEffect(() => {
     const loadGarageData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch garage data
-        const garageData = await getGarageById(params.id);
-        
+        const garageData = await getGarageById(unwrappedParams.id);
+
         if (!garageData || !garageData.isActive) {
           notFound();
           return;
@@ -53,7 +59,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
     };
 
     loadGarageData();
-  }, [params.id]);
+  }, [unwrappedParams.id]);
 
   if (loading) {
     return (
