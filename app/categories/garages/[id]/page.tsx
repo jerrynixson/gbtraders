@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
@@ -23,10 +24,9 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Next.js 14+ app router: params is a Promise, unwrap with use()
-  const unwrappedParams = (typeof (params as any)?.then === "function"
-    ? use(params)
-    : params) as { id: string };
+  // Use Next.js useParams hook for stable parameter access
+  const routeParams = useParams();
+  const id = routeParams.id as string;
 
   useEffect(() => {
     const loadGarageData = async () => {
@@ -34,7 +34,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
         setLoading(true);
 
         // Fetch garage data
-        const garageData = await getGarageById(unwrappedParams.id);
+        const garageData = await getGarageById(id);
 
         if (!garageData || !garageData.isActive) {
           notFound();
@@ -59,7 +59,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
     };
 
     loadGarageData();
-  }, [unwrappedParams.id]);
+  }, [id]);
 
   if (loading) {
     return (
