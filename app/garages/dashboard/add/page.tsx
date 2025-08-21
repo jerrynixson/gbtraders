@@ -741,16 +741,6 @@ export default function AddGaragePage() {
                       >
                         Clear All
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const popular = ["MOT", "Servicing", "Brakes", "Tyres", "Battery servicing"];
-                          setForm(f => ({ ...f, services: popular }));
-                        }}
-                        className="px-3 py-1 text-xs rounded-lg border border-blue-300 text-blue-600 hover:bg-blue-50"
-                      >
-                        Popular
-                      </button>
                     </div>
                     
                     {(form.services || []).length === 0 && (
