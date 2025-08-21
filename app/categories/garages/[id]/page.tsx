@@ -271,7 +271,7 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
 
       {/* Related Listings */}
       <div className="container mx-auto px-4 py-8">
-        <h2 className="text-xl font-bold text-blue-900 mb-4">Related Listings</h2>
+        <h2 className="text-xl font-bold text-blue-900 mb-4">Other Garages</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {relatedGarages.map((relatedGarage) => (
             <div key={relatedGarage.id} className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
