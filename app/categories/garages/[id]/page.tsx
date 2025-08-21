@@ -126,17 +126,19 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
             >
               <Mail className="mr-2" /> Mail
             </Button>
-            <Button
-              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold"
-              onClick={() => {
-                const url = garage.website?.startsWith('http://') || garage.website?.startsWith('https://')
-                  ? garage.website
-                  : `https://${garage.website}`;
-                window.open(url, '_blank', 'noopener,noreferrer');
-              }}
-            >
-              <Globe className="mr-2" /> Website
-            </Button>
+            {garage.website && garage.website.trim() && (
+              <Button
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold"
+                onClick={() => {
+                  const url = garage.website?.startsWith('http://') || garage.website?.startsWith('https://')
+                    ? garage.website
+                    : `https://${garage.website}`;
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                }}
+              >
+                <Globe className="mr-2" /> Website
+              </Button>
+            )}
             <Button 
               className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold"
               onClick={() => window.open(`tel:${garage.phone}`, '_self')}
