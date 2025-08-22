@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Upload, MapPin } from "lucide-react";
+import { Upload, MapPin, Check } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
 import { auth } from "@/lib/firebase";
 import { getDealerProfile, submitDealerProfile, DealerProfile } from "@/lib/dealer/profile";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 export function DealerProfileSection() {
   const [isSaving, setIsSaving] = useState(false);
   const [isFetchingCoordinates, setIsFetchingCoordinates] = useState(false);
+  const [hasCoordinates, setHasCoordinates] = useState(false);
   const [profile, setProfile] = useState<DealerProfile>({
     businessName: "",
     contact: {
@@ -90,6 +91,15 @@ export function DealerProfileSection() {
 
   const handleSaveProfile = async () => {
     try {
+      // Validate postcode before saving
+      const postcode = profile.location.addressLines[3];
+      const ukPostcodeRegex = /^(([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9][A-Za-z]?))))\s?[0-9][A-Za-z]{2}))$/;
+      
+      if (!postcode || !ukPostcodeRegex.test(postcode.trim())) {
+        toast.error("Please enter a valid UK postcode");
+        return;
+      }
+
       setIsSaving(true);
       await submitDealerProfile(profile, logoFile, bannerFile);
       toast.success("Profile updated successfully");
@@ -126,12 +136,22 @@ export function DealerProfileSection() {
     return { latitude: lat, longitude: lng };
   };
 
+  const [isValidPostcode, setIsValidPostcode] = useState(true);
+
+  const validatePostcode = (postcode: string): boolean => {
+    const ukPostcodeRegex = /^(([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9][A-Za-z]?))))\s?[0-9][A-Za-z]{2}))$/;
+    return postcode.trim() !== "" && ukPostcodeRegex.test(postcode.trim());
+  };
+
   const handlePostcodeChange = async (value: string) => {
     // Format UK postcode (add space if missing)
     let processedValue = value.toUpperCase().replace(/\s+/g, '');
     if (processedValue.length > 3) {
       processedValue = processedValue.slice(0, -3) + ' ' + processedValue.slice(-3);
     }
+
+    const isValid = validatePostcode(processedValue);
+    setIsValidPostcode(isValid);
 
     setProfile(prev => ({
       ...prev,
@@ -141,31 +161,30 @@ export function DealerProfileSection() {
       }
     }));
 
-    // Auto-fetch coordinates if postcode is valid
-    if (processedValue.trim()) {
-      const ukPostcodeRegex = /^(([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9][A-Za-z]?))))\s?[0-9][A-Za-z]{2}))$/;
-      if (ukPostcodeRegex.test(processedValue.trim())) {
-        setIsFetchingCoordinates(true);
-        try {
-          const coordinates = await getCoordinatesFromPostcode(processedValue);
-          
-          setProfile(prev => ({
-            ...prev,
-            location: {
-              ...prev.location,
-              lat: coordinates.latitude,
-              long: coordinates.longitude
-            }
-          }));
-          
-          toast.success(`Coordinates updated for ${processedValue}`);
-        } catch (error) {
-          console.warn("Could not fetch coordinates:", error);
-          toast.error("Could not fetch coordinates for this postcode");
-        } finally {
-          setIsFetchingCoordinates(false);
-        }
+    // Only fetch coordinates if postcode is valid
+    if (isValid) {
+      setIsFetchingCoordinates(true);
+      setHasCoordinates(false);
+      try {
+        const coordinates = await getCoordinatesFromPostcode(processedValue);
+        setProfile(prev => ({
+          ...prev,
+          location: {
+            ...prev.location,
+            lat: coordinates.latitude,
+            long: coordinates.longitude
+          }
+        }));
+        setHasCoordinates(true);
+      } catch (error) {
+        console.warn("Could not fetch coordinates:", error);
+        toast.error("Could not fetch coordinates for this postcode");
+        setHasCoordinates(false);
+      } finally {
+        setIsFetchingCoordinates(false);
       }
+    } else {
+      setHasCoordinates(false);
     }
   };
 
@@ -352,19 +371,19 @@ export function DealerProfileSection() {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   Postcode
-                  {isFetchingCoordinates && <MapPin className="h-4 w-4 animate-spin" />}
+                  {isFetchingCoordinates ? (
+                    <MapPin className="h-4 w-4 text-blue-500" />
+                  ) : hasCoordinates ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : null}
                 </Label>
                 <Input
                   value={profile.location.addressLines[3]}
                   onChange={(e) => handlePostcodeChange(e.target.value)}
                   placeholder="e.g., SW1A 1AA"
-                  className="bg-gray-50"
+                  className={`bg-gray-50 ${!isValidPostcode && profile.location.addressLines[3] ? 'border-red-500 focus:ring-red-500' : ''}`}
+                  aria-invalid={!isValidPostcode}
                 />
-                {profile.location.lat !== 0 && profile.location.long !== 0 && (
-                  <p className="text-xs text-green-600">
-                    ✓ Coordinates: {profile.location.lat.toFixed(6)}, {profile.location.long.toFixed(6)}
-                  </p>
-                )}
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>Business Description (max 100 words)</Label>
