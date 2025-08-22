@@ -544,7 +544,7 @@ export function PaymentPlans() {
                     <Button 
                       onClick={() => handlePlanSelection(plan.name)}
                       disabled={loadingPlan === plan.name || checkingPlan}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed whitespace-normal text-center"
                       size="lg"
                     >
                       {loadingPlan === plan.name ? (
@@ -564,7 +564,7 @@ export function PaymentPlans() {
                     <Button 
                       onClick={() => handlePlanSelection(plan.name)}
                       disabled={loadingPlan === plan.name || checkingPlan || (isLowerTierPlan && !isCurrentPlan)}
-                      className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+                      className={`w-full ${colors.button} text-white font-semibold py-3 rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed whitespace-normal text-center`}
                       size="lg"
                     >
                       {loadingPlan === plan.name ? (

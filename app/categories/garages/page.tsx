@@ -319,7 +319,13 @@ export default function SearchGaragesPage() {
               <label htmlFor="service-filter" className="block text-xs font-semibold text-gray-700 mb-1 ml-1">What do you need?</label>
               <select
                 id="service-filter"
-                className="w-full pl-4 pr-4 py-2.5 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 h-12"
+                className="w-full pl-4 pr-4 py-2.5 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 h-12 appearance-none"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'calc(100% - 12px) center',
+                  backgroundSize: '16px'
+                }}
                 value={selectedService}
                 onChange={(e) => setSelectedService(e.target.value)}
               >
