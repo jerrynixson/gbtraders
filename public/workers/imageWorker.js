@@ -37,9 +37,23 @@ async function compressImageWithStages(file, maxWidth, quality) {
   
   console.log(`Starting compression for ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
   
-  // Stage 1: Resize to 1200px, quality=70
-  console.log('Stage 1: Resize to 1200px, quality=70%');
-  let compressedFile = await compressImage(file, 1200, 0.7);
+  // Get original image dimensions to prevent upscaling
+  const originalDimensions = await getImageDimensions(file);
+  const originalWidth = originalDimensions.width;
+  
+  console.log(`Original image dimensions: ${originalWidth}x${originalDimensions.height}`);
+  
+  // Determine maximum width to prevent upscaling for images smaller than 1000px
+  const effectiveMaxWidth = originalWidth < 1000 ? originalWidth : 1200;
+  const stage3MaxWidth = originalWidth < 1000 ? originalWidth : 1000;
+  
+  if (originalWidth < 1000) {
+    console.log(`⚠️ Original width (${originalWidth}px) is smaller than 1000px - preventing upscaling`);
+  }
+  
+  // Stage 1: Resize to effective max width, quality=70
+  console.log(`Stage 1: Resize to ${effectiveMaxWidth}px, quality=70%`);
+  let compressedFile = await compressImage(file, effectiveMaxWidth, 0.7);
   console.log(`Stage 1 result: ${(compressedFile.size / 1024).toFixed(1)}KB`);
   
   // Check if under 150KB
@@ -49,8 +63,8 @@ async function compressImageWithStages(file, maxWidth, quality) {
   }
   
   // Stage 2: Re-encode at quality=65 (same size)
-  console.log('Stage 2: Re-encode at quality=65%');
-  compressedFile = await compressImage(file, 1200, 0.65);
+  console.log(`Stage 2: Re-encode at quality=65% (${effectiveMaxWidth}px)`);
+  compressedFile = await compressImage(file, effectiveMaxWidth, 0.65);
   console.log(`Stage 2 result: ${(compressedFile.size / 1024).toFixed(1)}KB`);
   
   // Check if under 150KB
@@ -59,10 +73,14 @@ async function compressImageWithStages(file, maxWidth, quality) {
     return { compressedFile, compressionStage: 'stage2' };
   }
   
-  // Stage 3: Resize to 1000px, quality=65
-  console.log('Stage 3: Resize to 1000px, quality=65%');
-  compressedFile = await compressImage(file, 1000, 0.65);
-  console.log(`Stage 3 result: ${(compressedFile.size / 1024).toFixed(1)}KB`);
+  // Stage 3: Resize to smaller width if original allows, quality=65
+  if (stage3MaxWidth < effectiveMaxWidth) {
+    console.log(`Stage 3: Resize to ${stage3MaxWidth}px, quality=65%`);
+    compressedFile = await compressImage(file, stage3MaxWidth, 0.65);
+    console.log(`Stage 3 result: ${(compressedFile.size / 1024).toFixed(1)}KB`);
+  } else {
+    console.log('Stage 3: Skipped (would not reduce size further)');
+  }
   
   if (compressedFile.size <= TARGET_SIZE) {
     console.log('✅ Target achieved at Stage 3');
@@ -150,4 +168,21 @@ function calculateDimensions(originalWidth, originalHeight, maxWidth) {
   const newHeight = Math.round(newWidth * aspectRatio);
   
   return { width: newWidth, height: newHeight };
+}
+
+async function getImageDimensions(file) {
+  return new Promise((resolve, reject) => {
+    createImageBitmap(file)
+      .then(imageBitmap => {
+        const dimensions = {
+          width: imageBitmap.width,
+          height: imageBitmap.height
+        };
+        imageBitmap.close();
+        resolve(dimensions);
+      })
+      .catch(error => {
+        reject(new Error('Failed to get image dimensions: ' + error.message));
+      });
+  });
 }
