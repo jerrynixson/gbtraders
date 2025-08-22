@@ -171,9 +171,21 @@ const UploadItem: React.FC<{
             <Progress value={upload.progress} className="h-2" />
             
             {upload.originalSize && upload.compressedSize && upload.status === 'completed' && (
-              <div className="text-xs text-gray-500">
-                Size: {formatFileSize(upload.originalSize)} → {formatFileSize(upload.compressedSize)}
-                {' '}({Math.round((1 - upload.compressedSize / upload.originalSize) * 100)}% smaller)
+              <div className="text-xs space-y-1">
+                <div className="text-gray-500">
+                  Size: {formatFileSize(upload.originalSize)} → {formatFileSize(upload.compressedSize)}
+                  {' '}({Math.round((1 - upload.compressedSize / upload.originalSize) * 100)}% smaller)
+                </div>
+                {upload.compressedSize <= 150 * 1024 && (
+                  <div className="text-green-600 font-medium">
+                    ✅ Optimized to &lt;150KB
+                  </div>
+                )}
+                {upload.compressedSize > 150 * 1024 && (
+                  <div className="text-amber-600 font-medium">
+                    ⚠️ {formatFileSize(upload.compressedSize)} (target: 150KB)
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -286,13 +298,23 @@ export const ImageUploadProgress: React.FC<ImageUploadProgressProps> = ({
               )}
             </div>
             
-            {/* Batch processing stats */}
+            {/* Compression and batch processing stats */}
             {batchProgress.totalUploads > 4 && (
               <div className="text-xs text-blue-600 bg-blue-50 rounded p-2">
                 <div className="flex items-center space-x-1">
                   <ImageIcon className="h-3 w-3" />
                   <span>
-                    Parallel processing: Processing up to 4 images simultaneously for faster uploads
+                    Multi-stage compression: Optimizing images to &lt;150KB with up to 4 parallel uploads
+                  </span>
+                </div>
+              </div>
+            )}
+            {batchProgress.totalUploads <= 4 && batchProgress.totalUploads > 0 && (
+              <div className="text-xs text-green-600 bg-green-50 rounded p-2">
+                <div className="flex items-center space-x-1">
+                  <ImageIcon className="h-3 w-3" />
+                  <span>
+                    Intelligent compression: Targeting 150KB per image with optimal quality
                   </span>
                 </div>
               </div>

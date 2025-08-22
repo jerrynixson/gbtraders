@@ -12,7 +12,6 @@ export interface UploadProgress {
   error?: string;
   downloadURL?: string;
   uploadTask?: UploadTask;
-  compressionProgress?: number;
   originalSize?: number;
   compressedSize?: number;
 }
@@ -78,13 +77,20 @@ export class UploadManager {
     const { type, id } = event.data;
 
     if (type === 'IMAGE_COMPRESSED') {
-      const { compressedFile, originalSize, compressedSize } = event.data;
+      const { compressedFile, originalSize, compressedSize, compressionStage } = event.data;
+      
+      // Log compression results
+      const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
+      const targetSize = 150 * 1024; // 150KB
+      const underTarget = compressedSize <= targetSize;
+      
+      console.log(`🖼️ Image compressed (${compressionStage}): ${(originalSize/1024).toFixed(1)}KB → ${(compressedSize/1024).toFixed(1)}KB (${compressionRatio}% reduction) ${underTarget ? '✅' : '⚠️'}`);
+      
       this.updateUploadStatus(id, {
         status: 'uploading',
         file: compressedFile,
         originalSize,
         compressedSize,
-        compressionProgress: 100,
       });
       this.startFirebaseUpload(id, compressedFile);
     } else if (type === 'IMAGE_COMPRESSION_ERROR') {
@@ -298,7 +304,6 @@ export class UploadManager {
         file: file,
         originalSize: file.size,
         compressedSize: file.size,
-        compressionProgress: 100,
       });
       this.startFirebaseUpload(id, file);
       return;
@@ -306,7 +311,6 @@ export class UploadManager {
 
     this.updateUploadStatus(id, {
       status: 'compressing',
-      compressionProgress: 0,
     });
 
     this.worker.postMessage({
@@ -448,28 +452,7 @@ export class UploadManager {
       .map(upload => upload.downloadURL!);
   }
 
-  public getUploadStats(): {
-    total: number;
-    pending: number;
-    compressing: number;
-    uploading: number;
-    completed: number;
-    failed: number;
-    paused: number;
-    active: number;
-  } {
-    const uploads = Object.values(this.uploads);
-    return {
-      total: uploads.length,
-      pending: uploads.filter(u => u.status === 'pending').length,
-      compressing: uploads.filter(u => u.status === 'compressing').length,
-      uploading: uploads.filter(u => u.status === 'uploading').length,
-      completed: uploads.filter(u => u.status === 'completed').length,
-      failed: uploads.filter(u => u.status === 'error').length,
-      paused: uploads.filter(u => u.status === 'paused').length,
-      active: this.activeUploads,
-    };
-  }
+
 
   public setProgressCallback(callback: (progress: BatchUploadProgress) => void): void {
     this.progressCallback = callback;
@@ -494,9 +477,7 @@ export class UploadManager {
     this.notifyProgress();
   }
 
-  public setVehicleId(vehicleId: string): void {
-    this.config.vehicleId = vehicleId;
-  }
+
 
   public setBatchSize(batchSize: number): void {
     if (batchSize > 0 && batchSize <= 10) { // Reasonable limits
@@ -508,17 +489,7 @@ export class UploadManager {
     }
   }
 
-  public getBatchSize(): number {
-    return this.config.batchSize;
-  }
 
-  public getCurrentBatchInfo(): { batchSize: number; activeUploads: number; queueLength: number } {
-    return {
-      batchSize: this.config.batchSize,
-      activeUploads: this.activeUploads,
-      queueLength: this.uploadQueue.length
-    };
-  }
 
   public destroy(): void {
     this.clear();
@@ -537,6 +508,17 @@ export const defaultUploadConfig: UploadManagerConfig = {
   compressionOptions: {
     maxWidth: 1200,
     quality: 0.7,
+  },
+};
+
+// Vehicle listing specific configuration with enhanced compression
+export const vehicleUploadConfig: UploadManagerConfig = {
+  batchSize: 4, // Process 4 images in parallel
+  maxRetries: 3,
+  retryDelay: 1000,
+  compressionOptions: {
+    maxWidth: 1200, // Initial size, worker will handle multi-stage compression
+    quality: 0.7,   // Initial quality, worker will handle quality reduction if needed
   },
 };
 

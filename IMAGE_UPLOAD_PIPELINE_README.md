@@ -8,8 +8,12 @@ This implementation provides a robust image uploading pipeline for the AddVehicl
 
 ### 🔧 Web Worker Image Compression
 - **Separate Thread Processing**: Uses a dedicated web worker to avoid blocking the main UI thread
-- **WebP Conversion**: Automatically converts images to WebP format with 0.7 quality
-- **Smart Resizing**: Maintains aspect ratio while resizing to maximum 1200px width
+- **Multi-Stage Compression**: Intelligent compression with 150KB target size
+  - Stage 1: Resize to 1200px, quality=70% → Save if ≤150KB
+  - Stage 2: Re-encode at quality=65% → Save if ≤150KB  
+  - Stage 3: Resize to 1000px, quality=65% → Store result
+- **WebP Conversion**: Automatically converts images to WebP format
+- **Smart Resizing**: Maintains aspect ratio while optimizing for file size
 - **Cross-Platform**: Handles both portrait and landscape orientations
 
 ### 📦 Batch Processing Pipeline
@@ -112,7 +116,7 @@ function MyForm() {
       onExistingImagesChange={setExistingImages}
       onUploadComplete={(urls) => setUploadedUrls(prev => [...prev, ...urls])}
       maxImages={20}
-      maxFileSize={5 * 1024 * 1024} // 5MB
+      maxFileSize={15 * 1024 * 1024} // 15MB
     />
   );
 }
@@ -176,7 +180,6 @@ interface UploadProgress {
   error?: string;
   downloadURL?: string;
   uploadTask?: UploadTask;
-  compressionProgress?: number;
   originalSize?: number;
   compressedSize?: number;
 }
@@ -212,7 +215,9 @@ uploadTask.on('state_changed',
 
 ## Performance Characteristics
 
-- **Compression**: ~70% file size reduction with WebP conversion
+- **Target Size**: Optimizes images to ~150KB with multi-stage compression
+- **Compression**: 70-85% file size reduction with intelligent WebP conversion
+- **Quality**: Maintains high visual quality while hitting size targets
 - **Speed**: Concurrent uploads provide 2-4x faster upload times
 - **Memory**: Efficient memory usage with automatic cleanup
 - **UI Responsiveness**: No UI blocking during image processing
@@ -244,17 +249,6 @@ uploadTask.on('state_changed',
 4. **Compression Errors**
    - Check image file validity
    - Verify browser Canvas API support
-
-### Debug Mode
-
-Enable detailed logging:
-
-```typescript
-const uploadManager = new UploadManager({
-  ...defaultConfig,
-  debug: true // Add debug flag if implemented
-});
-```
 
 ## Future Enhancements
 

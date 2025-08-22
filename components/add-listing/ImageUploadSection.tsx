@@ -13,7 +13,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { UploadManager, BatchUploadProgress, defaultUploadConfig, deleteImageFromStorage } from '@/lib/uploadManager';
+import { UploadManager, BatchUploadProgress, defaultUploadConfig, vehicleUploadConfig, deleteImageFromStorage } from '@/lib/uploadManager';
 import { ImageUploadProgress } from './ImageUploadProgress';
 import {
   DndContext,
@@ -164,7 +164,7 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
   onUploadComplete,
   onUploadedImageRemove,
   maxImages = 20,
-  maxFileSize = 5 * 1024 * 1024, // 5MB
+  maxFileSize = 15 * 1024 * 1024, // 15MB
   vehicleId,
   className = "",
 }) => {
@@ -183,7 +183,7 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
   // Initialize upload manager
   useEffect(() => {
     const config = {
-      ...defaultUploadConfig,
+      ...vehicleUploadConfig, // Use vehicle-specific configuration for enhanced compression
       batchSize: 4, // Explicitly set batch size for parallel processing
       vehicleId: vehicleId || 'temp'
     };
@@ -295,19 +295,7 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
       // Start upload process with batch processing
       if (uploadManagerRef.current) {
         setIsUploading(true);
-        const uploadIds = uploadManagerRef.current.addFiles(validFiles);
-        
-        // Get batch size with multiple fallback methods
-        let batchSize = 4; // Default fallback
-        try {
-          if (uploadManagerRef.current.getBatchSize) {
-            batchSize = uploadManagerRef.current.getBatchSize();
-          } else if (uploadManagerRef.current.getCurrentBatchInfo) {
-            batchSize = uploadManagerRef.current.getCurrentBatchInfo().batchSize;
-          }
-        } catch (error) {
-          console.warn('Could not get batch size, using default:', error);
-        }
+        uploadManagerRef.current.addFiles(validFiles);
       }
     }
   }, [images, existingImages, maxImages, maxFileSize, onImagesChange]);

@@ -194,7 +194,7 @@ const TRANSMISSION_TYPES = [
 ] as const
 
 const MAX_IMAGES = 30
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15MB
 
 interface AddVehicleFormProps {
   vehicleId?: string // Optional vehicle ID for editing

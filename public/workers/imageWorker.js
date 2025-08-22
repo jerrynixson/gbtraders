@@ -1,5 +1,5 @@
 // Image compression worker (compiled from TypeScript)
-// Handles image resizing and WebP conversion in a separate thread
+// Handles image resizing and WebP conversion in a separate thread with multi-stage compression
 
 self.onmessage = async (event) => {
   const { type, file, id, maxWidth, quality } = event.data;
@@ -9,14 +9,15 @@ self.onmessage = async (event) => {
   }
 
   try {
-    const compressedFile = await compressImage(file, maxWidth, quality);
+    const { compressedFile, compressionStage } = await compressImageWithStages(file, maxWidth, quality);
     
     const response = {
       type: 'IMAGE_COMPRESSED',
       id,
       compressedFile,
       originalSize: file.size,
-      compressedSize: compressedFile.size
+      compressedSize: compressedFile.size,
+      compressionStage
     };
 
     self.postMessage(response);
@@ -30,6 +31,47 @@ self.onmessage = async (event) => {
     self.postMessage(errorResponse);
   }
 };
+
+async function compressImageWithStages(file, maxWidth, quality) {
+  const TARGET_SIZE = 150 * 1024; // 150KB target
+  
+  console.log(`Starting compression for ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+  
+  // Stage 1: Resize to 1200px, quality=70
+  console.log('Stage 1: Resize to 1200px, quality=70%');
+  let compressedFile = await compressImage(file, 1200, 0.7);
+  console.log(`Stage 1 result: ${(compressedFile.size / 1024).toFixed(1)}KB`);
+  
+  // Check if under 150KB
+  if (compressedFile.size <= TARGET_SIZE) {
+    console.log('✅ Target achieved at Stage 1');
+    return { compressedFile, compressionStage: 'stage1' };
+  }
+  
+  // Stage 2: Re-encode at quality=65 (same size)
+  console.log('Stage 2: Re-encode at quality=65%');
+  compressedFile = await compressImage(file, 1200, 0.65);
+  console.log(`Stage 2 result: ${(compressedFile.size / 1024).toFixed(1)}KB`);
+  
+  // Check if under 150KB
+  if (compressedFile.size <= TARGET_SIZE) {
+    console.log('✅ Target achieved at Stage 2');
+    return { compressedFile, compressionStage: 'stage2' };
+  }
+  
+  // Stage 3: Resize to 1000px, quality=65
+  console.log('Stage 3: Resize to 1000px, quality=65%');
+  compressedFile = await compressImage(file, 1000, 0.65);
+  console.log(`Stage 3 result: ${(compressedFile.size / 1024).toFixed(1)}KB`);
+  
+  if (compressedFile.size <= TARGET_SIZE) {
+    console.log('✅ Target achieved at Stage 3');
+    return { compressedFile, compressionStage: 'stage3' };
+  } else {
+    console.log('⚠️ Target not achieved, using best result');
+    return { compressedFile, compressionStage: 'stage3_max' };
+  }
+}
 
 async function compressImage(file, maxWidth, quality) {
   return new Promise((resolve, reject) => {

@@ -88,32 +88,7 @@ export class UploadPerformanceMonitor {
     console.log(`   Efficiency: ${((metrics.peakConcurrentUploads / metrics.batchSize) * 100).toFixed(1)}% of max parallelism utilized`);
   }
 
-  generatePerformanceInsights(): string[] {
-    const metrics = this.getMetrics();
-    const insights: string[] = [];
 
-    if (metrics.peakConcurrentUploads < metrics.batchSize) {
-      insights.push(`Consider smaller file sizes or better network connection. Only ${metrics.peakConcurrentUploads}/${metrics.batchSize} parallel uploads were utilized.`);
-    }
-
-    if (metrics.throughputMBps < 1) {
-      insights.push('Upload speed is below 1 MB/s. Consider checking network connection or reducing image quality.');
-    }
-
-    if (metrics.compressionRatio > 0.8) {
-      insights.push('Images are not compressing much. Consider increasing compression quality or reducing max width.');
-    }
-
-    if (metrics.averageUploadTime > 10000) {
-      insights.push('Average upload time is over 10 seconds per file. Consider optimizing compression settings.');
-    }
-
-    if (insights.length === 0) {
-      insights.push('Upload performance looks good! Parallel processing is working efficiently.');
-    }
-
-    return insights;
-  }
 }
 
 // Global instance for easy access
