@@ -47,9 +47,9 @@ export default function AddGaragePage() {
     paymentMethods: [],
     socialMedia: {},
     openingHours: {
-      weekdays: { start: "08:00", end: "18:00" },
-      saturday: { start: "09:00", end: "17:00" },
-      sunday: { start: "10:00", end: "16:00" }
+      weekdays: { start: "", end: "" },
+      saturday: { start: "", end: "" },
+      sunday: { start: "", end: "" }
     }
     // DO NOT include image or coverImage in initial state - they'll be handled separately
   });
@@ -64,6 +64,7 @@ export default function AddGaragePage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false); // Add submission guard
+  const [manualSubmitAttempted, setManualSubmitAttempted] = useState(false); // Track manual submission attempts
 
   // Load garage data for editing
   useEffect(() => {
@@ -200,12 +201,53 @@ export default function AddGaragePage() {
     };
   }, [imagePreview, coverImagePreview]);
 
+  // Form submission handler that only allows submission on final step
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation(); // Stop event propagation
+    
+    // Prevent submission if we just got to the last step
+    const justReachedFinalStep = currentStep === steps.length - 1 && 
+      (!form.openingHours?.weekdays?.start || !form.openingHours?.weekdays?.end);
+      
+    if (justReachedFinalStep) {
+      console.log('Preventing submission on initial load of step 4');
+      return false;
+    }
+    
+    // Only allow submission on the last step
+    if (currentStep !== steps.length - 1) {
+      console.log('Form submission blocked - not on final step');
+      return false;
+    }
+    
+    // Call the actual submit handler
+    handleSubmit(e);
+  };
+
+  // Add keyboard handler to prevent Enter key from submitting form early
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && currentStep !== steps.length - 1) {
+      e.preventDefault();
+      if (canProceed()) {
+        nextStep();
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Prevent duplicate submissions
     if (isSubmitting) {
       console.log('Submission already in progress, ignoring...');
+      return;
+    }
+    
+    // Additional safety check: only proceed if manual submission was attempted
+    // This prevents automatic submission when reaching step 4
+    if (currentStep === steps.length - 1 && !manualSubmitAttempted) {
+      console.log('Blocking auto-submission - manual submit not attempted');
       return;
     }
     
@@ -219,9 +261,16 @@ export default function AddGaragePage() {
       return;
     }
 
-    // Check for required images when creating new garage
-    if (!isEditing && (!imageFile || !coverImageFile)) {
-      toast.error('Please upload both main image and cover image');
+    // Check that all opening hours are filled
+    if (
+      !form.openingHours?.weekdays?.start || 
+      !form.openingHours?.weekdays?.end || 
+      !form.openingHours?.saturday?.start || 
+      !form.openingHours?.saturday?.end || 
+      !form.openingHours?.sunday?.start || 
+      !form.openingHours?.sunday?.end
+    ) {
+      toast.error('Please fill in all opening hours fields');
       return;
     }
 
@@ -296,13 +345,23 @@ export default function AddGaragePage() {
   const validateStep = (stepIndex: number) => {
     switch (stepIndex) {
       case 0: // Basic Info
-        return form.name && form.description && imageFile && coverImageFile; // Make both images mandatory
+        return form.name && form.description; // Remove image requirement
       case 1: // Contact
         return form.address && form.phone && form.email;
       case 2: // Services
         return (form.services || []).length > 0;
       case 3: // Hours
-        return form.openingHours?.weekdays?.start && form.openingHours?.weekdays?.end;
+        return (
+          // Validate weekdays
+          form.openingHours?.weekdays?.start && 
+          form.openingHours?.weekdays?.end &&
+          // Validate Saturday
+          form.openingHours?.saturday?.start && 
+          form.openingHours?.saturday?.end &&
+          // Validate Sunday
+          form.openingHours?.sunday?.start && 
+          form.openingHours?.sunday?.end
+        );
       default:
         return true;
     }
@@ -317,8 +376,6 @@ export default function AddGaragePage() {
       step: currentStep,
       name: !!form.name,
       description: !!form.description,
-      imageFile: !!imageFile,
-      coverImageFile: !!coverImageFile,
       address: !!form.address,
       phone: !!form.phone,
       email: !!form.email,
@@ -328,7 +385,16 @@ export default function AddGaragePage() {
     });
     
     if (canProceed() && currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      // If moving to step 4 (opening hours), add a small delay to prevent auto-submission
+      if (currentStep === 2) {
+        // Going to step 3 (opening hours)
+        console.log('Adding delay before navigating to opening hours step');
+        setTimeout(() => {
+          setCurrentStep(currentStep + 1);
+        }, 100);
+      } else {
+        setCurrentStep(currentStep + 1);
+      }
     }
   };
 
@@ -406,7 +472,7 @@ export default function AddGaragePage() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-8">
+            <form onSubmit={handleFormSubmit} onKeyDown={handleKeyDown} className="p-8">
               {/* Basic Info Step */}
               {currentStep === 0 && (
                 <div className="space-y-8">
@@ -448,12 +514,12 @@ export default function AddGaragePage() {
 
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-4">Images *</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-4">Images (Optional)</label>
                       
                       {/* Main Image Upload */}
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm text-gray-600 mb-2">Main Image *</label>
+                          <label className="block text-sm text-gray-600 mb-2">Main Image</label>
                           <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-blue-400 transition-colors">
                             {imagePreview || form.image ? (
                               <div className="relative">
@@ -502,14 +568,11 @@ export default function AddGaragePage() {
                               </div>
                             )}
                           </div>
-                          {!imageFile && (
-                            <p className="text-red-500 text-sm mt-2">Main image is required</p>
-                          )}
                         </div>
 
                         {/* Cover Image Upload */}
                         <div>
-                          <label className="block text-sm text-gray-600 mb-2">Cover Image *</label>
+                          <label className="block text-sm text-gray-600 mb-2">Cover Image (Optional)</label>
                           <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-blue-400 transition-colors">
                             {coverImagePreview || form.coverImage ? (
                               <div className="relative">
@@ -540,7 +603,7 @@ export default function AddGaragePage() {
                               <div className="text-center">
                                 <Camera className="w-10 h-10 text-gray-400 mx-auto mb-2" />
                                 <p className="text-gray-600 mb-2">Upload cover image</p>
-                                <p className="text-xs text-gray-500 mb-4">Required banner image</p>
+                                <p className="text-xs text-gray-500 mb-4">Optional banner image</p>
                                 <input
                                   type="file"
                                   accept="image/*"
@@ -558,9 +621,6 @@ export default function AddGaragePage() {
                               </div>
                             )}
                           </div>
-                          {!coverImageFile && (
-                            <p className="text-red-500 text-sm mt-2">Cover image is required</p>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -769,7 +829,7 @@ export default function AddGaragePage() {
                 <div className="space-y-8">
                   <div className="text-center mb-8">
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">When are you open?</h3>
-                    <p className="text-gray-600">Set your business hours so customers know when to visit</p>
+                    <p className="text-gray-600">Set your business hours so customers know when to visit (use 24-hour format: e.g., 09:00, 17:30)</p>
                   </div>
                   
                   <div>
@@ -778,22 +838,24 @@ export default function AddGaragePage() {
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center p-4 bg-blue-50 rounded-xl border border-blue-200">
                         <span className="font-semibold text-blue-900">Monday - Friday</span>
                         <Input 
-                          type="time"
+                          type="text"
                           value={form.openingHours?.weekdays?.start || ""} 
                           onChange={(e) => handleNestedChange('openingHours', 'weekdays', { 
                             start: e.target.value, 
                             end: form.openingHours?.weekdays?.end || "" 
                           })}
+                          placeholder="09:00"
                           required
                           className="rounded-xl border-blue-300 focus:border-blue-500 focus:ring-blue-500 bg-white"
                         />
                         <Input 
-                          type="time"
+                          type="text"
                           value={form.openingHours?.weekdays?.end || ""} 
                           onChange={(e) => handleNestedChange('openingHours', 'weekdays', { 
                             start: form.openingHours?.weekdays?.start || "", 
                             end: e.target.value 
                           })}
+                          placeholder="17:30"
                           required
                           className="rounded-xl border-blue-300 focus:border-blue-500 focus:ring-blue-500 bg-white"
                         />
@@ -801,45 +863,60 @@ export default function AddGaragePage() {
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center p-4 bg-green-50 rounded-xl border border-green-200">
                         <span className="font-semibold text-green-900">Saturday</span>
                         <Input 
-                          type="time"
+                          type="text"
                           value={form.openingHours?.saturday?.start || ""} 
                           onChange={(e) => handleNestedChange('openingHours', 'saturday', { 
                             start: e.target.value, 
                             end: form.openingHours?.saturday?.end || "" 
                           })}
+                          placeholder="09:00"
+                          required
                           className="rounded-xl border-green-300 focus:border-green-500 focus:ring-green-500 bg-white"
                         />
                         <Input 
-                          type="time"
+                          type="text"
                           value={form.openingHours?.saturday?.end || ""} 
                           onChange={(e) => handleNestedChange('openingHours', 'saturday', { 
                             start: form.openingHours?.saturday?.start || "", 
                             end: e.target.value 
                           })}
+                          placeholder="17:30"
+                          required
                           className="rounded-xl border-green-300 focus:border-green-500 focus:ring-green-500 bg-white"
                         />
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center p-4 bg-amber-50 rounded-xl border border-amber-200">
                         <span className="font-semibold text-amber-900">Sunday</span>
                         <Input 
-                          type="time"
+                          type="text"
                           value={form.openingHours?.sunday?.start || ""} 
                           onChange={(e) => handleNestedChange('openingHours', 'sunday', { 
                             start: e.target.value, 
                             end: form.openingHours?.sunday?.end || "" 
                           })}
+                          placeholder="10:00"
+                          required
                           className="rounded-xl border-amber-300 focus:border-amber-500 focus:ring-amber-500 bg-white"
                         />
                         <Input 
-                          type="time"
+                          type="text"
                           value={form.openingHours?.sunday?.end || ""} 
                           onChange={(e) => handleNestedChange('openingHours', 'sunday', { 
                             start: form.openingHours?.sunday?.start || "", 
                             end: e.target.value 
                           })}
+                          placeholder="16:00"
+                          required
                           className="rounded-xl border-amber-300 focus:border-amber-500 focus:ring-amber-500 bg-white"
                         />
                       </div>
+                    </div>
+                    
+                    {/* Time format help */}
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-600">
+                        <strong>Time Format:</strong> Use 24-hour format (HH:MM) - Examples: 09:00, 13:30, 17:45
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -887,6 +964,7 @@ export default function AddGaragePage() {
                       <Button 
                         type="submit" 
                         disabled={!canProceed() || isSubmitting}
+                        onClick={() => setManualSubmitAttempted(true)}
                         className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:from-gray-300 disabled:to-gray-400 text-white px-6 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:transform-none disabled:cursor-not-allowed"
                       >
                         <Save className="w-4 h-4 mr-2" />
