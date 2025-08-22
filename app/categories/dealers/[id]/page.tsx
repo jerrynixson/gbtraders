@@ -306,7 +306,7 @@ export default function DealerInfoPage() {
                     width={112}
                     height={112}
                     className="w-full h-full object-contain"
-                    onError={(e: any) => { e.target.src = "/placeholder-logo.png"; }}
+                    onError={(e: any) => { e.target.src = "/placeholder.svg"; }}
                   />
                 </div>
               </div>
