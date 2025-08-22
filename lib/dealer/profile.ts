@@ -3,7 +3,7 @@ import { auth } from "@/lib/firebase";
 export interface DealerLocation {
   lat: number;
   long: number;
-  addressLines: [string, string, string];
+  addressLines: [string, string, string, string]; // 4th element is postcode
 }
 
 export interface DealerProfile {

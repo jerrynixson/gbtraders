@@ -4,39 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Upload } from "lucide-react";
+import { Upload, MapPin } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
 import { auth } from "@/lib/firebase";
-import { getDealerProfile, submitDealerProfile } from "@/lib/dealer/profile";
+import { getDealerProfile, submitDealerProfile, DealerProfile } from "@/lib/dealer/profile";
 import { toast } from "sonner";
-
-interface DealerLocation {
-  lat: number;
-  long: number;
-  addressLines: [string, string, string];
-}
-
-interface DealerProfile {
-  businessName: string;
-  contact: {
-    email: string;
-    phone: string;
-  website: string;
-  };
-  description: string;
-  location: DealerLocation;
-  businessHours: {
-    mondayToFriday: string;
-    saturday: string;
-    sunday: string;
-  };
-  socialMedia: string[];
-  dealerLogoUrl?: string;
-  dealerBannerUrl?: string;
-}
 
 export function DealerProfileSection() {
   const [isSaving, setIsSaving] = useState(false);
+  const [isFetchingCoordinates, setIsFetchingCoordinates] = useState(false);
   const [profile, setProfile] = useState<DealerProfile>({
     businessName: "",
     contact: {
@@ -48,7 +24,7 @@ export function DealerProfileSection() {
     location: {
       lat: 0,
       long: 0,
-      addressLines: ["", "", ""],
+      addressLines: ["", "", "", ""], // 4th element for postcode
     },
     businessHours: {
       mondayToFriday: "",
@@ -75,7 +51,16 @@ export function DealerProfileSection() {
               businessName: existingProfile.businessName,
               contact: existingProfile.contact,
               description: existingProfile.description,
-              location: existingProfile.location,
+              location: {
+                lat: existingProfile.location.lat,
+                long: existingProfile.location.long,
+                addressLines: [
+                  existingProfile.location.addressLines[0] || "",
+                  existingProfile.location.addressLines[1] || "",
+                  existingProfile.location.addressLines[2] || "",
+                  existingProfile.location.addressLines[3] || (existingProfile.location as any).postcode || ""
+                ] as [string, string, string, string],
+              },
               businessHours: existingProfile.businessHours,
               socialMedia: existingProfile.socialMedia,
               dealerLogoUrl: existingProfile.dealerLogoUrl,
@@ -113,6 +98,74 @@ export function DealerProfileSection() {
       toast.error("Failed to save profile changes");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const getCoordinatesFromPostcode = async (postcode: string) => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      throw new Error('Google Maps API key not configured');
+    }
+
+    const searchQuery = `${postcode} UK`;
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}&region=uk&components=country:GB`
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch coordinates');
+    }
+    
+    const data = await response.json();
+    
+    if (data.status !== 'OK' || !data.results?.[0]?.geometry?.location) {
+      throw new Error('No coordinates found for this postcode');
+    }
+    
+    const { lat, lng } = data.results[0].geometry.location;
+    return { latitude: lat, longitude: lng };
+  };
+
+  const handlePostcodeChange = async (value: string) => {
+    // Format UK postcode (add space if missing)
+    let processedValue = value.toUpperCase().replace(/\s+/g, '');
+    if (processedValue.length > 3) {
+      processedValue = processedValue.slice(0, -3) + ' ' + processedValue.slice(-3);
+    }
+
+    setProfile(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        addressLines: [prev.location.addressLines[0], prev.location.addressLines[1], prev.location.addressLines[2], processedValue] as [string, string, string, string]
+      }
+    }));
+
+    // Auto-fetch coordinates if postcode is valid
+    if (processedValue.trim()) {
+      const ukPostcodeRegex = /^(([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9][A-Za-z]?))))\s?[0-9][A-Za-z]{2}))$/;
+      if (ukPostcodeRegex.test(processedValue.trim())) {
+        setIsFetchingCoordinates(true);
+        try {
+          const coordinates = await getCoordinatesFromPostcode(processedValue);
+          
+          setProfile(prev => ({
+            ...prev,
+            location: {
+              ...prev.location,
+              lat: coordinates.latitude,
+              long: coordinates.longitude
+            }
+          }));
+          
+          toast.success(`Coordinates updated for ${processedValue}`);
+        } catch (error) {
+          console.warn("Could not fetch coordinates:", error);
+          toast.error("Could not fetch coordinates for this postcode");
+        } finally {
+          setIsFetchingCoordinates(false);
+        }
+      }
     }
   };
 
@@ -262,7 +315,7 @@ export function DealerProfileSection() {
                     ...profile,
                     location: {
                       ...profile.location,
-                      addressLines: [e.target.value, profile.location.addressLines[1], profile.location.addressLines[2]]
+                      addressLines: [e.target.value, profile.location.addressLines[1], profile.location.addressLines[2], profile.location.addressLines[3]] as [string, string, string, string]
                     }
                   })}
                   className="bg-gray-50"
@@ -276,7 +329,7 @@ export function DealerProfileSection() {
                     ...profile,
                     location: {
                       ...profile.location,
-                      addressLines: [profile.location.addressLines[0], e.target.value, profile.location.addressLines[2]]
+                      addressLines: [profile.location.addressLines[0], e.target.value, profile.location.addressLines[2], profile.location.addressLines[3]] as [string, string, string, string]
                     }
                   })}
                   className="bg-gray-50"
@@ -290,11 +343,28 @@ export function DealerProfileSection() {
                     ...profile,
                     location: {
                       ...profile.location,
-                      addressLines: [profile.location.addressLines[0], profile.location.addressLines[1], e.target.value]
+                      addressLines: [profile.location.addressLines[0], profile.location.addressLines[1], e.target.value, profile.location.addressLines[3]] as [string, string, string, string]
                     }
                   })}
                   className="bg-gray-50"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  Postcode
+                  {isFetchingCoordinates && <MapPin className="h-4 w-4 animate-spin" />}
+                </Label>
+                <Input
+                  value={profile.location.addressLines[3]}
+                  onChange={(e) => handlePostcodeChange(e.target.value)}
+                  placeholder="e.g., SW1A 1AA"
+                  className="bg-gray-50"
+                />
+                {profile.location.lat !== 0 && profile.location.long !== 0 && (
+                  <p className="text-xs text-green-600">
+                    ✓ Coordinates: {profile.location.lat.toFixed(6)}, {profile.location.long.toFixed(6)}
+                  </p>
+                )}
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>Business Description (max 100 words)</Label>
