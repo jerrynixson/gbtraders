@@ -82,23 +82,22 @@ export default function AddGaragePage() {
             // Clean the garage data before setting form state
             const cleanGarageData = Object.fromEntries(
               Object.entries(garage).filter(([key, value]) => {
-                // Keep all fields except id and image fields
+                // Keep all fields except id
                 if (key === 'id') return false;
-                if (key === 'image' || key === 'coverImage') return false;
                 return value !== undefined;
               })
             );
             
             setForm(cleanGarageData);
             
-            // Handle existing images separately - don't put them in form data
+            // Handle existing images separately - store them for display and validation
             if (garage.image) {
               console.log('Existing main image:', garage.image);
-              // Store reference for display but don't set in form
+              setForm(f => ({ ...f, image: garage.image }));
             }
             if (garage.coverImage) {
               console.log('Existing cover image:', garage.coverImage);
-              // Store reference for display but don't set in form
+              setForm(f => ({ ...f, coverImage: garage.coverImage }));
             }
           } else {
             toast.error('Garage not found or access denied');
@@ -261,6 +260,22 @@ export default function AddGaragePage() {
       return;
     }
 
+    // Check for required images
+    if (!isEditing && (!imageFile || !coverImageFile)) {
+      toast.error('Please upload both main image and cover image');
+      return;
+    }
+    
+    // For editing, ensure at least existing or new images are present
+    if (isEditing) {
+      const hasMainImage = form.image || imageFile;
+      const hasCoverImage = form.coverImage || coverImageFile;
+      if (!hasMainImage || !hasCoverImage) {
+        toast.error('Please ensure both main image and cover image are provided');
+        return;
+      }
+    }
+
     // Check that all opening hours are filled
     if (
       !form.openingHours?.weekdays?.start || 
@@ -278,13 +293,11 @@ export default function AddGaragePage() {
       setIsSubmitting(true); // Set submission guard
       setSaving(true);
       
-      // Clean form data to remove undefined fields and image fields
+      // Clean form data to remove undefined fields 
       const cleanFormData = Object.fromEntries(
         Object.entries(form).filter(([key, value]) => {
           // Remove undefined values
           if (value === undefined) return false;
-          // Remove image fields - they'll be handled separately as files
-          if (key === 'image' || key === 'coverImage') return false;
           return true;
         })
       ) as Partial<Garage>;
@@ -345,7 +358,10 @@ export default function AddGaragePage() {
   const validateStep = (stepIndex: number) => {
     switch (stepIndex) {
       case 0: // Basic Info
-        return form.name && form.description; // Remove image requirement
+        // For editing, check if we have existing images or new image files
+        const hasMainImage = isEditing ? (form.image || imageFile) : imageFile;
+        const hasCoverImage = isEditing ? (form.coverImage || coverImageFile) : coverImageFile;
+        return form.name && form.description && hasMainImage && hasCoverImage;
       case 1: // Contact
         return form.address && form.phone && form.email;
       case 2: // Services
@@ -376,6 +392,8 @@ export default function AddGaragePage() {
       step: currentStep,
       name: !!form.name,
       description: !!form.description,
+      hasMainImage: !!(isEditing ? (form.image || imageFile) : imageFile),
+      hasCoverImage: !!(isEditing ? (form.coverImage || coverImageFile) : coverImageFile),
       address: !!form.address,
       phone: !!form.phone,
       email: !!form.email,
@@ -514,12 +532,12 @@ export default function AddGaragePage() {
 
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-4">Images (Optional)</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-4">Images *</label>
                       
                       {/* Main Image Upload */}
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm text-gray-600 mb-2">Main Image</label>
+                          <label className="block text-sm text-gray-600 mb-2">Main Image *</label>
                           <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-blue-400 transition-colors">
                             {imagePreview || form.image ? (
                               <div className="relative">
@@ -539,7 +557,10 @@ export default function AddGaragePage() {
                                     if (imagePreview) {
                                       URL.revokeObjectURL(imagePreview);
                                     }
-                                    // DO NOT modify form data - let it remain without image field
+                                    // For editing, remove existing image from form
+                                    if (isEditing) {
+                                      setForm(f => ({ ...f, image: undefined }));
+                                    }
                                   }}
                                   className="absolute top-2 right-2 bg-white/90 hover:bg-white"
                                 >
@@ -549,7 +570,7 @@ export default function AddGaragePage() {
                             ) : (
                               <div className="text-center">
                                 <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                                <p className="text-gray-600 mb-2">Upload main garage image</p>
+                                <p className="text-gray-600 mb-2">Upload main garage image *</p>
                                 <p className="text-xs text-gray-500 mb-4">JPG, PNG up to 5MB</p>
                                 <input
                                   type="file"
@@ -567,12 +588,15 @@ export default function AddGaragePage() {
                                 </label>
                               </div>
                             )}
+                            {!imagePreview && !form.image && (
+                              <p className="text-red-500 text-sm mt-2 text-center">Main image is required</p>
+                            )}
                           </div>
                         </div>
 
                         {/* Cover Image Upload */}
                         <div>
-                          <label className="block text-sm text-gray-600 mb-2">Cover Image (Optional)</label>
+                          <label className="block text-sm text-gray-600 mb-2">Cover Image *</label>
                           <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-blue-400 transition-colors">
                             {coverImagePreview || form.coverImage ? (
                               <div className="relative">
@@ -592,7 +616,10 @@ export default function AddGaragePage() {
                                     if (coverImagePreview) {
                                       URL.revokeObjectURL(coverImagePreview);
                                     }
-                                    // DO NOT modify form data - let it remain without coverImage field
+                                    // For editing, remove existing cover image from form
+                                    if (isEditing) {
+                                      setForm(f => ({ ...f, coverImage: undefined }));
+                                    }
                                   }}
                                   className="absolute top-2 right-2 bg-white/90 hover:bg-white"
                                 >
@@ -602,8 +629,8 @@ export default function AddGaragePage() {
                             ) : (
                               <div className="text-center">
                                 <Camera className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                                <p className="text-gray-600 mb-2">Upload cover image</p>
-                                <p className="text-xs text-gray-500 mb-4">Optional banner image</p>
+                                <p className="text-gray-600 mb-2">Upload cover image *</p>
+                                <p className="text-xs text-gray-500 mb-4">Required banner image</p>
                                 <input
                                   type="file"
                                   accept="image/*"
@@ -619,6 +646,9 @@ export default function AddGaragePage() {
                                   Choose Cover
                                 </label>
                               </div>
+                            )}
+                            {!coverImagePreview && !form.coverImage && (
+                              <p className="text-red-500 text-sm mt-2 text-center">Cover image is required</p>
                             )}
                           </div>
                         </div>
