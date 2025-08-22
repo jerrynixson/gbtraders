@@ -146,7 +146,7 @@ export function DealerProfileSection() {
                 <div className="flex items-center gap-4">
                   <div className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50">
                     <img
-                      src={logoFile ? URL.createObjectURL(logoFile) : profile.dealerLogoUrl || "/placeholder-logo.png"}
+                      src={logoFile ? URL.createObjectURL(logoFile) : profile.dealerLogoUrl || "/placeholder.svg"}
                       alt="Business Logo"
                       className="w-full h-full object-contain p-2"
                     />
@@ -176,7 +176,7 @@ export function DealerProfileSection() {
                 <div className="flex items-center gap-4">
                   <div className="w-full h-40 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50">
                     <img
-                      src={bannerFile ? URL.createObjectURL(bannerFile) : profile.dealerBannerUrl || "/placeholder-banner.png"}
+                      src={bannerFile ? URL.createObjectURL(bannerFile) : profile.dealerBannerUrl || "/placeholder.svg"}
                       alt="Cover Image"
                       className="w-full h-full object-cover"
                     />

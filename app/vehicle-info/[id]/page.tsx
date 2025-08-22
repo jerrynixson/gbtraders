@@ -236,7 +236,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
     description: dealerProfile?.description || "Dealer description not available",
     email: dealerProfile?.contact?.email,
     logo: dealerProfile?.dealerLogoUrl || "/placeholder-logo.png", // was dealerLogoURL
-    coverImage: dealerProfile?.dealerBannerUrl || "/banner/default-banner.jpg", // was dealerBannerURL
+    coverImage: dealerProfile?.dealerBannerUrl || "/placeholder.svg", // was dealerBannerURL
     website: dealerProfile?.contact?.website,
     socialMedia: dealerProfile?.socialMedia ? {
       facebook: dealerProfile.socialMedia[0],
