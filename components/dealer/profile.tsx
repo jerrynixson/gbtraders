@@ -189,25 +189,26 @@ export function DealerProfileSection() {
   };
 
   return (
-    <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle>Dealer Profile</CardTitle>
-            <CardDescription>
-              Manage your dealer account profile and information
-            </CardDescription>
+    <>
+      <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Dealer Profile</CardTitle>
+              <CardDescription>
+                Manage your dealer account profile and information
+              </CardDescription>
+            </div>
+            <Button
+              onClick={handleSaveProfile}
+              disabled={isSaving}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
-          <Button
-            onClick={handleSaveProfile}
-            disabled={isSaving}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+        </CardHeader>
+        <CardContent>
         <div className="space-y-8">
           {/* Profile Images */}
           <div className="space-y-4">
@@ -485,7 +486,18 @@ export function DealerProfileSection() {
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      {/* Persistent Save Changes button at the bottom */}
+      <div className="flex justify-end max-w-3xl mx-auto py-6">
+        <Button
+          onClick={handleSaveProfile}
+          disabled={isSaving}
+          className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+        >
+          {isSaving ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
+    </>
   );
-} 
+}
