@@ -86,8 +86,27 @@ const SignUpPage: React.FC = () => {
       return;
     }
 
+    // If dealer account is selected, redirect to dealer setup instead of creating account
+    if (isDealerAccount) {
+      // Store form data in session storage for dealer setup page
+      const dealerFormData = {
+        firstName,
+        lastName,
+        email,
+        password,
+        country,
+        additionalRoles
+      };
+      
+      sessionStorage.setItem('dealerSignupData', JSON.stringify(dealerFormData));
+      
+      // Redirect to dealer setup page
+      router.push('/signup/dealer-setup');
+      return;
+    }
+
     try {
-      // Create the user account
+      // Create the user account (only for regular users)
       const userCredential = await signUp(email, password, firstName, lastName);
       const user = userCredential.user;
       const role = isDealerAccount ? 'dealer' : 'user';
@@ -492,7 +511,7 @@ const SignUpPage: React.FC = () => {
                 type="submit"
                 className="relative w-full flex justify-center items-center p-3 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium shadow-sm group mt-4"
               >
-                Create account
+                {isDealerAccount ? "Next" : "Create account"}
                 <ArrowRight size={18} className="ml-2 opacity-70 group-hover:translate-x-1 transition-transform" />
               </button>
 
