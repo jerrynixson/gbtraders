@@ -20,10 +20,13 @@ export interface BaseVehicle {
   color: string;
   registrationNumber?: string;
   location: {
-    address: string;
-    city: string;
-    country: string;
-    coordinates?: {
+    // New format (from dealer profile)
+    addressLines?: [string, string, string, string];
+    // Old format (for backward compatibility) 
+    address?: string;
+    city?: string;
+    country?: string;
+    coordinates: {
       latitude: number;
       longitude: number;
     };
@@ -160,10 +163,13 @@ export interface VehicleSummary {
   color: string;
   registrationNumber?: string;
   location: {
-    address: string;
-    city: string;
-    country: string;
-    coordinates?: {
+    // New format (from dealer profile)
+    addressLines?: [string, string, string, string];
+    // Old format (for backward compatibility) 
+    address?: string;
+    city?: string;
+    country?: string;
+    coordinates: {
       latitude: number;
       longitude: number;
     };

@@ -188,6 +188,49 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loadingDealer, setLoadingDealer] = useState(true);
 
+  // Helper function to get vehicle coordinates with fallback support
+  const getVehicleCoordinates = () => {
+    // New format: vehicle.location.coordinates.latitude/longitude
+    if (vehicle.location.coordinates?.latitude && vehicle.location.coordinates?.longitude) {
+      return {
+        lat: Number(vehicle.location.coordinates.latitude),
+        lng: Number(vehicle.location.coordinates.longitude)
+      };
+    }
+    
+    // Old format fallback: vehicle.location.coordinates.latitude/longitude (might be numbers)
+    if (vehicle.location.coordinates && 
+        typeof vehicle.location.coordinates.latitude === 'number' && 
+        typeof vehicle.location.coordinates.longitude === 'number') {
+      return {
+        lat: vehicle.location.coordinates.latitude,
+        lng: vehicle.location.coordinates.longitude
+      };
+    }
+    
+    // Default fallback coordinates (UK center)
+    return { lat: 51.4543, lng: -2.5879 };
+  };
+
+  // Helper function to get location description
+  const getLocationDescription = () => {
+    // New format: use addressLines
+    if (vehicle.location.addressLines && vehicle.location.addressLines.length > 0) {
+      return vehicle.location.addressLines.filter((line: string) => line.trim()).join(', ');
+    }
+    
+    // Old format fallback: use city, country, etc.
+    if (vehicle.location.city) {
+      const parts = [];
+      if (vehicle.location.address) parts.push(vehicle.location.address);
+      if (vehicle.location.city) parts.push(vehicle.location.city);
+      if (vehicle.location.country) parts.push(vehicle.location.country);
+      return parts.join(', ');
+    }
+    
+    return "Location not specified";
+  };
+
   useEffect(() => {
     const fetchDealerAndUserProfile = async () => {
       if (!vehicle.dealerUid) {
@@ -231,7 +274,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
   const dealerInfo = {
     name: dealerProfile?.businessName || "Dealer information not available",
-    location: dealerProfile?.location?.addressLines?.[0] || vehicle.location.city,
+    location: dealerProfile?.location?.addressLines?.[0] || getLocationDescription().split(',')[0] || vehicle.location.city || "Location not available",
     phoneNumber: dealerProfile?.contact?.phone || "Contact information not available",
     description: dealerProfile?.description || "Dealer description not available",
     email: dealerProfile?.contact?.email,
@@ -258,7 +301,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
     carDescription: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
     price: `£${vehicle.price.toLocaleString()}`,
     dealerName: dealerInfo.name,
-    dealerLocation: vehicle.location.city,
+    dealerLocation: dealerProfile?.location?.addressLines?.[0] || getLocationDescription().split(',')[0] || vehicle.location.city || "Location not available",
     saveButton: (
       <button 
         className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ml-2"
@@ -582,16 +625,11 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           <h3 className="text-lg font-semibold mb-4 text-gray-800">Vehicle Location</h3>
           <div className="w-full h-[300px] rounded-lg overflow-hidden">
             <GoogleMapComponent 
-              center={vehicle.location.coordinates ? 
-                { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
-                { lat: 51.4543, lng: -2.5879 }
-              }
+              center={getVehicleCoordinates()}
               zoom={13}
               markers={[
                 {
-                  position: vehicle.location.coordinates ? 
-                    { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
-                    { lat: 51.4543, lng: -2.5879 },
+                  position: getVehicleCoordinates(),
                   title: `${vehicle.make} ${vehicle.model}`
                 },
                 ...(userLocation ? [{
@@ -602,7 +640,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
             />
           </div>
           <div className="mt-4 text-sm text-gray-600">
-            <p>This vehicle is currently located at {vehicle.location.address}, {vehicle.location.city}.</p>
+            <p>This vehicle is currently located at {getLocationDescription()}.</p>
           </div>
         </div>
       </div>
@@ -696,16 +734,11 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
             <h3 className="text-lg font-semibold mb-4 text-gray-800">Vehicle Location</h3>
             <div className="w-full h-[300px] rounded-lg overflow-hidden">
               <GoogleMapComponent 
-                center={vehicle.location.coordinates ? 
-                  { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
-                  { lat: 51.4543, lng: -2.5879 }
-                }
+                center={getVehicleCoordinates()}
                 zoom={13}
                 markers={[
                   {
-                    position: vehicle.location.coordinates ? 
-                      { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
-                      { lat: 51.4543, lng: -2.5879 },
+                    position: getVehicleCoordinates(),
                     title: `${vehicle.make} ${vehicle.model}`
                   },
                   ...(userLocation ? [{
@@ -716,7 +749,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
               />
             </div>
             <div className="mt-4 text-sm text-gray-600">
-              <p>This vehicle is currently located at {vehicle.location.address}, {vehicle.location.city}.</p>
+              <p>This vehicle is currently located at {getLocationDescription()}.</p>
             </div>
           </div>
         </div>
