@@ -48,6 +48,11 @@ service firebase.storage {
         && isEmailVerified()
         && isDealerOrUser()
         && isValidImage();
+      
+      // Allow delete for authenticated, verified users and dealers (when updating images)
+      allow delete: if isAuthenticated() 
+        && isEmailVerified()
+        && isDealerOrUser();
     }
 
     // Dealer profile assets rules
