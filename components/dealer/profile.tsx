@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, MapPin, Check } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
 import { auth } from "@/lib/firebase";
@@ -39,6 +40,7 @@ export function DealerProfileSection() {
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [phoneCountryCode, setPhoneCountryCode] = useState("+44");
 
   useEffect(() => {
     // Fetch existing profile data
@@ -67,6 +69,30 @@ export function DealerProfileSection() {
               dealerLogoUrl: existingProfile.dealerLogoUrl,
               dealerBannerUrl: existingProfile.dealerBannerUrl,
             });
+
+            // Parse existing phone number to extract country code
+            if (existingProfile.contact.phone) {
+              const phone = existingProfile.contact.phone;
+              if (phone.startsWith("+44")) {
+                setPhoneCountryCode("+44");
+                setProfile(prev => ({
+                  ...prev,
+                  contact: { ...prev.contact, phone: phone.substring(3) }
+                }));
+              } else if (phone.startsWith("+1")) {
+                setPhoneCountryCode("+1");
+                setProfile(prev => ({
+                  ...prev,
+                  contact: { ...prev.contact, phone: phone.substring(2) }
+                }));
+              } else if (phone.startsWith("+91")) {
+                setPhoneCountryCode("+91");
+                setProfile(prev => ({
+                  ...prev,
+                  contact: { ...prev.contact, phone: phone.substring(3) }
+                }));
+              }
+            }
           }
         }
       } catch (error) {
@@ -101,7 +127,17 @@ export function DealerProfileSection() {
       }
 
       setIsSaving(true);
-      await submitDealerProfile(profile, logoFile, bannerFile);
+      
+      // Combine country code with phone number for saving
+      const profileToSave = {
+        ...profile,
+        contact: {
+          ...profile.contact,
+          phone: profile.contact.phone ? `${phoneCountryCode}${profile.contact.phone}` : ""
+        }
+      };
+      
+      await submitDealerProfile(profileToSave, logoFile, bannerFile);
       toast.success("Profile updated successfully");
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -305,15 +341,28 @@ export function DealerProfileSection() {
               </div>
               <div className="space-y-2">
                 <Label>Phone Number</Label>
-                <Input
-                  type="tel"
-                  value={profile.contact.phone}
-                  onChange={(e) => setProfile({
-                    ...profile,
-                    contact: { ...profile.contact, phone: e.target.value }
-                  })}
-                  className="bg-gray-50"
-                />
+                <div className="flex">
+                  <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
+                    <SelectTrigger className="w-[100px] rounded-r-none bg-gray-50" aria-label="Country code">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="+44">🇬🇧 +44</SelectItem>
+                      <SelectItem value="+1">🇺🇸 +1</SelectItem>
+                      <SelectItem value="+91">🇮🇳 +91</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="tel"
+                    value={profile.contact.phone}
+                    onChange={(e) => setProfile({
+                      ...profile,
+                      contact: { ...profile.contact, phone: e.target.value }
+                    })}
+                    className="bg-gray-50 rounded-l-none"
+                    placeholder="Enter phone number"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Website</Label>

@@ -44,6 +44,7 @@ function DealerProfileSignupSection({ onProfileComplete }: { onProfileComplete: 
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+44');
 
   // Handle file selection for logo
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,7 +128,18 @@ function DealerProfileSignupSection({ onProfileComplete }: { onProfileComplete: 
       }
 
       setIsSaving(true);
-      await submitDealerProfile(profile, logoFile, bannerFile);
+      
+      // Combine country code with phone number
+      const fullPhoneNumber = profile.contact.phone ? `${phoneCountryCode} ${profile.contact.phone}` : '';
+      const profileToSave = {
+        ...profile,
+        contact: {
+          ...profile.contact,
+          phone: fullPhoneNumber
+        }
+      };
+      
+      await submitDealerProfile(profileToSave, logoFile, bannerFile);
       toast.success("Dealer profile created successfully!");
       onProfileComplete();
     } catch (error) {
@@ -333,16 +345,28 @@ function DealerProfileSignupSection({ onProfileComplete }: { onProfileComplete: 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Phone Number</label>
-            <input
-              type="tel"
-              value={profile.contact.phone}
-              onChange={(e) => setProfile({
-                ...profile,
-                contact: { ...profile.contact, phone: e.target.value }
-              })}
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="+44 20 1234 5678"
-            />
+            <div className="flex space-x-2">
+              <select
+                value={phoneCountryCode}
+                onChange={(e) => setPhoneCountryCode(e.target.value)}
+                className="w-20 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                aria-label="Country code"
+              >
+                <option value="+44">+44</option>
+                <option value="+1">+1</option>
+                <option value="+91">+91</option>
+              </select>
+              <input
+                type="tel"
+                value={profile.contact.phone}
+                onChange={(e) => setProfile({
+                  ...profile,
+                  contact: { ...profile.contact, phone: e.target.value }
+                })}
+                className="flex-1 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="20 1234 5678"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Website</label>
