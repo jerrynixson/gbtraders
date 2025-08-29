@@ -7,13 +7,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   Upload, 
-  Image as ImageIcon, 
   X, 
-  GripVertical,
-  AlertCircle
+  GripVertical
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { UploadManager, BatchUploadProgress, defaultUploadConfig, vehicleUploadConfig, deleteImageFromStorage } from '@/lib/uploadManager';
+import { UploadManager, BatchUploadProgress, vehicleUploadConfig } from '@/lib/uploadManager';
+import { imageCacheManager, CachedImage } from '@/lib/imageCache';
 import { ImageUploadProgress } from './ImageUploadProgress';
 import {
   DndContext,
@@ -34,25 +33,19 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 interface ImageUploadSectionProps {
-  images: File[];
-  existingImages: string[];
-  uploadedImageUrls?: string[]; // Add uploaded URLs prop
-  onImagesChange: (images: File[]) => void;
-  onExistingImagesChange: (images: string[]) => void;
-  onUploadComplete: (urls: string[]) => void;
-  onUploadedImageRemove?: (url: string) => void; // Add callback for removing uploaded images
+  onImagesChange: (imageUrls: string[]) => void;
   maxImages?: number;
   maxFileSize?: number;
-  vehicleId?: string; // Add vehicle ID prop
+  vehicleId: string;
+  initialImages?: string[];
   className?: string;
+  isEditMode?: boolean; // Flag to indicate if we're editing (enables periodic sync)
 }
 
 interface SortableImageItemProps {
   id: string;
-  image: File | string;
+  image: CachedImage;
   index: number;
-  isExisting: boolean;
-  objectUrl?: string; // Add object URL prop
   onRemove: () => void;
 }
 
@@ -60,8 +53,6 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
   id,
   image,
   index,
-  isExisting,
-  objectUrl,
   onRemove,
 }) => {
   const {
@@ -78,13 +69,7 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const imageUrl = isExisting 
-    ? (image as string)
-    : objectUrl || '';
-
-  const imageName = isExisting
-    ? (image as string).split('/').pop() || 'Image'
-    : (image as File).name;
+  const imageName = image.fileName || image.url.split('/').pop() || 'Image';
 
   return (
     <div
@@ -96,28 +81,20 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
       <Card className="overflow-hidden border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors">
         <CardContent className="p-2">
           <div className="relative aspect-square">
-            {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={`Upload ${index + 1}`}
-                className="w-full h-full object-cover rounded"
-                onError={(e) => {
-                  console.error('Image failed to load:', imageUrl);
-                }}
-                onLoad={() => {
-                  // Image loaded successfully
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded">
-                <ImageIcon className="h-8 w-8 text-gray-400" />
-              </div>
-            )}
+            <img
+              src={image.url}
+              alt={`Upload ${index + 1}`}
+              className="w-full h-full object-cover rounded"
+              onError={(e) => {
+                console.error('Failed to load image:', image.url);
+                e.currentTarget.src = '/placeholder-image.jpg';
+              }}
+            />
             
             {/* Drag handle */}
             <div
-              {...listeners}
               className="absolute top-1 left-1 p-1 bg-black/50 rounded cursor-grab hover:bg-black/70 transition-colors"
+              {...listeners}
             >
               <GripVertical className="h-3 w-3 text-white" />
             </div>
@@ -137,12 +114,12 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
               <X className="h-3 w-3" />
             </Button>
             
-            {/* Image type badge */}
+            {/* Image position indicator */}
             <Badge
               variant="secondary"
               className="absolute bottom-1 left-1 text-xs bg-black/50 text-white"
             >
-              {isExisting ? 'Existing' : 'New'}
+              {index + 1}
             </Badge>
           </div>
           
@@ -156,17 +133,13 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
 };
 
 export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
-  images,
-  existingImages,
-  uploadedImageUrls = [],
   onImagesChange,
-  onExistingImagesChange,
-  onUploadComplete,
-  onUploadedImageRemove,
   maxImages = 20,
   maxFileSize = 15 * 1024 * 1024, // 15MB
   vehicleId,
+  initialImages = [],
   className = "",
+  isEditMode = false,
 }) => {
   const [batchProgress, setBatchProgress] = useState<BatchUploadProgress>({
     overallProgress: 0,
@@ -177,64 +150,135 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
   });
   
   const [isUploading, setIsUploading] = useState(false);
-  const [objectUrls, setObjectUrls] = useState<Map<number, string>>(new Map());
+  const [cachedImages, setCachedImages] = useState<CachedImage[]>([]);
   const uploadManagerRef = useRef<UploadManager | null>(null);
+  const previousImageUrlsRef = useRef<string[]>([]);
+  const initializedVehicleIdRef = useRef<string | null>(null);
 
-  // Initialize upload manager
+  // Initialize cache and upload manager once
   useEffect(() => {
-    const config = {
-      ...vehicleUploadConfig, // Use vehicle-specific configuration for enhanced compression
-      batchSize: 4, // Explicitly set batch size for parallel processing
-      vehicleId: vehicleId || 'temp'
+    let mounted = true;
+    const initializationKey = `${vehicleId}_${initialImages.length}_${initialImages.join(',')}`;
+    
+    const initializeCache = async () => {
+      try {
+        // Check if cache is already initialized for this vehicle to prevent duplicate initialization
+        const isAlreadyInitialized = imageCacheManager.isCacheInitialized(vehicleId);
+        const existingImages = isAlreadyInitialized ? imageCacheManager.getImages(vehicleId) : [];
+        
+        console.log('Cache initialization check:', {
+          vehicleId,
+          isAlreadyInitialized,
+          existingImagesCount: existingImages.length,
+          initialImagesCount: initialImages.length
+        });
+
+        // Determine if we need to (re)initialize
+        const needsInitialization = !isAlreadyInitialized || 
+          (initialImages.length > 0 && 
+           JSON.stringify(existingImages.map(img => img.url).sort()) !== JSON.stringify(initialImages.sort()));
+
+        if (needsInitialization) {
+          console.log('Initializing cache for vehicle:', vehicleId, 'with initial images:', initialImages.length, 'Edit mode:', isEditMode);
+          await imageCacheManager.initializeCache(vehicleId, initialImages, isEditMode);
+          
+          if (mounted) {
+            const images = imageCacheManager.getImages(vehicleId);
+            setCachedImages(images);
+            previousImageUrlsRef.current = imageCacheManager.getImageUrls(vehicleId);
+            console.log('Cache initialized successfully with', images.length, 'images');
+          }
+        } else {
+          console.log('Cache already initialized with correct images, skipping initialization');
+          // Just update the state with existing images
+          if (mounted) {
+            setCachedImages(existingImages);
+            previousImageUrlsRef.current = imageCacheManager.getImageUrls(vehicleId);
+          }
+        }
+
+        // Initialize upload manager only once per vehicle
+        if (!uploadManagerRef.current || initializedVehicleIdRef.current !== vehicleId) {
+          const config = {
+            ...vehicleUploadConfig,
+            batchSize: 4,
+            vehicleId: vehicleId
+          };
+          
+          // Cleanup old upload manager if exists
+          if (uploadManagerRef.current) {
+            uploadManagerRef.current.destroy();
+          }
+          
+          uploadManagerRef.current = new UploadManager(config);
+          uploadManagerRef.current.setProgressCallback(setBatchProgress);
+          initializedVehicleIdRef.current = vehicleId;
+          console.log('Upload manager initialized for vehicle:', vehicleId);
+          
+          // Set upload completion callback
+          uploadManagerRef.current.setUploadCompleteCallback(async (uploadId: string, downloadURL: string, file: File) => {
+            try {
+              console.log('Upload completed, adding to cache:', downloadURL);
+              const imageId = await imageCacheManager.addUploadedImage(vehicleId, downloadURL, file.name);
+              setCachedImages(prev => imageCacheManager.getImages(vehicleId));
+              console.log('Successfully added image to cache:', imageId);
+            } catch (error) {
+              console.error('Error adding uploaded image to cache:', error);
+              toast.error('Failed to add image to cache');
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Failed to initialize image cache:', error);
+        if (mounted) {
+          toast.error('Failed to initialize image cache');
+        }
+      }
     };
-    uploadManagerRef.current = new UploadManager(config);
-    uploadManagerRef.current.setProgressCallback(setBatchProgress);
+
+    // Only initialize if we have a valid vehicleId
+    if (vehicleId) {
+      initializeCache();
+    }
 
     return () => {
+      mounted = false;
       if (uploadManagerRef.current) {
         uploadManagerRef.current.destroy();
+        uploadManagerRef.current = null;
       }
+      // Clean up cache for this vehicle when component unmounts
+      if (vehicleId) {
+        imageCacheManager.cleanupVehicleCache(vehicleId);
+      }
+      initializedVehicleIdRef.current = null;
     };
-  }, [vehicleId]);
+  }, [vehicleId, initialImages, isEditMode]); // Include isEditMode in dependencies
 
-  // Manage object URLs for file previews
+  // Update parent component when images change - use useCallback to prevent infinite loops
+  const updateParentImages = useCallback(() => {
+    try {
+      const imageUrls = imageCacheManager.getImageUrls(vehicleId);
+      
+      // Only update if URLs actually changed
+      const previousUrls = previousImageUrlsRef.current;
+      if (JSON.stringify(imageUrls) !== JSON.stringify(previousUrls)) {
+        console.log('Images changed, notifying parent:', { 
+          previous: previousUrls.length, 
+          current: imageUrls.length,
+          urls: imageUrls
+        });
+        previousImageUrlsRef.current = imageUrls;
+        onImagesChange(imageUrls);
+      }
+    } catch (error) {
+      console.error('Error getting image URLs:', error);
+    }
+  }, [vehicleId, onImagesChange]);
+
   useEffect(() => {
-    const newObjectUrls = new Map<number, string>();
-    
-    images.forEach((file, index) => {
-      if (!objectUrls.has(index)) {
-        const url = URL.createObjectURL(file);
-        newObjectUrls.set(index, url);
-      } else {
-        newObjectUrls.set(index, objectUrls.get(index)!);
-      }
-    });
-
-    // Clean up old URLs that are no longer needed
-    objectUrls.forEach((url, index) => {
-      if (index >= images.length) {
-        URL.revokeObjectURL(url);
-      }
-    });
-
-    setObjectUrls(newObjectUrls);
-
-    // Cleanup function
-    return () => {
-      newObjectUrls.forEach((url) => {
-        URL.revokeObjectURL(url);
-      });
-    };
-  }, [images]);
-
-  // Cleanup all object URLs on unmount
-  useEffect(() => {
-    return () => {
-      objectUrls.forEach((url) => {
-        URL.revokeObjectURL(url);
-      });
-    };
-  }, []);
+    updateParentImages();
+  }, [cachedImages, updateParentImages]);
 
   // Sensors for drag and drop
   const sensors = useSensors(
@@ -246,12 +290,10 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     console.log('Files dropped:', { accepted: acceptedFiles, rejected: rejectedFiles });
-    console.log('Max file size:', maxFileSize);
     
-    // Handle rejected files first
+    // Handle rejected files
     rejectedFiles.forEach(({ file, errors }) => {
       errors.forEach((error: any) => {
-        console.log('Rejected file error:', error);
         if (error.code === 'file-too-large') {
           toast.error(`${file.name} is too large (max ${Math.round(maxFileSize / (1024 * 1024))}MB)`);
         } else if (error.code === 'file-invalid-type') {
@@ -264,41 +306,32 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
     
     // Validate accepted files
     const validFiles = acceptedFiles.filter((file) => {
-      console.log(`Checking file: ${file.name}, size: ${file.size}, type: ${file.type}`);
-      
       if (!file.type.startsWith('image/')) {
-        console.log(`File ${file.name} is not an image`);
         toast.error(`${file.name} is not an image file`);
         return false;
       }
       if (file.size > maxFileSize) {
-        console.log(`File ${file.name} is too large: ${file.size} > ${maxFileSize}`);
         toast.error(`${file.name} is too large (max ${Math.round(maxFileSize / (1024 * 1024))}MB)`);
         return false;
       }
       return true;
     });
 
-    console.log('Valid files:', validFiles);
-    console.log('Current image counts:', { existing: existingImages.length, new: images.length });
+    const currentImageCount = cachedImages.length;
 
-    if (existingImages.length + images.length + validFiles.length > maxImages) {
-      console.log('Too many images');
+    if (currentImageCount + validFiles.length > maxImages) {
       toast.error(`Maximum ${maxImages} images allowed`);
       return;
     }
 
     if (validFiles.length > 0) {
-      // Add files to the form state
-      onImagesChange([...images, ...validFiles]);
-
-      // Start upload process with batch processing
+      // Start upload process
       if (uploadManagerRef.current) {
         setIsUploading(true);
         uploadManagerRef.current.addFiles(validFiles);
       }
     }
-  }, [images, existingImages, maxImages, maxFileSize, onImagesChange]);
+  }, [cachedImages, maxImages, maxFileSize, vehicleId]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -313,104 +346,56 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
         batchProgress.totalUploads > 0 && 
         batchProgress.overallProgress === 100) {
       
+      setIsUploading(false);
+      
       if (uploadManagerRef.current) {
-        const completedUrls = uploadManagerRef.current.getCompletedUploads();
-        onUploadComplete(completedUrls);
-        setIsUploading(false);
-        
-        // Clear the upload manager state
         uploadManagerRef.current.clear();
       }
     }
-  }, [batchProgress, onUploadComplete]);
+  }, [batchProgress]);
 
-  const removeImage = (index: number) => {
-    // Clean up object URL before removing the image
-    const url = objectUrls.get(index);
-    if (url) {
-      URL.revokeObjectURL(url);
-    }
-    
-    const newImages = images.filter((_, i) => i !== index);
-    onImagesChange(newImages);
-    
-    // Show feedback to user
-    toast.success('Image removed from upload queue');
-  };
-
-  const removeExistingImage = async (index: number) => {
-    const imageUrl = existingImages[index];
-    
-    // If this is an uploaded image URL, delete it from storage and notify parent
-    if (uploadedImageUrls.includes(imageUrl)) {
-      try {
-        // Show loading toast
-        const loadingToast = toast.loading('Deleting image from storage...');
-        
-        const deleted = await deleteImageFromStorage(imageUrl, vehicleId);
-        
-        // Dismiss loading toast
-        toast.dismiss(loadingToast);
-        
-        if (deleted && onUploadedImageRemove) {
-          onUploadedImageRemove(imageUrl);
-          toast.success('Image deleted successfully');
-        } else {
-          toast.error('Failed to delete image from storage');
-          return; // Don't remove from UI if storage deletion failed
-        }
-      } catch (error) {
-        console.error('Error deleting image:', error);
-        toast.error('Failed to delete image from storage');
-        return;
+  const removeImage = async (imageId: string) => {
+    try {
+      console.log('Removing image with ID:', imageId);
+      const success = await imageCacheManager.removeImage(vehicleId, imageId, true);
+      if (success) {
+        setCachedImages(imageCacheManager.getImages(vehicleId));
+        toast.success('Image removed successfully');
+      } else {
+        console.error('Failed to remove image - removeImage returned false');
+        toast.error('Failed to remove image from storage');
       }
-    } else {
-      // For existing images that weren't uploaded in this session, just show a simple message
-      toast.success('Image removed from listing');
+    } catch (error) {
+      console.error('Error removing image:', error);
+      if (error instanceof Error && error.message.includes('storage/unauthorized')) {
+        toast.error('Permission denied: Unable to delete image from storage');
+      } else {
+        toast.error('Failed to remove image');
+      }
     }
-    
-    const newExistingImages = existingImages.filter((_, i) => i !== index);
-    onExistingImagesChange(newExistingImages);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const activeId = active.id as string;
-      const overId = over.id as string;
+      try {
+        const activeIndex = cachedImages.findIndex(img => img.id === active.id);
+        const overIndex = cachedImages.findIndex(img => img.id === over.id);
 
-      // Determine if we're dealing with existing or new images
-      const isActiveExisting = activeId.startsWith('existing-');
-      const isOverExisting = overId.startsWith('existing-');
-
-      if (isActiveExisting && isOverExisting) {
-        // Reordering existing images
-        const activeIndex = parseInt(activeId.replace('existing-', ''));
-        const overIndex = parseInt(overId.replace('existing-', ''));
-        
-        const newExistingImages = arrayMove(existingImages, activeIndex, overIndex);
-        onExistingImagesChange(newExistingImages);
-      } else if (!isActiveExisting && !isOverExisting) {
-        // Reordering new images
-        const activeIndex = parseInt(activeId.replace('new-', ''));
-        const overIndex = parseInt(overId.replace('new-', ''));
-        
-        const newImages = arrayMove(images, activeIndex, overIndex);
-        onImagesChange(newImages);
+        if (activeIndex !== -1 && overIndex !== -1) {
+          const newOrder = arrayMove(cachedImages.map(img => img.id), activeIndex, overIndex);
+          imageCacheManager.reorderImages(vehicleId, newOrder);
+          setCachedImages(imageCacheManager.getImages(vehicleId));
+        }
+      } catch (error) {
+        console.error('Error reordering images:', error);
+        toast.error('Failed to reorder images');
       }
-      // Note: We don't allow mixing existing and new images in the same drag operation
     }
   };
 
-  // Combine images for display
-  const allImageIds = [
-    ...existingImages.map((_, index) => `existing-${index}`),
-    ...images.map((_, index) => `new-${index}`),
-  ];
-
-  const totalImages = existingImages.length + images.length;
-  const canAddMore = totalImages < maxImages && !isUploading;
+  const canAddMore = cachedImages.length < maxImages && !isUploading;
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -449,23 +434,22 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
           <div className="flex flex-wrap justify-center gap-2 text-sm text-gray-500">
             <Badge variant="outline">JPG, PNG, WebP</Badge>
             <Badge variant="outline">Max {Math.round(maxFileSize / (1024 * 1024))}MB per file</Badge>
-            <Badge variant="outline">{totalImages}/{maxImages} images</Badge>
+            <Badge variant="outline">{cachedImages.length}/{maxImages} images</Badge>
           </div>
         </div>
       )}
 
       {/* Images Grid */}
-      {totalImages > 0 && (
+      {cachedImages.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-medium">
-              Vehicle Images ({totalImages}/{maxImages})
+              Vehicle Images ({cachedImages.length}/{maxImages})
             </h3>
-            {totalImages >= maxImages && (
-              <div className="flex items-center text-amber-600">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                <span className="text-sm">Maximum images reached</span>
-              </div>
+            {cachedImages.length >= maxImages && (
+              <Badge variant="outline" className="text-yellow-600">
+                Maximum images reached
+              </Badge>
             )}
           </div>
 
@@ -475,32 +459,17 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={allImageIds}
+              items={cachedImages.map(img => img.id)}
               strategy={horizontalListSortingStrategy}
             >
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {/* Existing Images */}
-                {existingImages.map((image, index) => (
+                {cachedImages.map((image, index) => (
                   <SortableImageItem
-                    key={`existing-${index}`}
-                    id={`existing-${index}`}
+                    key={image.id}
+                    id={image.id}
                     image={image}
                     index={index}
-                    isExisting={true}
-                    onRemove={() => removeExistingImage(index)}
-                  />
-                ))}
-                
-                {/* New Images */}
-                {images.map((image, index) => (
-                  <SortableImageItem
-                    key={`new-${index}`}
-                    id={`new-${index}`}
-                    image={image}
-                    index={index}
-                    isExisting={false}
-                    objectUrl={objectUrls.get(index)}
-                    onRemove={() => removeImage(index)}
+                    onRemove={() => removeImage(image.id)}
                   />
                 ))}
               </div>

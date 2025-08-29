@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { getTokenErrorMessage } from "@/lib/utils/tokenUtils"
+import { imageCacheManager } from "@/lib/imageCache"
 import { ImageUploadSection } from "./ImageUploadSection"
 
 // OneAuto API interfaces
@@ -117,7 +118,7 @@ interface ListingFormData {
   fuelType: 'petrol' | 'diesel' | 'electric' | 'hybrid' | ''
   transmission: 'manual' | 'automatic' | ''
   description: string
-  images: File[]
+  imageUrls: string[] // Changed from images to imageUrls
   registrationNumber: string
   vehicleIdentificationNumber: string
   engineNumber: string
@@ -223,7 +224,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     fuelType: "",
     transmission: "",
     description: "",
-    images: [],
+    imageUrls: [], // Changed from images
     registrationNumber: "",
     vehicleIdentificationNumber: "",
     engineNumber: "",
@@ -260,8 +261,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
       }
     }
   })
-  const [existingImages, setExistingImages] = useState<string[]>([])
-  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([])
+  const [initialImages, setInitialImages] = useState<string[]>([]) // Track initial images for cache initialization
   const [currentVehicleId, setCurrentVehicleId] = useState<string>("")
   const [formErrors, setFormErrors] = useState<FormErrors>({})
 
@@ -402,7 +402,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
           fuelType: vehicleData.fuelType || "",
           transmission: vehicleData.transmission || "",
           description: vehicleData.description || "",
-          images: [], // New images will be added here
+          imageUrls: [], // New images will be added here
           registrationNumber: vehicleData.registrationNumber || "",
           vehicleIdentificationNumber: vehicleData.vehicleIdentificationNumber || "",
           engineNumber: vehicleData.engineNumber || "",
@@ -441,7 +441,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
         })
 
         // Set existing images
-        setExistingImages(vehicleData.images || [])
+        setInitialImages(vehicleData.images || [])
 
         toast.success("Vehicle data loaded successfully")
       } catch (error) {
@@ -456,6 +456,16 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     }
   }, [isEditMode, vehicleId, user, loading, router])
 
+  // Cleanup cache when component unmounts
+  useEffect(() => {
+    return () => {
+      if (currentVehicleId && !isEditMode) {
+        // Clear cache for new listings on unmount to prevent orphaned images
+        imageCacheManager.clearCache(currentVehicleId)
+      }
+    }
+  }, [currentVehicleId, isEditMode])
+
   const validateForm = (): boolean => {
     const errors: FormErrors = {}
     
@@ -469,7 +479,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     if (!formData.fuelType) errors.fuelType = "Fuel type is required"
     if (!formData.transmission) errors.transmission = "Transmission is required"
     if (!formData.description.trim()) errors.description = "Description is required"
-    if (formData.images.length === 0 && existingImages.length === 0) errors.images = "At least one image is required"
+    if (formData.imageUrls.length === 0) errors.images = "At least one image is required"
     if (!formData.registrationNumber.trim()) errors.registrationNumber = "Registration number is required"
     if (!formData.color.trim()) errors.color = "Color is required"
     if (!formData.engineCapacity.trim()) errors.engineCapacity = "Engine capacity is required"
@@ -682,20 +692,18 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     }
   }
 
-  const removeImage = (index: number) => {
-    setFormData((prev: any) => ({ ...prev, images: prev.images.filter((_: any, i: any) => i !== index) }))
-  }
+  // Image handling is now managed by ImageUploadSection and cache
+  const handleImagesChange = useCallback((imageUrls: string[]) => {
+    setFormData(prev => ({ ...prev, imageUrls }))
+  }, [])
 
-  const removeExistingImage = (index: number) => {
-    setExistingImages((prev) => prev.filter((_, i) => i !== index))
-  }
-
+  // These handlers are no longer needed but kept for compatibility
   const handleUploadComplete = (urls: string[]) => {
-    setUploadedImageUrls(prev => [...prev, ...urls])
+    // No longer needed - handled by cache
   }
 
   const handleUploadedImageRemove = (url: string) => {
-    setUploadedImageUrls(prev => prev.filter(existingUrl => existingUrl !== url))
+    // No longer needed - handled by cache
   }
 
   const handleSubmit = async (e: any) => {
@@ -800,8 +808,8 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
       // Use existing vehicle ID for edit mode, or the pre-generated one for create mode
       const vehicleIdToUse = currentVehicleId;
 
-      // Combine existing images and uploaded images
-      const imageUrls: string[] = [...existingImages, ...uploadedImageUrls]
+      // Get final image URLs from cache and save
+      const finalImageUrls = await imageCacheManager.finalSave(vehicleIdToUse);
 
       const vehicleDataFromForm = {
         title: formData.title,
@@ -853,7 +861,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
                 longitude: Number(formData.location.coordinates.longitude)
               }
             },
-            images: imageUrls,
+            images: finalImageUrls,
             createdAt: isEditMode ? undefined : new Date(), // Don't overwrite createdAt when editing
             updatedAt: new Date(),
             status: 'available' as const,
@@ -879,7 +887,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
                 longitude: Number(formData.location.coordinates.longitude)
               }
             },
-            images: imageUrls,
+            images: finalImageUrls,
             createdAt: isEditMode ? undefined : new Date(),
             updatedAt: new Date(),
             status: 'available' as const,
@@ -904,7 +912,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
                 longitude: Number(formData.location.coordinates.longitude)
               }
             },
-            images: imageUrls,
+            images: finalImageUrls,
             createdAt: isEditMode ? undefined : new Date(),
             updatedAt: new Date(),
             status: 'available' as const,
@@ -1669,16 +1677,12 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
 
       {/* Images */}
       <ImageUploadSection
-        images={formData.images}
-        existingImages={existingImages}
-        uploadedImageUrls={uploadedImageUrls}
-        onImagesChange={(images) => setFormData(prev => ({ ...prev, images }))}
-        onExistingImagesChange={setExistingImages}
-        onUploadComplete={handleUploadComplete}
-        onUploadedImageRemove={handleUploadedImageRemove}
+        onImagesChange={handleImagesChange}
         maxImages={MAX_IMAGES}
         maxFileSize={MAX_FILE_SIZE}
         vehicleId={currentVehicleId}
+        initialImages={initialImages}
+        isEditMode={isEditMode}
       />
       {formErrors.images && <p className="text-sm text-red-500">{formErrors.images}</p>}
 

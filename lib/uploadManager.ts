@@ -41,6 +41,7 @@ export class UploadManager {
   private worker: Worker | null = null;
   private uploads: Record<string, UploadProgress> = {};
   private progressCallback: ((progress: BatchUploadProgress) => void) | null = null;
+  private uploadCompleteCallback: ((uploadId: string, downloadURL: string, file: File) => void) | null = null;
   private activeUploads = 0;
   private uploadQueue: string[] = [];
   private isPaused = false;
@@ -180,6 +181,11 @@ export class UploadManager {
               progress: 100,
               downloadURL,
             });
+            
+            // Call upload complete callback if set
+            if (this.uploadCompleteCallback && upload.file) {
+              this.uploadCompleteCallback(id, downloadURL, upload.file);
+            }
             
             // Record performance metrics
             uploadPerformanceMonitor.recordFileProcessed(
@@ -456,6 +462,10 @@ export class UploadManager {
 
   public setProgressCallback(callback: (progress: BatchUploadProgress) => void): void {
     this.progressCallback = callback;
+  }
+
+  public setUploadCompleteCallback(callback: (uploadId: string, downloadURL: string, file: File) => void): void {
+    this.uploadCompleteCallback = callback;
   }
 
   public clear(): void {
