@@ -208,8 +208,8 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
       };
     }
     
-    // Default fallback coordinates (UK center)
-    return { lat: 51.4543, lng: -2.5879 };
+    // No fallback - return null when coordinates are not available
+    return null;
   };
 
   // Helper function to get location description
@@ -623,22 +623,28 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
         {/* Vehicle Location Map for mobile */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">Vehicle Location</h3>
-          <div className="w-full h-[300px] rounded-lg overflow-hidden">
-            <GoogleMapComponent 
-              center={getVehicleCoordinates()}
-              zoom={13}
-              markers={[
-                {
-                  position: getVehicleCoordinates(),
-                  title: `${vehicle.make} ${vehicle.model}`
-                },
-                ...(userLocation ? [{
-                  position: userLocation,
-                  title: "Your Location"
-                }] : [])
-              ]}
-            />
-          </div>
+          {getVehicleCoordinates() ? (
+            <div className="w-full h-[300px] rounded-lg overflow-hidden">
+              <GoogleMapComponent 
+                center={getVehicleCoordinates()}
+                zoom={13}
+                markers={[
+                  {
+                    position: getVehicleCoordinates(),
+                    title: `${vehicle.make} ${vehicle.model}`
+                  },
+                  ...(userLocation ? [{
+                    position: userLocation,
+                    title: "Your Location"
+                  }] : [])
+                ]}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-[300px] rounded-lg flex items-center justify-center bg-gray-100">
+              <p className="text-gray-500">Location coordinates not available</p>
+            </div>
+          )}
           <div className="mt-4 text-sm text-gray-600">
             <p>This vehicle is currently located at {getLocationDescription()}.</p>
           </div>
@@ -732,22 +738,28 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           {/* Vehicle Location Map */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
             <h3 className="text-lg font-semibold mb-4 text-gray-800">Vehicle Location</h3>
-            <div className="w-full h-[300px] rounded-lg overflow-hidden">
-              <GoogleMapComponent 
-                center={getVehicleCoordinates()}
-                zoom={13}
-                markers={[
-                  {
-                    position: getVehicleCoordinates(),
-                    title: `${vehicle.make} ${vehicle.model}`
-                  },
-                  ...(userLocation ? [{
-                    position: userLocation,
-                    title: "Your Location"
-                  }] : [])
-                ]}
-              />
-            </div>
+            {getVehicleCoordinates() ? (
+              <div className="w-full h-[300px] rounded-lg overflow-hidden">
+                <GoogleMapComponent 
+                  center={getVehicleCoordinates()}
+                  zoom={13}
+                  markers={[
+                    {
+                      position: getVehicleCoordinates(),
+                      title: `${vehicle.make} ${vehicle.model}`
+                    },
+                    ...(userLocation ? [{
+                      position: userLocation,
+                      title: "Your Location"
+                    }] : [])
+                  ]}
+                />
+              </div>
+            ) : (
+              <div className="w-full h-[300px] rounded-lg flex items-center justify-center bg-gray-100">
+                <p className="text-gray-500">Location coordinates not available</p>
+              </div>
+            )}
             <div className="mt-4 text-sm text-gray-600">
               <p>This vehicle is currently located at {getLocationDescription()}.</p>
             </div>

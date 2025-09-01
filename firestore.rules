@@ -108,8 +108,8 @@ service cloud.firestore {
 
     // Users collection rules
     match /users/{userId} {
-      // Allow read if user is authenticated
-      allow read: if request.auth != null;
+      // Allow read for everyone (public user profiles)
+      allow read: if true;
       // Allow create during signup (no verification required)
       allow create: if isAuthenticated() && request.auth.uid == userId;
       // Allow update if user is admin, or if it's the user's own document and they're verified
