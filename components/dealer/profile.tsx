@@ -10,11 +10,10 @@ import React, { useEffect, useState, useRef } from "react";
 import { auth } from "@/lib/firebase";
 import { getDealerProfile, submitDealerProfile, DealerProfile } from "@/lib/dealer/profile";
 import { toast } from "sonner";
+import { PostcodeLocationInput, LocationInfo } from '@/components/ui/PostcodeLocationInput';
 
 export function DealerProfileSection() {
   const [isSaving, setIsSaving] = useState(false);
-  const [isFetchingCoordinates, setIsFetchingCoordinates] = useState(false);
-  const [hasCoordinates, setHasCoordinates] = useState(false);
   const [profile, setProfile] = useState<DealerProfile>({
     businessName: "",
     contact: {
@@ -117,15 +116,6 @@ export function DealerProfileSection() {
 
   const handleSaveProfile = async () => {
     try {
-      // Validate postcode before saving
-      const postcode = profile.location.addressLines[3];
-      const ukPostcodeRegex = /^(([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9][A-Za-z]?))))\s?[0-9][A-Za-z]{2}))$/;
-      
-      if (!postcode || !ukPostcodeRegex.test(postcode.trim())) {
-        toast.error("Please enter a valid UK postcode");
-        return;
-      }
-
       setIsSaving(true);
       
       // Combine country code with phone number for saving
@@ -144,83 +134,6 @@ export function DealerProfileSection() {
       toast.error("Failed to save profile changes");
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const getCoordinatesFromPostcode = async (postcode: string) => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) {
-      throw new Error('Google Maps API key not configured');
-    }
-
-    const searchQuery = `${postcode} UK`;
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}&region=uk&components=country:GB`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch coordinates');
-    }
-    
-    const data = await response.json();
-    
-    if (data.status !== 'OK' || !data.results?.[0]?.geometry?.location) {
-      throw new Error('No coordinates found for this postcode');
-    }
-    
-    const { lat, lng } = data.results[0].geometry.location;
-    return { latitude: lat, longitude: lng };
-  };
-
-  const [isValidPostcode, setIsValidPostcode] = useState(true);
-
-  const validatePostcode = (postcode: string): boolean => {
-    const ukPostcodeRegex = /^(([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9][A-Za-z]?))))\s?[0-9][A-Za-z]{2}))$/;
-    return postcode.trim() !== "" && ukPostcodeRegex.test(postcode.trim());
-  };
-
-  const handlePostcodeChange = async (value: string) => {
-    // Format UK postcode (add space if missing)
-    let processedValue = value.toUpperCase().replace(/\s+/g, '');
-    if (processedValue.length > 3) {
-      processedValue = processedValue.slice(0, -3) + ' ' + processedValue.slice(-3);
-    }
-
-    const isValid = validatePostcode(processedValue);
-    setIsValidPostcode(isValid);
-
-    setProfile(prev => ({
-      ...prev,
-      location: {
-        ...prev.location,
-        addressLines: [prev.location.addressLines[0], prev.location.addressLines[1], prev.location.addressLines[2], processedValue] as [string, string, string, string]
-      }
-    }));
-
-    // Only fetch coordinates if postcode is valid
-    if (isValid) {
-      setIsFetchingCoordinates(true);
-      setHasCoordinates(false);
-      try {
-        const coordinates = await getCoordinatesFromPostcode(processedValue);
-        setProfile(prev => ({
-          ...prev,
-          location: {
-            ...prev.location,
-            lat: coordinates.latitude,
-            long: coordinates.longitude
-          }
-        }));
-        setHasCoordinates(true);
-      } catch (error) {
-        console.warn("Could not fetch coordinates:", error);
-        toast.error("Could not fetch coordinates for this postcode");
-        setHasCoordinates(false);
-      } finally {
-        setIsFetchingCoordinates(false);
-      }
-    } else {
-      setHasCoordinates(false);
     }
   };
 
@@ -419,20 +332,11 @@ export function DealerProfileSection() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  Postcode
-                  {isFetchingCoordinates ? (
-                    <MapPin className="h-4 w-4 text-blue-500" />
-                  ) : hasCoordinates ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : null}
-                </Label>
-                <Input
-                  value={profile.location.addressLines[3]}
-                  onChange={(e) => handlePostcodeChange(e.target.value)}
-                  placeholder="e.g., SW1A 1AA"
-                  className={`bg-gray-50 ${!isValidPostcode && profile.location.addressLines[3] ? 'border-red-500 focus:ring-red-500' : ''}`}
-                  aria-invalid={!isValidPostcode}
+                <PostcodeLocationInput
+                  value={profile.location}
+                  onChange={(location) => setProfile(prev => ({ ...prev, location }))}
+                  label="Postcode"
+                  required
                 />
               </div>
               <div className="space-y-2 md:col-span-2">

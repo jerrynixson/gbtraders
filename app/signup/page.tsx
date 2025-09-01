@@ -12,13 +12,20 @@ import { doc, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { useToast } from "@/hooks/use-toast";
 import { FirebaseError } from 'firebase/app';
+import { PostcodeLocationInput, LocationInfo } from '@/components/ui/PostcodeLocationInput';
 
 const SignUpPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [country, setCountry] = useState('');
+  const [country, setCountry] = useState('UK');
+  const [location, setLocation] = useState<LocationInfo>({
+    addressLines: ['', '', '', ''],
+    lat: 0,
+    long: 0,
+  });
+  const [isPostcodeValid, setIsPostcodeValid] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isDealerAccount, setIsDealerAccount] = useState(false);
   const [additionalRoles, setAdditionalRoles] = useState<string[]>([]);
@@ -75,9 +82,29 @@ const SignUpPage: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!firstName || !lastName || !email || !password || !country) {
+    if (!firstName || !lastName || !email || !password) {
       setError('Please fill in all required fields');
       return;
+    }
+
+    // For regular users, also validate address fields
+    if (!isDealerAccount) {
+      if (!location.addressLines[0] || !location.addressLines[2] || !location.addressLines[3]) {
+        setError('Please fill in your address details (Address Line 1, City/Town, and Postcode are required)');
+        return;
+      }
+      
+      // Check if coordinates were fetched (valid postcode) and postcode validation status
+      if (location.lat === 0 && location.long === 0) {
+        setError('Please enter a valid UK postcode.');
+        return;
+      }
+      
+      // Additional check for postcode validation status
+      if (!isPostcodeValid && location.addressLines[3]?.trim()) {
+        setError('Please enter a valid UK postcode.');
+        return;
+      }
     }
 
     // Client-side password validation
@@ -95,6 +122,7 @@ const SignUpPage: React.FC = () => {
         email,
         password,
         country,
+        location,
         additionalRoles
       };
       
@@ -124,6 +152,7 @@ const SignUpPage: React.FC = () => {
             lastName,
             email,
             country,
+            location,
             role,
             additionalRoles,
             emailVerified: false,
@@ -198,9 +227,6 @@ const SignUpPage: React.FC = () => {
       console.error("Signup error:", error);
       if (error instanceof FirebaseError) {
         switch (error.code) {
-          case 'auth/email-already-in-use':
-            setError('This email is already registered. Please sign in instead.');
-            break;
           case 'auth/invalid-email':
             setError('The email address is not valid. Please check and try again.');
             break;
@@ -435,7 +461,87 @@ const SignUpPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Country Dropdown */}
+              {/* Address and Location Fields - Only show for regular users */}
+              {!isDealerAccount && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900">Address Information</h3>
+                  
+                  {/* Address Line 1 */}
+                  <div className="space-y-2">
+                    <label htmlFor="address-line-1" className="block text-sm font-medium text-gray-700">
+                      Address Line 1 *
+                    </label>
+                    <input
+                      id="address-line-1"
+                      name="addressLine1"
+                      type="text"
+                      autoComplete="address-line1"
+                      required
+                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="Street address"
+                      value={location.addressLines[0]}
+                      onChange={(e) => setLocation(prev => ({
+                        ...prev,
+                        addressLines: [e.target.value, prev.addressLines[1], prev.addressLines[2], prev.addressLines[3]] as [string, string, string, string]
+                      }))}
+                    />
+                  </div>
+
+                  {/* Address Line 2 */}
+                  <div className="space-y-2">
+                    <label htmlFor="address-line-2" className="block text-sm font-medium text-gray-700">
+                      Address Line 2 (Optional)
+                    </label>
+                    <input
+                      id="address-line-2"
+                      name="addressLine2"
+                      type="text"
+                      autoComplete="address-line2"
+                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="Apartment, suite, etc."
+                      value={location.addressLines[1]}
+                      onChange={(e) => setLocation(prev => ({
+                        ...prev,
+                        addressLines: [prev.addressLines[0], e.target.value, prev.addressLines[2], prev.addressLines[3]] as [string, string, string, string]
+                      }))}
+                    />
+                  </div>
+
+                  {/* City/Town */}
+                  <div className="space-y-2">
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+                      City/Town *
+                    </label>
+                    <input
+                      id="city"
+                      name="city"
+                      type="text"
+                      autoComplete="address-level2"
+                      required
+                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="City or town"
+                      value={location.addressLines[2]}
+                      onChange={(e) => setLocation(prev => ({
+                        ...prev,
+                        addressLines: [prev.addressLines[0], prev.addressLines[1], e.target.value, prev.addressLines[3]] as [string, string, string, string]
+                      }))}
+                    />
+                  </div>
+
+                  {/* Postcode */}
+                  <div className="space-y-2">
+                    <PostcodeLocationInput
+                      value={location}
+                      onChange={setLocation}
+                      onValidationChange={setIsPostcodeValid}
+                      label="Postcode"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Country Dropdown (locked to UK) */}
               <div className="space-y-2">
                 <label htmlFor="country" className="block text-sm font-medium text-gray-700">
                   Country
@@ -444,31 +550,14 @@ const SignUpPage: React.FC = () => {
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Globe size={18} className="text-gray-400" />
                   </div>
-                  <select
+                  <input
                     id="country"
                     name="country"
-                    className="pl-10 w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    required
-                  >
-                    <option value="" disabled>Select your country</option>
-                    <option value="US">United States</option>
-                    <option value="CA">Canada</option>
-                    <option value="UK">United Kingdom</option>
-                    <option value="AU">Australia</option>
-                    <option value="IN">India</option>
-                    <option value="DE">Germany</option>
-                    <option value="FR">France</option>
-                    <option value="JP">Japan</option>
-                    <option value="BR">Brazil</option>
-                    <option value="MX">Mexico</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
-                    <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
+                    type="text"
+                    className="pl-10 w-full p-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
+                    value="United Kingdom"
+                    disabled
+                  />
                 </div>
               </div>
 

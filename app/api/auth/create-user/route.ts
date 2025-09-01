@@ -6,7 +6,7 @@ const VALID_ADDITIONAL_ROLES = ['shop', 'garage'];
 
 export async function POST(request: Request) {
   try {
-    const { uid, firstName, lastName, email, country, role, additionalRoles = [] } = await request.json();
+    const { uid, firstName, lastName, email, country, location, role, additionalRoles = [] } = await request.json();
 
     // Validate required fields
     if (!uid || !firstName || !lastName || !email || !country || !role) {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
     // Validate additional roles if provided
     if (additionalRoles.length > 0) {
-      const invalidRoles = additionalRoles.filter(r => !VALID_ADDITIONAL_ROLES.includes(r));
+      const invalidRoles = additionalRoles.filter((r: string) => !VALID_ADDITIONAL_ROLES.includes(r));
       if (invalidRoles.length > 0) {
         return NextResponse.json(
           { error: `Invalid additional roles: ${invalidRoles.join(', ')}` },
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       lastName,
       email,
       country,
+      location: location || null,
       role,
       additionalRoles,
       createdAt: admin.firestore.Timestamp.now(),

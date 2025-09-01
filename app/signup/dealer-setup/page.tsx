@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
+import { PostcodeLocationInput, LocationInfo } from '@/components/ui/PostcodeLocationInput';
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { DealerProfileSection } from "@/components/dealer/profile"
@@ -30,7 +31,7 @@ function DealerProfileSignupSection({ onProfileComplete }: { onProfileComplete: 
     location: {
       lat: 0,
       long: 0,
-      addressLines: ["", "", "", ""], // 4th element for postcode
+      addressLines: ["", "", "", ""],
     },
     businessHours: {
       mondayToFriday: "",
@@ -113,19 +114,7 @@ function DealerProfileSignupSection({ onProfileComplete }: { onProfileComplete: 
         return;
       }
 
-      if (!profile.location.addressLines[3].trim()) {
-        toast.error("Postcode is required");
-        return;
-      }
-
-      // Validate postcode before saving
-      const postcode = profile.location.addressLines[3];
-      const ukPostcodeRegex = /^(([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9][A-Za-z]?))))\s?[0-9][A-Za-z]{2}))$/;
-      
-      if (!postcode || !ukPostcodeRegex.test(postcode.trim())) {
-        toast.error("Please enter a valid UK postcode");
-        return;
-      }
+  // Postcode/location validation is handled by PostcodeLocationInput
 
       setIsSaving(true);
       
@@ -150,82 +139,6 @@ function DealerProfileSignupSection({ onProfileComplete }: { onProfileComplete: 
     }
   };
 
-  const getCoordinatesFromPostcode = async (postcode: string) => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) {
-      throw new Error('Google Maps API key not configured');
-    }
-
-    const searchQuery = `${postcode} UK`;
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}&region=uk&components=country:GB`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch coordinates');
-    }
-    
-    const data = await response.json();
-    
-    if (data.status !== 'OK' || !data.results?.[0]?.geometry?.location) {
-      throw new Error('No coordinates found for this postcode');
-    }
-    
-    const { lat, lng } = data.results[0].geometry.location;
-    return { latitude: lat, longitude: lng };
-  };
-
-  const [isValidPostcode, setIsValidPostcode] = useState(true);
-
-  const validatePostcode = (postcode: string): boolean => {
-    const ukPostcodeRegex = /^(([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9][A-Za-z]?))))\s?[0-9][A-Za-z]{2}))$/;
-    return postcode.trim() !== "" && ukPostcodeRegex.test(postcode.trim());
-  };
-
-  const handlePostcodeChange = async (value: string) => {
-    // Format UK postcode (add space if missing)
-    let processedValue = value.toUpperCase().replace(/\s+/g, '');
-    if (processedValue.length > 3) {
-      processedValue = processedValue.slice(0, -3) + ' ' + processedValue.slice(-3);
-    }
-
-    const isValid = validatePostcode(processedValue);
-    setIsValidPostcode(isValid);
-
-    setProfile(prev => ({
-      ...prev,
-      location: {
-        ...prev.location,
-        addressLines: [prev.location.addressLines[0], prev.location.addressLines[1], prev.location.addressLines[2], processedValue] as [string, string, string, string]
-      }
-    }));
-
-    // Only fetch coordinates if postcode is valid
-    if (isValid) {
-      setIsFetchingCoordinates(true);
-      setHasCoordinates(false);
-      try {
-        const coordinates = await getCoordinatesFromPostcode(processedValue);
-        setProfile(prev => ({
-          ...prev,
-          location: {
-            ...prev.location,
-            lat: coordinates.latitude,
-            long: coordinates.longitude
-          }
-        }));
-        setHasCoordinates(true);
-      } catch (error) {
-        console.warn("Could not fetch coordinates:", error);
-        toast.error("Could not fetch coordinates for this postcode");
-        setHasCoordinates(false);
-      } finally {
-        setIsFetchingCoordinates(false);
-      }
-    } else {
-      setHasCoordinates(false);
-    }
-  };
 
   // Return a simplified form for signup (essential fields only)
   return (
@@ -390,26 +303,26 @@ function DealerProfileSignupSection({ onProfileComplete }: { onProfileComplete: 
             <input
               type="text"
               value={profile.location.addressLines[0]}
-              onChange={(e) => setProfile({
-                ...profile,
+              onChange={e => setProfile(prev => ({
+                ...prev,
                 location: {
-                  ...profile.location,
-                  addressLines: [e.target.value, profile.location.addressLines[1], profile.location.addressLines[2], profile.location.addressLines[3]] as [string, string, string, string]
+                  ...prev.location,
+                  addressLines: [e.target.value, prev.location.addressLines[1], prev.location.addressLines[2], prev.location.addressLines[3]] as [string, string, string, string]
                 }
-              })}
+              }))}
               className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Address Line 1"
             />
             <input
               type="text"
               value={profile.location.addressLines[1]}
-              onChange={(e) => setProfile({
-                ...profile,
+              onChange={e => setProfile(prev => ({
+                ...prev,
                 location: {
-                  ...profile.location,
-                  addressLines: [profile.location.addressLines[0], e.target.value, profile.location.addressLines[2], profile.location.addressLines[3]] as [string, string, string, string]
+                  ...prev.location,
+                  addressLines: [prev.location.addressLines[0], e.target.value, prev.location.addressLines[2], prev.location.addressLines[3]] as [string, string, string, string]
                 }
-              })}
+              }))}
               className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Address Line 2 (optional)"
             />
@@ -417,41 +330,34 @@ function DealerProfileSignupSection({ onProfileComplete }: { onProfileComplete: 
               <input
                 type="text"
                 value={profile.location.addressLines[2]}
-                onChange={(e) => setProfile({
-                  ...profile,
+                onChange={e => setProfile(prev => ({
+                  ...prev,
                   location: {
-                    ...profile.location,
-                    addressLines: [profile.location.addressLines[0], profile.location.addressLines[1], e.target.value, profile.location.addressLines[3]] as [string, string, string, string]
+                    ...prev.location,
+                    addressLines: [prev.location.addressLines[0], prev.location.addressLines[1], e.target.value, prev.location.addressLines[3]] as [string, string, string, string]
                   }
-                })}
+                }))}
                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="City/Town"
               />
-              <div className="relative">
-                <input
-                  type="text"
-                  value={profile.location.addressLines[3]}
-                  onChange={(e) => handlePostcodeChange(e.target.value)}
-                  placeholder="Postcode *"
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    !isValidPostcode && profile.location.addressLines[3] ? 'border-red-500' : 'border-gray-200'
-                  }`}
-                  required
-                />
-                {isFetchingCoordinates && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                  </div>
-                )}
-              </div>
+              <PostcodeLocationInput
+                value={profile.location}
+                onChange={loc => setProfile(prev => ({ ...prev, location: loc }))}
+                label="Postcode"
+                required
+              />
             </div>
-            {!isValidPostcode && profile.location.addressLines[3] && (
-              <p className="text-sm text-red-600">Please enter a valid UK postcode</p>
-            )}
-            {hasCoordinates && (
-              <p className="text-sm text-green-600">✓ Location coordinates updated</p>
-            )}
           </div>
+        </div>
+        {/* Country (locked to UK) */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">Country *</label>
+          <input
+            type="text"
+            value="UK"
+            disabled
+            className="w-full p-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+          />
         </div>
 
         {/* Business Description */}
