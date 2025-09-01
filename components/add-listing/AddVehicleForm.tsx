@@ -197,7 +197,7 @@ interface AddVehicleFormProps {
 export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVehicleFormProps) {
   const router = useRouter()
   const [user, loading, error] = useAuthState(auth)
-  const { user: authUser } = useAuth() // This includes role information
+  const { user: authUser, getUserProfile } = useAuth() // This includes role information and profile function
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
   const [registrationNumber, setRegistrationNumber] = useState("")
@@ -727,34 +727,46 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     setIsLoading(true)
 
     try {
-      // Get dealer profile to get location information
-      let dealerLocation = null;
+      // Get location information based on user role
+      let vehicleLocation = null;
       try {
-        const dealerProfile = await getDealerProfile(user.uid);
-        if (dealerProfile && dealerProfile.location) {
-          dealerLocation = {
-            addressLines: dealerProfile.location.addressLines,
-            lat: dealerProfile.location.lat,
-            long: dealerProfile.location.long
-          };
-          console.log("🏢 Using dealer location:", dealerLocation);
+        if (userRole === 'dealer') {
+          // For dealers, get location from dealer profile
+          const dealerProfile = await getDealerProfile(user.uid);
+          if (dealerProfile && dealerProfile.location) {
+            vehicleLocation = {
+              addressLines: dealerProfile.location.addressLines,
+              lat: dealerProfile.location.lat,
+              long: dealerProfile.location.long
+            };
+            console.log("🏢 Using dealer location:", vehicleLocation);
+          }
         } else {
-          console.warn("⚠️ No dealer profile found, will use fallback location");
-          // Fallback location (e.g., UK center coordinates)
-          dealerLocation = {
-            addressLines: ["Location not specified", "", "", ""],
-            lat: 51.4543,
-            long: -2.5879
-          };
+          // For regular users, get location from user profile
+          const userProfile = await getUserProfile();
+          if (userProfile && userProfile.location) {
+            vehicleLocation = {
+              addressLines: userProfile.location.addressLines,
+              lat: userProfile.location.lat,
+              long: userProfile.location.long
+            };
+            console.log("👤 Using user location:", vehicleLocation);
+          }
+        }
+
+        // If no location found, show error and prevent creation
+        if (!vehicleLocation) {
+          const profileLocation = userRole === 'dealer' ? 'dashboard' : 'profile';
+          toast.error(`Location couldn't be obtained. Please update your profile in ${profileLocation} before creating a listing.`);
+          setIsLoading(false);
+          return;
         }
       } catch (error) {
-        console.error("❌ Error fetching dealer profile:", error);
-        // Fallback location
-        dealerLocation = {
-          addressLines: ["Location not specified", "", "", ""],
-          lat: 51.4543,
-          long: -2.5879
-        };
+        console.error("❌ Error fetching location from profile:", error);
+        const profileLocation = userRole === 'dealer' ? 'dashboard' : 'profile';
+        toast.error(`Location couldn't be obtained. Please update your profile in ${profileLocation} before creating a listing.`);
+        setIsLoading(false);
+        return;
       }
 
       // Use existing vehicle ID for edit mode, or the pre-generated one for create mode
@@ -805,10 +817,10 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
             seats: Number(formData.seats),
             features: [],
             location: {
-              addressLines: dealerLocation.addressLines,
+              addressLines: vehicleLocation.addressLines,
               coordinates: {
-                latitude: dealerLocation.lat,
-                longitude: dealerLocation.long
+                latitude: vehicleLocation.lat,
+                longitude: vehicleLocation.long
               }
             },
             images: finalImageUrls,
@@ -829,10 +841,10 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
             height: Number(formData.height!),
             features: [],
             location: {
-              addressLines: dealerLocation.addressLines,
+              addressLines: vehicleLocation.addressLines,
               coordinates: {
-                latitude: dealerLocation.lat,
-                longitude: dealerLocation.long
+                latitude: vehicleLocation.lat,
+                longitude: vehicleLocation.long
               }
             },
             images: finalImageUrls,
@@ -852,10 +864,10 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
             cabType: formData.cabType as TruckType['cabType'],
             features: [],
             location: {
-              addressLines: dealerLocation.addressLines,
+              addressLines: vehicleLocation.addressLines,
               coordinates: {
-                latitude: dealerLocation.lat,
-                longitude: dealerLocation.long
+                latitude: vehicleLocation.lat,
+                longitude: vehicleLocation.long
               }
             },
             images: finalImageUrls,
