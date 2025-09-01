@@ -298,7 +298,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
   const carDetails = {
     carName: `${vehicle.make} ${vehicle.model}`,
-    carDescription: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+    title: vehicle.title || `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
     price: `£${vehicle.price.toLocaleString()}`,
     dealerName: dealerInfo.name,
     dealerLocation: dealerProfile?.location?.addressLines?.[0] || getLocationDescription().split(',')[0] || vehicle.location.city || "Location not available",
@@ -419,10 +419,16 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
   // More Details section: show all fields except id, images, and the specified fields
   const excludedFields = [
     'id', 'images', 'deactivationReason', 'dateOfLastV5CIssued', 'tokenExpiryDate', 'tokenActivatedDate',
-    'updatedAt', 'tokenStatus', 'createdAt', 'location', 'features', 'dealerUid', 'deactivatedAt', 'mot', 'registrationNumber', 'description', 'fuel'
+    'updatedAt', 'tokenStatus', 'createdAt', 'location', 'features', 'dealerUid', 'deactivatedAt', 'mot', 'registrationNumber', 'description', 'fuel',
+    'title', 'type', 'vehicleIdentificationNumber', 'status', 'range', 'engineNumber', 'price', 'make', 'model', 'lastColorChange', 'bodyStyle', 'firstRegistrationDate'
   ];
   const moreDetails = Object.entries(vehicle)
-    .filter(([key]) => !excludedFields.includes(key))
+    .filter(([key, value]) => {
+      if (key === 'lastColorChange' && (value === null || value === undefined || value === '')) {
+        return false;
+      }
+      return !excludedFields.includes(key);
+    })
     .map(([key, value]) => (
       <tr key={key}>
         <td className="py-1 pr-4 font-mono text-xs text-gray-500 align-top">{key}</td>
