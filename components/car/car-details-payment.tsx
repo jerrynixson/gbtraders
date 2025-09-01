@@ -5,7 +5,7 @@ import { VehicleSpecsBar } from "@/components/vehicle/vehicle-specs-bar"
 
 interface CarDetailsPaymentProps {
   carName: string
-  carDescription: string
+  title: string
   price: string
   dealerName: string
   dealerLocation: string
@@ -21,7 +21,7 @@ interface CarDetailsPaymentProps {
 
 export function CarDetailsPayment({
   carName,
-  carDescription,
+  title,
   price,
   dealerName,
   dealerLocation,
@@ -36,7 +36,7 @@ export function CarDetailsPayment({
           <h1 className="text-xl font-bold">{carName}</h1>
           {saveButton && <div>{saveButton}</div>}
         </div>
-        <p className="text-sm text-muted-foreground mb-4">{carDescription}</p>
+  <p className="text-sm text-muted-foreground mb-4">{title}</p>
         <div className="hidden grid grid-cols-2 gap-4 mb-4">
           <button className="bg-primary text-primary-foreground text-sm font-semibold py-2 px-4 rounded-md">
             Make Offer
