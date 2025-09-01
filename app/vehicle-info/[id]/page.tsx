@@ -423,7 +423,12 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
     'title', 'type', 'vehicleIdentificationNumber', 'status', 'range', 'engineNumber', 'price', 'make', 'model', 'lastColorChange', 'bodyStyle', 'firstRegistrationDate'
   ];
   const moreDetails = Object.entries(vehicle)
-    .filter(([key]) => !excludedFields.includes(key))
+    .filter(([key, value]) => {
+      if (key === 'lastColorChange' && (value === null || value === undefined || value === '')) {
+        return false;
+      }
+      return !excludedFields.includes(key);
+    })
     .map(([key, value]) => (
       <tr key={key}>
         <td className="py-1 pr-4 font-mono text-xs text-gray-500 align-top">{key}</td>
