@@ -453,7 +453,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     if (!formData.fuelType) errors.fuelType = "Fuel type is required"
     if (!formData.transmission) errors.transmission = "Transmission is required"
     if (!formData.description.trim()) errors.description = "Description is required"
-    if (formData.imageUrls.length === 0) errors.images = "At least one image is required"
+    if (!isEditMode && formData.imageUrls.length === 0) errors.images = "At least one image is required"
     if (!formData.registrationNumber.trim()) errors.registrationNumber = "Registration number is required"
     if (!formData.color.trim()) errors.color = "Color is required"
     if (!formData.engineCapacity.trim()) errors.engineCapacity = "Engine capacity is required"
