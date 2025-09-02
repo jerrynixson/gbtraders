@@ -457,6 +457,14 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     if (!formData.color.trim()) errors.color = "Color is required"
     if (!formData.engineCapacity.trim()) errors.engineCapacity = "Engine capacity is required"
 
+    // Character limit validation
+    if (formData.title.length > 20) {
+      errors.title = "Title must be 20 characters or less"
+    }
+    if (formData.description.length > 500) {
+      errors.description = "Description must be 500 characters or less"
+    }
+
     // Numeric validation
     if (isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
       errors.price = "Price must be a positive number"
