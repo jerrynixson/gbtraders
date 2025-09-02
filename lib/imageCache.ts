@@ -31,7 +31,6 @@ class ImageCacheManager {
   async initializeCache(vehicleId: string, existingImages: string[] = [], isEditMode = false): Promise<void> {
     // Check if cache is already initialized
     if (this.cache.has(vehicleId)) {
-      console.log(`Cache already exists for vehicle ${vehicleId}, clearing and reinitializing`);
       // Clear existing sync interval
       const existingInterval = this.syncIntervals.get(vehicleId);
       if (existingInterval) {
@@ -39,8 +38,6 @@ class ImageCacheManager {
         this.syncIntervals.delete(vehicleId);
       }
     }
-    
-    console.log(`Initializing cache for vehicle ${vehicleId} with ${existingImages.length} existing images (Edit mode: ${isEditMode})`);
     
     const cacheData: ImageCacheData = {
       vehicleId,
@@ -59,13 +56,8 @@ class ImageCacheManager {
     
     // Only start periodic sync in edit mode (when vehicle document exists)
     if (isEditMode) {
-      console.log(`Starting periodic sync for vehicle ${vehicleId} (edit mode)`);
       this.startPeriodicSync(vehicleId);
-    } else {
-      console.log(`Skipping periodic sync for vehicle ${vehicleId} (create mode - no document exists yet)`);
     }
-    
-    console.log(`Cache initialized for vehicle ${vehicleId} with ${cacheData.images.length} images`);
   }
 
   /**
@@ -146,14 +138,16 @@ class ImageCacheManager {
           console.error('User not authenticated - cannot delete from storage');
           // Still remove from cache even if storage deletion fails
         } else {
-          console.log('User authenticated, attempting storage deletion for:', image.url);
           const deletionSuccess = await this.deleteFromStorage(image.url);
           if (!deletionSuccess) {
             console.error('Storage deletion failed, but continuing with cache removal');
           }
         }
       } catch (error) {
-        console.error('Failed to delete image from storage:', error);
+        // Filter out user-canceled operations for production
+        if (!(error instanceof Error && error.message.includes('storage/canceled'))) {
+          console.error('Failed to delete image from storage:', error);
+        }
         // Don't return false here - still remove from cache even if storage deletion fails
       }
     }
@@ -233,10 +227,7 @@ class ImageCacheManager {
     
     // Only start if not already running
     if (!this.syncIntervals.has(vehicleId)) {
-      console.log(`Enabling periodic sync for vehicle ${vehicleId}`);
       this.startPeriodicSync(vehicleId);
-    } else {
-      console.log(`Periodic sync already enabled for vehicle ${vehicleId}`);
     }
   }
 
@@ -283,7 +274,6 @@ class ImageCacheManager {
       const docSnap = await getDoc(vehicleRef);
       
       if (!docSnap.exists()) {
-        console.log(`Vehicle document ${vehicleId} does not exist yet. Skipping sync.`);
         return false;
       }
 
@@ -295,15 +285,12 @@ class ImageCacheManager {
       cacheData.isDirty = false;
       cacheData.lastSynced = new Date();
       this.cache.set(vehicleId, cacheData);
-
-      console.log(`Synced ${imageUrls.length} images to Firestore for vehicle ${vehicleId}`);
       return true;
     } catch (error) {
       console.error('Failed to sync images to Firestore:', error);
       
       // If it's a "document not found" error in create mode, that's expected
       if (error instanceof Error && error.message.includes('No document to update')) {
-        console.log(`Document ${vehicleId} not found - likely in create mode, skipping sync.`);
         return false;
       }
       
@@ -324,14 +311,12 @@ class ImageCacheManager {
     const syncSuccess = await this.syncToFirestore(vehicleId, true);
     
     if (!syncSuccess) {
-      console.log(`Sync failed for vehicle ${vehicleId}, but continuing with cleanup. Images will be included in vehicle document.`);
     }
     
     // Clean up cache and stop sync
     this.stopPeriodicSync(vehicleId);
     this.cache.delete(vehicleId);
     
-    console.log(`Final save completed for vehicle ${vehicleId}. Cache cleaned up. Returning ${imageUrls.length} image URLs.`);
     return imageUrls;
   }
 
@@ -372,8 +357,6 @@ class ImageCacheManager {
    */
   private async deleteFromStorage(imageUrl: string): Promise<boolean> {
     try {
-      console.log('Attempting to delete image from storage:', imageUrl);
-      
       let fullPath = '';
       
       // Try multiple methods to extract the storage path
@@ -407,18 +390,19 @@ class ImageCacheManager {
         }
       }
       
-      console.log('Extracted storage path:', fullPath);
-      
       if (!fullPath) {
         throw new Error('Failed to extract storage path from URL');
       }
       
       const imageRef = ref(storage, fullPath);
       await deleteObject(imageRef);
-      console.log('Successfully deleted image from storage:', fullPath);
       return true;
     } catch (error) {
-      console.error('Error deleting image from storage:', error);
+      // Filter out user-canceled operations for production
+      if (!(error instanceof Error && error.message.includes('storage/canceled'))) {
+        console.error('Error deleting image from storage:', error);
+      }
+      
       // Check if it's a permission error specifically
       if (error instanceof Error && error.message.includes('storage/unauthorized')) {
         console.error('Storage unauthorized error - check if user is authenticated and has delete permissions');
@@ -431,8 +415,6 @@ class ImageCacheManager {
    * Clean up cache for a specific vehicle
    */
   cleanupVehicleCache(vehicleId: string): void {
-    console.log(`Cleaning up cache for vehicle ${vehicleId}`);
-    
     // Clear sync interval
     const interval = this.syncIntervals.get(vehicleId);
     if (interval) {

@@ -199,6 +199,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
   const [user, loading, error] = useAuthState(auth)
   const { user: authUser, getUserProfile } = useAuth() // This includes role information and profile function
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploadingImages, setIsUploadingImages] = useState(false)
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
   const [registrationNumber, setRegistrationNumber] = useState("")
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null)
@@ -658,6 +659,11 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     setFormData(prev => ({ ...prev, imageUrls }))
   }, [])
 
+  // Handle image upload state changes
+  const handleUploadStateChange = useCallback((isUploading: boolean) => {
+    setIsUploadingImages(isUploading)
+  }, [])
+
   // These handlers are no longer needed but kept for compatibility
   const handleUploadComplete = (urls: string[]) => {
     // No longer needed - handled by cache
@@ -671,6 +677,12 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     e.preventDefault()
     if (!user) {
       toast.error("You must be logged in to create a listing")
+      return
+    }
+
+    // Prevent submission while images are uploading
+    if (isUploadingImages) {
+      toast.error("Please wait for images to finish uploading before submitting")
       return
     }
 
@@ -1498,6 +1510,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
       {/* Images */}
       <ImageUploadSection
         onImagesChange={handleImagesChange}
+        onUploadStateChange={handleUploadStateChange}
         maxImages={MAX_IMAGES}
         maxFileSize={MAX_FILE_SIZE}
         vehicleId={currentVehicleId}
@@ -1510,10 +1523,12 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
         <Button type="button" variant="outline" onClick={() => router.push("/dashboard")}>Cancel</Button>
         <Button 
           type="submit" 
-          disabled={isLoading || (!canCreateNewListing && !isEditMode)} 
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+          disabled={isLoading || isUploadingImages || (!canCreateNewListing && !isEditMode)} 
+          className={`bg-blue-600 hover:bg-blue-700 disabled:opacity-50 ${isUploadingImages ? 'cursor-not-allowed' : ''}`}
         >
-          {isLoading 
+          {isUploadingImages 
+            ? "Uploading Images..."
+            : isLoading 
             ? (isEditMode ? "Updating..." : "Creating...") 
             : isEditMode 
             ? "Update Listing" 

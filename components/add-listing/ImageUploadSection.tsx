@@ -34,6 +34,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface ImageUploadSectionProps {
   onImagesChange: (imageUrls: string[]) => void;
+  onUploadStateChange?: (isUploading: boolean) => void; // Callback to notify parent of upload state
   maxImages?: number;
   maxFileSize?: number;
   vehicleId: string;
@@ -134,6 +135,7 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
 
 export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
   onImagesChange,
+  onUploadStateChange,
   maxImages = 20,
   maxFileSize = 15 * 1024 * 1024, // 15MB
   vehicleId,
@@ -165,13 +167,6 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
         // Check if cache is already initialized for this vehicle to prevent duplicate initialization
         const isAlreadyInitialized = imageCacheManager.isCacheInitialized(vehicleId);
         const existingImages = isAlreadyInitialized ? imageCacheManager.getImages(vehicleId) : [];
-        
-        console.log('Cache initialization check:', {
-          vehicleId,
-          isAlreadyInitialized,
-          existingImagesCount: existingImages.length,
-          initialImagesCount: initialImages.length
-        });
 
         // Determine if we need to (re)initialize
         const needsInitialization = !isAlreadyInitialized || 
@@ -179,17 +174,14 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
            JSON.stringify(existingImages.map(img => img.url).sort()) !== JSON.stringify(initialImages.sort()));
 
         if (needsInitialization) {
-          console.log('Initializing cache for vehicle:', vehicleId, 'with initial images:', initialImages.length, 'Edit mode:', isEditMode);
           await imageCacheManager.initializeCache(vehicleId, initialImages, isEditMode);
           
           if (mounted) {
             const images = imageCacheManager.getImages(vehicleId);
             setCachedImages(images);
             previousImageUrlsRef.current = imageCacheManager.getImageUrls(vehicleId);
-            console.log('Cache initialized successfully with', images.length, 'images');
           }
         } else {
-          console.log('Cache already initialized with correct images, skipping initialization');
           // Just update the state with existing images
           if (mounted) {
             setCachedImages(existingImages);
@@ -213,15 +205,12 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
           uploadManagerRef.current = new UploadManager(config);
           uploadManagerRef.current.setProgressCallback(setBatchProgress);
           initializedVehicleIdRef.current = vehicleId;
-          console.log('Upload manager initialized for vehicle:', vehicleId);
           
           // Set upload completion callback
           uploadManagerRef.current.setUploadCompleteCallback(async (uploadId: string, downloadURL: string, file: File) => {
             try {
-              console.log('Upload completed, adding to cache:', downloadURL);
               const imageId = await imageCacheManager.addUploadedImage(vehicleId, downloadURL, file.name);
               setCachedImages(prev => imageCacheManager.getImages(vehicleId));
-              console.log('Successfully added image to cache:', imageId);
             } catch (error) {
               console.error('Error adding uploaded image to cache:', error);
               toast.error('Failed to add image to cache');
@@ -255,6 +244,13 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
     };
   }, [vehicleId, initialImages, isEditMode]); // Include isEditMode in dependencies
 
+  // Notify parent component of upload state changes
+  useEffect(() => {
+    if (onUploadStateChange) {
+      onUploadStateChange(isUploading);
+    }
+  }, [isUploading, onUploadStateChange]);
+
   // Update parent component when images change - use useCallback to prevent infinite loops
   const updateParentImages = useCallback(() => {
     try {
@@ -263,11 +259,6 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
       // Only update if URLs actually changed
       const previousUrls = previousImageUrlsRef.current;
       if (JSON.stringify(imageUrls) !== JSON.stringify(previousUrls)) {
-        console.log('Images changed, notifying parent:', { 
-          previous: previousUrls.length, 
-          current: imageUrls.length,
-          urls: imageUrls
-        });
         previousImageUrlsRef.current = imageUrls;
         onImagesChange(imageUrls);
       }
@@ -289,8 +280,6 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
   );
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
-    console.log('Files dropped:', { accepted: acceptedFiles, rejected: rejectedFiles });
-    
     // Handle rejected files
     rejectedFiles.forEach(({ file, errors }) => {
       errors.forEach((error: any) => {
@@ -329,6 +318,8 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
       if (uploadManagerRef.current) {
         setIsUploading(true);
         uploadManagerRef.current.addFiles(validFiles);
+      } else {
+        console.error('Upload manager not available');
       }
     }
   }, [cachedImages, maxImages, maxFileSize, vehicleId]);
@@ -354,9 +345,26 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
     }
   }, [batchProgress]);
 
+  // Add a diagnostic timer to check for stuck uploads
+  useEffect(() => {
+    if (!isUploading) return;
+
+    const diagnosticInterval = setInterval(() => {
+      if (uploadManagerRef.current) {
+        const diagnostics = uploadManagerRef.current.getUploadDiagnostics();
+        
+        // Check if uploads are stuck
+        if (diagnostics.activeUploads === 0 && diagnostics.queueLength > 0) {
+          uploadManagerRef.current.restartStuckUploads();
+        }
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(diagnosticInterval);
+  }, [isUploading]);
+
   const removeImage = async (imageId: string) => {
     try {
-      console.log('Removing image with ID:', imageId);
       const success = await imageCacheManager.removeImage(vehicleId, imageId, true);
       if (success) {
         setCachedImages(imageCacheManager.getImages(vehicleId));
@@ -403,12 +411,7 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
       {isUploading && batchProgress.totalUploads > 0 && (
         <ImageUploadProgress
           batchProgress={batchProgress}
-          onPauseUpload={(id) => uploadManagerRef.current?.pauseUpload(id)}
-          onResumeUpload={(id) => uploadManagerRef.current?.resumeUpload(id)}
-          onRemoveUpload={(id) => uploadManagerRef.current?.removeUpload(id)}
           onRetryUpload={(id) => uploadManagerRef.current?.retryFailedUpload(id)}
-          onPauseAll={() => uploadManagerRef.current?.pauseAll()}
-          onResumeAll={() => uploadManagerRef.current?.resumeAll()}
           onRetryFailed={() => uploadManagerRef.current?.retryFailed()}
         />
       )}

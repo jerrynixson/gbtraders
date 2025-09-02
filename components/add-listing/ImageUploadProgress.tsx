@@ -6,9 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Play, 
-  Pause, 
-  X, 
   RefreshCw, 
   Check, 
   AlertCircle, 
@@ -19,12 +16,7 @@ import { BatchUploadProgress, UploadProgress } from '@/lib/uploadManager';
 
 interface ImageUploadProgressProps {
   batchProgress: BatchUploadProgress;
-  onPauseUpload: (id: string) => void;
-  onResumeUpload: (id: string) => void;
-  onRemoveUpload: (id: string) => void;
   onRetryUpload: (id: string) => void;
-  onPauseAll: () => void;
-  onResumeAll: () => void;
   onRetryFailed: () => void;
   className?: string;
 }
@@ -57,8 +49,6 @@ const getStatusIcon = (status: UploadProgress['status']) => {
       return <Check className="h-4 w-4 text-green-500" />;
     case 'error':
       return <AlertCircle className="h-4 w-4 text-red-500" />;
-    case 'paused':
-      return <Pause className="h-4 w-4 text-yellow-500" />;
     case 'compressing':
       return <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />;
     case 'uploading':
@@ -74,8 +64,6 @@ const getStatusColor = (status: UploadProgress['status']) => {
       return 'bg-green-100 text-green-800';
     case 'error':
       return 'bg-red-100 text-red-800';
-    case 'paused':
-      return 'bg-yellow-100 text-yellow-800';
     case 'compressing':
     case 'uploading':
       return 'bg-blue-100 text-blue-800';
@@ -84,15 +72,27 @@ const getStatusColor = (status: UploadProgress['status']) => {
   }
 };
 
+const getStatusDisplayText = (status: UploadProgress['status']) => {
+  switch (status) {
+    case 'compressing':
+      return 'processing';
+    case 'uploading':
+      return 'uploading';
+    case 'completed':
+      return 'completed';
+    case 'error':
+      return 'error';
+    case 'pending':
+      return 'pending';
+    default:
+      return status;
+  }
+};
+
 const UploadItem: React.FC<{
   upload: UploadProgress;
-  onPause: () => void;
-  onResume: () => void;
-  onRemove: () => void;
   onRetry: () => void;
-}> = ({ upload, onPause, onResume, onRemove, onRetry }) => {
-  const canPause = upload.status === 'uploading';
-  const canResume = upload.status === 'paused';
+}> = ({ upload, onRetry }) => {
   const canRetry = upload.status === 'error';
   const showProgress = upload.status !== 'pending' && upload.status !== 'error';
 
@@ -108,34 +108,12 @@ const UploadItem: React.FC<{
             <Badge variant="secondary" className={getStatusColor(upload.status)}>
               <div className="flex items-center space-x-1">
                 {getStatusIcon(upload.status)}
-                <span className="text-xs">{upload.status}</span>
+                <span className="text-xs">{getStatusDisplayText(upload.status)}</span>
               </div>
             </Badge>
           </div>
           
           <div className="flex items-center space-x-1 flex-shrink-0">
-            {canPause && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onPause}
-                className="h-8 w-8 p-0"
-              >
-                <Pause className="h-3 w-3" />
-              </Button>
-            )}
-            
-            {canResume && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onResume}
-                className="h-8 w-8 p-0"
-              >
-                <Play className="h-3 w-3" />
-              </Button>
-            )}
-            
             {canRetry && (
               <Button
                 variant="ghost"
@@ -146,15 +124,6 @@ const UploadItem: React.FC<{
                 <RefreshCw className="h-3 w-3" />
               </Button>
             )}
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRemove}
-              className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-            >
-              <X className="h-3 w-3" />
-            </Button>
           </div>
         </div>
         
@@ -162,7 +131,7 @@ const UploadItem: React.FC<{
           <div className="space-y-2">
             <div className="flex justify-between text-xs text-gray-500">
               <span>
-                {upload.status === 'compressing' ? 'Compressing...' : 
+                {upload.status === 'compressing' ? 'Processing...' : 
                  upload.status === 'uploading' ? 'Uploading...' : 
                  'Completed'}
               </span>
@@ -184,20 +153,11 @@ const UploadItem: React.FC<{
 
 export const ImageUploadProgress: React.FC<ImageUploadProgressProps> = ({
   batchProgress,
-  onPauseUpload,
-  onResumeUpload,
-  onRemoveUpload,
   onRetryUpload,
-  onPauseAll,
-  onResumeAll,
   onRetryFailed,
   className = "",
 }) => {
   const uploads = Object.values(batchProgress.uploads);
-  const hasActiveUploads = uploads.some(u => 
-    u.status === 'uploading' || u.status === 'compressing'
-  );
-  const hasPausedUploads = uploads.some(u => u.status === 'paused');
   const hasFailedUploads = uploads.some(u => u.status === 'error');
 
   if (uploads.length === 0) {
@@ -212,30 +172,6 @@ export const ImageUploadProgress: React.FC<ImageUploadProgressProps> = ({
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold">Upload Progress</h3>
             <div className="flex items-center space-x-2">
-              {hasActiveUploads && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onPauseAll}
-                  className="h-8"
-                >
-                  <Pause className="h-3 w-3 mr-1" />
-                  Pause All
-                </Button>
-              )}
-              
-              {hasPausedUploads && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onResumeAll}
-                  className="h-8"
-                >
-                  <Play className="h-3 w-3 mr-1" />
-                  Resume All
-                </Button>
-              )}
-              
               {hasFailedUploads && (
                 <Button
                   variant="outline"
@@ -277,9 +213,6 @@ export const ImageUploadProgress: React.FC<ImageUploadProgressProps> = ({
           <UploadItem
             key={upload.id}
             upload={upload}
-            onPause={() => onPauseUpload(upload.id)}
-            onResume={() => onResumeUpload(upload.id)}
-            onRemove={() => onRemoveUpload(upload.id)}
             onRetry={() => onRetryUpload(upload.id)}
           />
         ))}

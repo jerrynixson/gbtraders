@@ -1,7 +1,6 @@
 // lib/uploadManager.ts
 import { ref, uploadBytesResumable, getDownloadURL, UploadTask } from 'firebase/storage';
 import { storage } from './firebase';
-import { uploadPerformanceMonitor } from './uploadPerformanceMonitor';
 
 export interface UploadProgress {
   id: string;
@@ -46,6 +45,7 @@ export class UploadManager {
   private uploadQueue: string[] = [];
   private isPaused = false;
   private retryTimeouts: Record<string, NodeJS.Timeout> = {};
+  private compressionTimeouts: Record<string, NodeJS.Timeout> = {};
   private startTime: number = 0;
 
   constructor(config: UploadManagerConfig) {
@@ -62,12 +62,20 @@ export class UploadManager {
       }
 
       this.worker = new Worker('/workers/imageWorker.js');
+      
       this.worker.onmessage = this.handleWorkerMessage.bind(this);
+      
       this.worker.onerror = (error) => {
         console.error('Worker error:', error);
         // Disable worker if it fails to load
         this.worker = null;
+        console.warn('Worker disabled due to error, uploads will proceed without compression');
       };
+      
+      this.worker.onmessageerror = (error) => {
+        console.error('Worker message error:', error);
+      };
+      
     } catch (error) {
       console.error('Failed to initialize worker:', error);
       this.worker = null;
@@ -77,15 +85,14 @@ export class UploadManager {
   private handleWorkerMessage(event: MessageEvent): void {
     const { type, id } = event.data;
 
+    // Clear compression timeout if it exists
+    if (this.compressionTimeouts[id]) {
+      clearTimeout(this.compressionTimeouts[id]);
+      delete this.compressionTimeouts[id];
+    }
+
     if (type === 'IMAGE_COMPRESSED') {
       const { compressedFile, originalSize, compressedSize, compressionStage } = event.data;
-      
-      // Log compression results
-      const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
-      const targetSize = 150 * 1024; // 150KB
-      const underTarget = compressedSize <= targetSize;
-      
-      console.log(`🖼️ Image compressed (${compressionStage}): ${(originalSize/1024).toFixed(1)}KB → ${(compressedSize/1024).toFixed(1)}KB (${compressionRatio}% reduction) ${underTarget ? '✅' : '⚠️'}`);
       
       this.updateUploadStatus(id, {
         status: 'uploading',
@@ -96,11 +103,15 @@ export class UploadManager {
       this.startFirebaseUpload(id, compressedFile);
     } else if (type === 'IMAGE_COMPRESSION_ERROR') {
       const { error } = event.data;
+      console.error(`Compression error for ${id}:`, error);
       this.updateUploadStatus(id, {
         status: 'error',
         error: `Compression failed: ${error}`,
       });
+      this.activeUploads--;
       this.processNextInQueue();
+    } else {
+      console.warn('Unknown worker message type:', type);
     }
   }
 
@@ -165,7 +176,10 @@ export class UploadManager {
           this.updateUploadStatus(id, { progress });
         },
         (error) => {
-          console.error('Upload error:', error);
+          // Filter out user-canceled upload errors for production
+          if (error.code !== 'storage/canceled') {
+            console.error('Upload error:', error);
+          }
           this.handleUploadError(id, error.message);
         },
         async () => {
@@ -187,23 +201,11 @@ export class UploadManager {
               this.uploadCompleteCallback(id, downloadURL, upload.file);
             }
             
-            // Record performance metrics
-            uploadPerformanceMonitor.recordFileProcessed(
-              upload.originalSize || 0,
-              upload.compressedSize || upload.originalSize || 0,
-              uploadDuration
-            );
-            uploadPerformanceMonitor.recordConcurrentUploads(this.activeUploads);
-            
             this.activeUploads--;
             
             // Check if all uploads are complete
             const allUploads = Object.values(this.uploads);
             const completedUploads = allUploads.filter(u => u.status === 'completed');
-            if (completedUploads.length === allUploads.length && allUploads.length > 0) {
-              uploadPerformanceMonitor.end();
-              uploadPerformanceMonitor.logPerformanceReport();
-            }
             
             this.processNextInQueue();
           } catch (error) {
@@ -219,6 +221,17 @@ export class UploadManager {
   private handleUploadError(id: string, errorMessage: string): void {
     const upload = this.uploads[id];
     if (!upload) return;
+
+    // Handle user-canceled uploads differently - don't retry them
+    if (errorMessage.includes('storage/canceled') || errorMessage.includes('User canceled')) {
+      this.updateUploadStatus(id, {
+        status: 'error',
+        error: 'Upload canceled by user',
+      });
+      this.activeUploads--;
+      this.processNextInQueue();
+      return;
+    }
 
     const retryCount = (upload as any).retryCount || 0;
     
@@ -289,6 +302,7 @@ export class UploadManager {
     }
 
     // Process multiple items in parallel up to batch size
+    let processed = 0;
     while (this.activeUploads < this.config.batchSize && this.uploadQueue.length > 0) {
       const nextId = this.uploadQueue.shift();
       if (nextId && this.uploads[nextId]) {
@@ -296,6 +310,7 @@ export class UploadManager {
         if (upload.status === 'pending') {
           this.activeUploads++;
           this.compressAndUpload(nextId, upload.originalFile!);
+          processed++;
         }
       }
     }
@@ -319,6 +334,22 @@ export class UploadManager {
       status: 'compressing',
     });
 
+    // Set a timeout for compression in case worker gets stuck
+    this.compressionTimeouts[id] = setTimeout(() => {
+      console.warn(`Compression timeout for ${id}, falling back to original file`);
+      delete this.compressionTimeouts[id];
+      
+      // Update status and upload original file
+      this.updateUploadStatus(id, {
+        status: 'uploading',
+        file: file,
+        originalSize: file.size,
+        compressedSize: file.size,
+        error: undefined,
+      });
+      this.startFirebaseUpload(id, file);
+    }, 30000); // 30 second timeout
+
     this.worker.postMessage({
       type: 'COMPRESS_IMAGE',
       file,
@@ -330,12 +361,6 @@ export class UploadManager {
 
   public addFiles(files: File[]): string[] {
     const ids: string[] = [];
-    
-    // Start performance monitoring
-    if (files.length > 0) {
-      uploadPerformanceMonitor.start();
-      uploadPerformanceMonitor.setBatchSize(this.config.batchSize);
-    }
     
     files.forEach((file) => {
       const id = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -427,6 +452,31 @@ export class UploadManager {
     this.processNextInQueue();
   }
 
+  public restartStuckUploads(): void {
+    // If queue has items but no active uploads, restart processing
+    if (this.uploadQueue.length > 0 && this.activeUploads === 0) {
+      this.processNextInQueue();
+    }
+    
+    // Check for uploads stuck in compressing state for too long
+    const now = Date.now();
+    Object.values(this.uploads).forEach(upload => {
+      if (upload.status === 'compressing') {
+        // If compressing for more than 30 seconds, restart it
+        this.updateUploadStatus(upload.id, {
+          status: 'pending',
+          progress: 0,
+        });
+        
+        if (!this.uploadQueue.includes(upload.id)) {
+          this.uploadQueue.unshift(upload.id);
+        }
+      }
+    });
+    
+    this.processNextInQueue();
+  }
+
   public removeUpload(id: string): void {
     if (this.uploads[id]) {
       // Cancel upload if in progress
@@ -438,6 +488,12 @@ export class UploadManager {
       if (this.retryTimeouts[id]) {
         clearTimeout(this.retryTimeouts[id]);
         delete this.retryTimeouts[id];
+      }
+      
+      // Clear compression timeout
+      if (this.compressionTimeouts[id]) {
+        clearTimeout(this.compressionTimeouts[id]);
+        delete this.compressionTimeouts[id];
       }
 
       delete this.uploads[id];
@@ -456,6 +512,23 @@ export class UploadManager {
     return Object.values(this.uploads)
       .filter(upload => upload.status === 'completed' && upload.downloadURL)
       .map(upload => upload.downloadURL!);
+  }
+
+  public getUploadDiagnostics(): any {
+    return {
+      workerAvailable: !!this.worker,
+      isPaused: this.isPaused,
+      activeUploads: this.activeUploads,
+      maxBatchSize: this.config.batchSize,
+      queueLength: this.uploadQueue.length,
+      totalUploads: Object.keys(this.uploads).length,
+      uploadStatuses: Object.values(this.uploads).reduce((acc: Record<string, number>, upload) => {
+        acc[upload.status] = (acc[upload.status] || 0) + 1;
+        return acc;
+      }, {}),
+      compressionTimeouts: Object.keys(this.compressionTimeouts).length,
+      retryTimeouts: Object.keys(this.retryTimeouts).length,
+    };
   }
 
 
@@ -478,11 +551,13 @@ export class UploadManager {
 
     // Clear all retry timeouts
     Object.values(this.retryTimeouts).forEach(timeout => clearTimeout(timeout));
+    Object.values(this.compressionTimeouts).forEach(timeout => clearTimeout(timeout));
     
     this.uploads = {};
     this.uploadQueue = [];
     this.activeUploads = 0;
     this.retryTimeouts = {};
+    this.compressionTimeouts = {};
     this.startTime = 0;
     this.notifyProgress();
   }
@@ -558,10 +633,12 @@ export async function deleteImageFromStorage(imageUrl: string, vehicleId?: strin
     }
 
     const result = await response.json();
-    console.log('Successfully deleted image via admin SDK:', result.deletedPath);
     return true;
   } catch (error) {
-    console.error('Error deleting image from storage:', error);
+    // Filter out user-canceled operations for production
+    if (!(error instanceof Error && error.message.includes('storage/canceled'))) {
+      console.error('Error deleting image from storage:', error);
+    }
     return false;
   }
 }
