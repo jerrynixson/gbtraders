@@ -140,7 +140,7 @@ export interface VehicleQueryOptions {
   };
 }
 
-export interface VehicleQueryResult<T extends Vehicle = Vehicle> {
+export interface VehicleQueryResult<T = Vehicle> {
   items: T[];
   total: number;
   page: number;
@@ -176,6 +176,8 @@ export interface VehicleSummary {
   };
   mainImage: string;
   imageUrls?: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Component Props Types

@@ -264,9 +264,9 @@ export function sortVehiclesLocally(
         bValue = b.mileage;
         break;
       case 'createdAt':
-        // Assuming createdAt is not available in VehicleSummary, use ID as fallback
-        aValue = a.id;
-        bValue = b.id;
+        // Use createdAt timestamp, fallback to updatedAt if not available
+        aValue = new Date(a.createdAt || a.updatedAt).getTime();
+        bValue = new Date(b.createdAt || b.updatedAt).getTime();
         break;
       default:
         return 0;
