@@ -3,7 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: Request) {
   try {
-    const { uid, firstName, lastName, country, role } = await request.json();
+    const { uid, firstName, lastName, country, role, location } = await request.json();
 
     if (!uid) {
       return NextResponse.json(
@@ -12,14 +12,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // Update user profile in Firestore using the existing adminDb instance
-    await adminDb.collection('users').doc(uid).update({
+    // Prepare update data
+    const updateData: any = {
       firstName,
       lastName,
       country,
       role,
       updatedAt: new Date(),
-    });
+    };
+
+    // Add location if provided
+    if (location) {
+      updateData.location = location;
+    }
+
+    // Update user profile in Firestore using the existing adminDb instance
+    await adminDb.collection('users').doc(uid).update(updateData);
 
     return NextResponse.json(
       { message: 'Profile updated successfully' },

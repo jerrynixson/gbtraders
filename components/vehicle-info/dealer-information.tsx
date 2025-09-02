@@ -80,10 +80,12 @@ export function DealerInformation({
                   <h3 className="text-lg font-semibold hover:text-blue-600 transition-colors">{displayName}</h3>
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                  <MapPin className="w-4 h-4" />
-                  <span>{location}</span>
-                </div>
+                {!shouldShowUserFallback && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                    <MapPin className="w-4 h-4" />
+                    <span>{location}</span>
+                  </div>
+                )}
                 {phoneNumber && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                     <Phone className="w-4 h-4" />
@@ -131,10 +133,12 @@ export function DealerInformation({
           <div className="flex items-start gap-4">
             <div className="flex-grow">
               <h3 className="text-lg font-semibold">{displayName}</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                <MapPin className="w-4 h-4" />
-                <span>{location}</span>
-              </div>
+              {!shouldShowUserFallback && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                  <MapPin className="w-4 h-4" />
+                  <span>{location}</span>
+                </div>
+              )}
               {phoneNumber && !shouldShowUserFallback && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                   <Phone className="w-4 h-4" />

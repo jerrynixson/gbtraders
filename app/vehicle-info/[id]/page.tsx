@@ -188,6 +188,49 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loadingDealer, setLoadingDealer] = useState(true);
 
+  // Helper function to get vehicle coordinates with fallback support
+  const getVehicleCoordinates = () => {
+    // New format: vehicle.location.coordinates.latitude/longitude
+    if (vehicle.location.coordinates?.latitude && vehicle.location.coordinates?.longitude) {
+      return {
+        lat: Number(vehicle.location.coordinates.latitude),
+        lng: Number(vehicle.location.coordinates.longitude)
+      };
+    }
+    
+    // Old format fallback: vehicle.location.coordinates.latitude/longitude (might be numbers)
+    if (vehicle.location.coordinates && 
+        typeof vehicle.location.coordinates.latitude === 'number' && 
+        typeof vehicle.location.coordinates.longitude === 'number') {
+      return {
+        lat: vehicle.location.coordinates.latitude,
+        lng: vehicle.location.coordinates.longitude
+      };
+    }
+    
+    // No fallback - return null when coordinates are not available
+    return null;
+  };
+
+  // Helper function to get location description
+  const getLocationDescription = () => {
+    // New format: use addressLines
+    if (vehicle.location.addressLines && vehicle.location.addressLines.length > 0) {
+      return vehicle.location.addressLines.filter((line: string) => line.trim()).join(', ');
+    }
+    
+    // Old format fallback: use city, country, etc.
+    if (vehicle.location.city) {
+      const parts = [];
+      if (vehicle.location.address) parts.push(vehicle.location.address);
+      if (vehicle.location.city) parts.push(vehicle.location.city);
+      if (vehicle.location.country) parts.push(vehicle.location.country);
+      return parts.join(', ');
+    }
+    
+    return "Location not specified";
+  };
+
   useEffect(() => {
     const fetchDealerAndUserProfile = async () => {
       if (!vehicle.dealerUid) {
@@ -231,7 +274,7 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
   const dealerInfo = {
     name: dealerProfile?.businessName || "Dealer information not available",
-    location: dealerProfile?.location?.addressLines?.[0] || vehicle.location.city,
+    location: dealerProfile?.location?.addressLines?.[0] || getLocationDescription().split(',')[0] || vehicle.location.city || "Location not available",
     phoneNumber: dealerProfile?.contact?.phone || "Contact information not available",
     description: dealerProfile?.description || "Dealer description not available",
     email: dealerProfile?.contact?.email,
@@ -255,10 +298,10 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
 
   const carDetails = {
     carName: `${vehicle.make} ${vehicle.model}`,
-    carDescription: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+    title: vehicle.title || `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
     price: `£${vehicle.price.toLocaleString()}`,
     dealerName: dealerInfo.name,
-    dealerLocation: vehicle.location.city,
+    dealerLocation: dealerProfile?.location?.addressLines?.[0] || getLocationDescription().split(',')[0] || vehicle.location.city || "Location not available",
     saveButton: (
       <button 
         className="inline-flex items-center justify-center gap-2 rounded-md bg-muted px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ml-2"
@@ -376,10 +419,16 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
   // More Details section: show all fields except id, images, and the specified fields
   const excludedFields = [
     'id', 'images', 'deactivationReason', 'dateOfLastV5CIssued', 'tokenExpiryDate', 'tokenActivatedDate',
-    'updatedAt', 'tokenStatus', 'createdAt', 'location', 'features', 'dealerUid', 'deactivatedAt', 'mot', 'registrationNumber', 'description', 'fuel'
+    'updatedAt', 'tokenStatus', 'createdAt', 'location', 'features', 'dealerUid', 'deactivatedAt', 'mot', 'registrationNumber', 'description', 'fuel',
+    'title', 'type', 'vehicleIdentificationNumber', 'status', 'range', 'engineNumber', 'price', 'make', 'model', 'lastColorChange', 'bodyStyle', 'firstRegistrationDate'
   ];
   const moreDetails = Object.entries(vehicle)
-    .filter(([key]) => !excludedFields.includes(key))
+    .filter(([key, value]) => {
+      if (key === 'lastColorChange' && (value === null || value === undefined || value === '')) {
+        return false;
+      }
+      return !excludedFields.includes(key);
+    })
     .map(([key, value]) => (
       <tr key={key}>
         <td className="py-1 pr-4 font-mono text-xs text-gray-500 align-top">{key}</td>
@@ -580,29 +629,30 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
         {/* Vehicle Location Map for mobile */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">Vehicle Location</h3>
-          <div className="w-full h-[300px] rounded-lg overflow-hidden">
-            <GoogleMapComponent 
-              center={vehicle.location.coordinates ? 
-                { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
-                { lat: 51.4543, lng: -2.5879 }
-              }
-              zoom={13}
-              markers={[
-                {
-                  position: vehicle.location.coordinates ? 
-                    { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
-                    { lat: 51.4543, lng: -2.5879 },
-                  title: `${vehicle.make} ${vehicle.model}`
-                },
-                ...(userLocation ? [{
-                  position: userLocation,
-                  title: "Your Location"
-                }] : [])
-              ]}
-            />
-          </div>
+          {getVehicleCoordinates() ? (
+            <div className="w-full h-[300px] rounded-lg overflow-hidden">
+              <GoogleMapComponent 
+                center={getVehicleCoordinates()}
+                zoom={13}
+                markers={[
+                  {
+                    position: getVehicleCoordinates(),
+                    title: `${vehicle.make} ${vehicle.model}`
+                  },
+                  ...(userLocation ? [{
+                    position: userLocation,
+                    title: "Your Location"
+                  }] : [])
+                ]}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-[300px] rounded-lg flex items-center justify-center bg-gray-100">
+              <p className="text-gray-500">Location coordinates not available</p>
+            </div>
+          )}
           <div className="mt-4 text-sm text-gray-600">
-            <p>This vehicle is currently located at {vehicle.location.address}, {vehicle.location.city}.</p>
+            <p>This vehicle is currently located at {getLocationDescription()}.</p>
           </div>
         </div>
       </div>
@@ -694,29 +744,30 @@ const VehicleContent = ({ vehicle, userLocation, isFavorite, onFavoriteClick, us
           {/* Vehicle Location Map */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">
             <h3 className="text-lg font-semibold mb-4 text-gray-800">Vehicle Location</h3>
-            <div className="w-full h-[300px] rounded-lg overflow-hidden">
-              <GoogleMapComponent 
-                center={vehicle.location.coordinates ? 
-                  { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
-                  { lat: 51.4543, lng: -2.5879 }
-                }
-                zoom={13}
-                markers={[
-                  {
-                    position: vehicle.location.coordinates ? 
-                      { lat: vehicle.location.coordinates.latitude, lng: vehicle.location.coordinates.longitude } :
-                      { lat: 51.4543, lng: -2.5879 },
-                    title: `${vehicle.make} ${vehicle.model}`
-                  },
-                  ...(userLocation ? [{
-                    position: userLocation,
-                    title: "Your Location"
-                  }] : [])
-                ]}
-              />
-            </div>
+            {getVehicleCoordinates() ? (
+              <div className="w-full h-[300px] rounded-lg overflow-hidden">
+                <GoogleMapComponent 
+                  center={getVehicleCoordinates()}
+                  zoom={13}
+                  markers={[
+                    {
+                      position: getVehicleCoordinates(),
+                      title: `${vehicle.make} ${vehicle.model}`
+                    },
+                    ...(userLocation ? [{
+                      position: userLocation,
+                      title: "Your Location"
+                    }] : [])
+                  ]}
+                />
+              </div>
+            ) : (
+              <div className="w-full h-[300px] rounded-lg flex items-center justify-center bg-gray-100">
+                <p className="text-gray-500">Location coordinates not available</p>
+              </div>
+            )}
             <div className="mt-4 text-sm text-gray-600">
-              <p>This vehicle is currently located at {vehicle.location.address}, {vehicle.location.city}.</p>
+              <p>This vehicle is currently located at {getLocationDescription()}.</p>
             </div>
           </div>
         </div>

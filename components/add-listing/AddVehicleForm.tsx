@@ -20,6 +20,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { getTokenErrorMessage } from "@/lib/utils/tokenUtils"
 import { imageCacheManager } from "@/lib/imageCache"
 import { ImageUploadSection } from "./ImageUploadSection"
+import { getDealerProfile } from "@/lib/dealer/profile"
 
 // OneAuto API interfaces
 interface OneAutoApiResponse {
@@ -146,15 +147,6 @@ interface ListingFormData {
   lastKeeperChangeDate: string
   colorChanges: string
   lastColorChangeDate: string
-  location: {
-    city: string
-    country: string
-    pincode: string
-    coordinates: {
-      latitude: string
-      longitude: string
-    }
-  }
 }
 
 interface FormErrors {
@@ -205,10 +197,9 @@ interface AddVehicleFormProps {
 export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVehicleFormProps) {
   const router = useRouter()
   const [user, loading, error] = useAuthState(auth)
-  const { user: authUser } = useAuth() // This includes role information
+  const { user: authUser, getUserProfile } = useAuth() // This includes role information and profile function
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingVehicleData, setIsFetchingVehicleData] = useState(false)
-  const [isFetchingCoordinates, setIsFetchingCoordinates] = useState(false)
   const [registrationNumber, setRegistrationNumber] = useState("")
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null)
   const [canCreateNewListing, setCanCreateNewListing] = useState(false)
@@ -250,16 +241,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     previousKeepers: "0",
     lastKeeperChangeDate: "",
     colorChanges: "0",
-    lastColorChangeDate: "",
-    location: {
-      city: "",
-      country: "",
-      pincode: "",
-      coordinates: {
-        latitude: "",
-        longitude: ""
-      }
-    }
+    lastColorChangeDate: ""
   })
   const [initialImages, setInitialImages] = useState<string[]>([]) // Track initial images for cache initialization
   const [currentVehicleId, setCurrentVehicleId] = useState<string>("")
@@ -428,16 +410,7 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
           previousKeepers: vehicleData.previousKeepers?.toString() || "0",
           lastKeeperChangeDate: formatDateForInput(vehicleData.lastKeeperChangeDate),
           colorChanges: vehicleData.colorChanges?.toString() || "0",
-          lastColorChangeDate: formatDateForInput(vehicleData.lastColorChangeDate),
-          location: {
-            city: vehicleData.location?.city || "",
-            country: vehicleData.location?.country || "",
-            pincode: vehicleData.location?.pincode || "",
-            coordinates: {
-              latitude: vehicleData.location?.coordinates?.latitude?.toString() || "",
-              longitude: vehicleData.location?.coordinates?.longitude?.toString() || ""
-            }
-          }
+          lastColorChangeDate: formatDateForInput(vehicleData.lastColorChangeDate)
         })
 
         // Set existing images
@@ -499,18 +472,6 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     }
     if (isNaN(Number(formData.co2Emissions)) || Number(formData.co2Emissions) < 0) {
       errors.co2Emissions = "CO2 emissions must be a positive number"
-    }
-
-    // Location validation
-    if (!formData.location.city.trim()) errors["location.city"] = "City is required"
-    if (!formData.location.country.trim()) errors["location.country"] = "Country is required"
-    if (!formData.location.pincode.trim()) {
-      errors["location.pincode"] = "Postcode is required"
-    } else {
-      const ukPostcodeRegex = /^(([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9][A-Za-z]?))))\s?[0-9][A-Za-z]{2}))$/
-      if (!ukPostcodeRegex.test(formData.location.pincode.trim())) {
-        errors["location.pincode"] = "Please enter a valid UK postcode (e.g., SW1A 1AA, M1 1AA)"
-      }
     }
 
     // Type-specific validation
@@ -766,44 +727,47 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     setIsLoading(true)
 
     try {
-      // Use existing coordinates or fetch if not available
-      let coordinates = formData.location.coordinates
-      
-      // If coordinates are empty, try to fetch them
-      if (!coordinates.latitude || !coordinates.longitude || coordinates.latitude === "0" || coordinates.longitude === "0") {
-        console.log("🔄 Coordinates not found in form, attempting to fetch from postcode...")
-        try {
-          coordinates = await getCoordinatesFromPincode(
-            formData.location.pincode,
-            formData.location.city,
-            formData.location.country
-          )
-        } catch (coordError) {
-          console.warn("Could not get coordinates during submission, using default values:", coordError)
-          coordinates = { latitude: "0", longitude: "0" }
+      // Get location information based on user role
+      let vehicleLocation = null;
+      try {
+        if (userRole === 'dealer') {
+          // For dealers, get location from dealer profile
+          const dealerProfile = await getDealerProfile(user.uid);
+          if (dealerProfile && dealerProfile.location) {
+            vehicleLocation = {
+              addressLines: dealerProfile.location.addressLines,
+              lat: dealerProfile.location.lat,
+              long: dealerProfile.location.long
+            };
+            console.log("🏢 Using dealer location:", vehicleLocation);
+          }
+        } else {
+          // For regular users, get location from user profile
+          const userProfile = await getUserProfile();
+          if (userProfile && userProfile.location) {
+            vehicleLocation = {
+              addressLines: userProfile.location.addressLines,
+              lat: userProfile.location.lat,
+              long: userProfile.location.long
+            };
+            console.log("👤 Using user location:", vehicleLocation);
+          }
         }
+
+        // If no location found, show error and prevent creation
+        if (!vehicleLocation) {
+          const profileLocation = userRole === 'dealer' ? 'dashboard' : 'profile';
+          toast.error(`Location couldn't be obtained. Please update your profile in ${profileLocation} before creating a listing.`);
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error("❌ Error fetching location from profile:", error);
+        const profileLocation = userRole === 'dealer' ? 'dashboard' : 'profile';
+        toast.error(`Location couldn't be obtained. Please update your profile in ${profileLocation} before creating a listing.`);
+        setIsLoading(false);
+        return;
       }
-      
-      // Log final coordinates being used for vehicle submission
-      console.log("🚗 Final coordinates for vehicle submission:", {
-        vehicleTitle: formData.title,
-        postcode: formData.location.pincode,
-        city: formData.location.city,
-        coordinates: {
-          latitude: coordinates.latitude,
-          longitude: coordinates.longitude
-        },
-        timestamp: new Date().toISOString()
-      })
-      
-      // Update form data with final coordinates
-      setFormData((prev: any) => ({
-        ...prev,
-        location: {
-          ...prev.location,
-          coordinates
-        }
-      }))
 
       // Use existing vehicle ID for edit mode, or the pre-generated one for create mode
       const vehicleIdToUse = currentVehicleId;
@@ -853,12 +817,10 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
             seats: Number(formData.seats),
             features: [],
             location: {
-              city: formData.location.city,
-              country: formData.location.country,
-              pincode: formData.location.pincode,
+              addressLines: vehicleLocation.addressLines,
               coordinates: {
-                latitude: Number(formData.location.coordinates.latitude),
-                longitude: Number(formData.location.coordinates.longitude)
+                latitude: vehicleLocation.lat,
+                longitude: vehicleLocation.long
               }
             },
             images: finalImageUrls,
@@ -879,12 +841,10 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
             height: Number(formData.height!),
             features: [],
             location: {
-              city: formData.location.city,
-              country: formData.location.country,
-              pincode: formData.location.pincode,
+              addressLines: vehicleLocation.addressLines,
               coordinates: {
-                latitude: Number(formData.location.coordinates.latitude),
-                longitude: Number(formData.location.coordinates.longitude)
+                latitude: vehicleLocation.lat,
+                longitude: vehicleLocation.long
               }
             },
             images: finalImageUrls,
@@ -904,12 +864,10 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
             cabType: formData.cabType as TruckType['cabType'],
             features: [],
             location: {
-              city: formData.location.city,
-              country: formData.location.country,
-              pincode: formData.location.pincode,
+              addressLines: vehicleLocation.addressLines,
               coordinates: {
-                latitude: Number(formData.location.coordinates.latitude),
-                longitude: Number(formData.location.coordinates.longitude)
+                latitude: vehicleLocation.lat,
+                longitude: vehicleLocation.long
               }
             },
             images: finalImageUrls,
@@ -989,94 +947,6 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
       })
     }
   }
-
-  // Combined location handling functions
-  const handleLocationChange = async (field: string, value: string) => {
-    let processedValue = value;
-    
-    if (field === 'pincode') {
-      // Format UK postcode (add space if missing)
-      processedValue = value.toUpperCase().replace(/\s+/g, '')
-      if (processedValue.length > 3) {
-        processedValue = processedValue.slice(0, -3) + ' ' + processedValue.slice(-3)
-      }
-    }
-
-    const updatedLocation = {
-      ...formData.location,
-      [field]: processedValue
-    }
-    
-    setFormData((prev: any) => ({
-      ...prev,
-      location: updatedLocation
-    }))
-    
-    // Clear any existing errors for this field
-    if (formErrors[`location.${field}`]) {
-      setFormErrors((prev: any) => {
-        const newErrors = { ...prev }
-        delete newErrors[`location.${field}`]
-        return newErrors
-      })
-    }
-
-    // Auto-fetch coordinates if postcode is valid
-    if (field === 'pincode' && processedValue.trim()) {
-      const ukPostcodeRegex = /^(([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9][A-Za-z]?))))\s?[0-9][A-Za-z]{2}))$/
-      if (ukPostcodeRegex.test(processedValue.trim())) {
-        setIsFetchingCoordinates(true)
-        try {
-          const coordinates = await getCoordinatesFromPincode(
-            processedValue,
-            formData.location.city,
-            formData.location.country
-          )
-          
-          console.log('Coordinates:', coordinates)
-          
-          setFormData((prev: any) => ({
-            ...prev,
-            location: {
-              ...prev.location,
-              coordinates
-            }
-          }))
-          toast.success("Coordinates updated for " + processedValue)
-        } catch (error) {
-          console.warn("Could not fetch coordinates:", error)
-          toast.error("Could not fetch coordinates for this postcode")
-        } finally {
-          setIsFetchingCoordinates(false)
-        }
-      }
-    }
-  }
-
-  const getCoordinatesFromPincode = async (pincode: string, city: string, country: string) => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    if (!apiKey) {
-      throw new Error('Google Maps API key not configured')
-    }
-
-    const searchQuery = `${pincode} ${city} ${country}`
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}&region=uk&components=country:GB`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch coordinates')
-    }
-    
-    const data = await response.json();
-    
-    if (data.status !== 'OK' || !data.results?.[0]?.geometry?.location) {
-      throw new Error('No coordinates found for this postcode')
-    }
-    
-    const { lat, lng } = data.results[0].geometry.location;
-    return { latitude: lat.toString(), longitude: lng.toString() };
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -1442,56 +1312,6 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
           <Separator className="my-6" />
         </>
       )}
-
-      {/* Location Information */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Location Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label>City</Label>
-            <Input
-              value={formData.location.city}
-              onChange={(e) => handleLocationChange("city", e.target.value)}
-              placeholder="Enter city"
-              required
-              className={formErrors['location.city'] ? "border-red-500" : ""}
-            />
-            {formErrors['location.city'] && (
-              <p className="text-sm text-red-500">{formErrors['location.city']}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label>Country</Label>
-            <Input
-              value={formData.location.country}
-              onChange={(e) => handleLocationChange("country", e.target.value)}
-              placeholder="United Kingdom"
-              required
-              className={formErrors['location.country'] ? "border-red-500" : ""}
-            />
-            {formErrors['location.country'] && (
-              <p className="text-sm text-red-500">{formErrors['location.country']}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label>UK Postcode</Label>
-            <div>
-              <Input
-                value={formData.location.pincode}
-                onChange={(e) => handleLocationChange('pincode', e.target.value)}
-                placeholder="e.g., SW1A 1AA"
-                required
-                className={formErrors['location.pincode'] ? "border-red-500" : ""}
-              />
-            </div>
-            {formErrors['location.pincode'] && (
-              <p className="text-sm text-red-500">{formErrors['location.pincode']}</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <Separator className="my-6" />
 
       {/* Type-specific Information */}
       <div className="space-y-4">
