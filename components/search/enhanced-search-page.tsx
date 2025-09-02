@@ -82,8 +82,8 @@ export default function EnhancedSearchPage({
   // Filter and sort state
   const [filters, setFilters] = useState<VehicleFilters>(initialFilters);
   const [sortOptions, setSortOptions] = useState<SortOptions>({
-    field: 'price',
-    direction: 'asc'
+    field: 'createdAt',
+    direction: 'desc'
   });
 
   // Get keyword from URL params
@@ -496,6 +496,7 @@ export default function EnhancedSearchPage({
                       value={`${sortOptions.field}:${sortOptions.direction}`}
                       onChange={(e) => handleSortChange(e.target.value)}
                       className="border rounded-lg px-3 py-1 text-sm w-full sm:w-auto min-w-0"
+                      aria-label="Sort vehicles by"
                     >
                       <option value="price:asc">Price: Low to High</option>
                       <option value="price:desc">Price: High to Low</option>
@@ -503,6 +504,7 @@ export default function EnhancedSearchPage({
                       <option value="year:asc">Year: Oldest First</option>
                       <option value="mileage:asc">Mileage: Low to High</option>
                       <option value="mileage:desc">Mileage: High to Low</option>
+                      <option value="createdAt:desc">Most Recent</option>
                     </select>
                   </div>
                 </div>
@@ -595,6 +597,7 @@ export default function EnhancedSearchPage({
                       value={pageSize}
                       onChange={(e) => setPageSize(Number(e.target.value))}
                       className="border rounded px-2 py-1"
+                      aria-label="Items per page"
                     >
                       <option value={12}>12</option>
                       <option value={24}>24</option>

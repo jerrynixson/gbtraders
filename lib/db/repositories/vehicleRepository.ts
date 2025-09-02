@@ -48,6 +48,8 @@ export class VehicleRepository {
       location: vehicle.location,
       mainImage: vehicle.images?.[0] || vehicle.imageUrls?.[0] || '/placeholder.svg',
       imageUrls: vehicle.imageUrls || vehicle.images,
+      createdAt: vehicle.createdAt,
+      updatedAt: vehicle.updatedAt,
     };
   }
 
