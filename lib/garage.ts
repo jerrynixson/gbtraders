@@ -134,29 +134,20 @@ export const convertGarageToDocument = (garage: Partial<Garage>, userId: string)
   // Handle location data - prefer new location structure, fallback to old address format
   let locationData;
   if (garage.location && garage.location.addressLines[0]) {
-    // Use new location structure
+    // Use new location structure directly
     locationData = {
-      address: garage.location.addressLines.join(', '),
-      city: garage.location.addressLines[2] || '', // City/Town is in addressLines[2]
-      state: garage.location.addressLines[1] || '', // District/Area is in addressLines[1]
-      zipCode: garage.location.addressLines[3] || '', // Postcode is in addressLines[3]
-      coordinates: garage.location.lat && garage.location.long ? {
-        lat: garage.location.lat,
-        lng: garage.location.long
-      } : undefined
+      addressLines: garage.location.addressLines,
+      lat: garage.location.lat || 0,
+      long: garage.location.long || 0
     };
   } else {
     // Fallback to old address format for backward compatibility
-    const addressParts = (garage.address || '').split(',').map(part => part.trim());
-    const city = addressParts.length > 1 ? addressParts[addressParts.length - 2] : '';
-    const state = addressParts.length > 2 ? addressParts[addressParts.length - 3] : '';
-    const zipCode = addressParts.length > 0 ? addressParts[addressParts.length - 1] : '';
-    
+    // Convert old address string to addressLines format
+    const address = garage.address || '';
     locationData = {
-      address: garage.address || '',
-      city,
-      state,
-      zipCode
+      addressLines: [address, '', '', ''] as [string, string, string, string],
+      lat: 0,
+      long: 0
     };
   }
 
@@ -227,27 +218,49 @@ export const convertDocumentToGarage = (doc: any): Garage => {
     return { start: start || '', end: end || '' };
   };
 
-  // Convert location data to new format
+  // Handle location data - support both new and old formats
   let location;
+  let address = '';
+  
   if (data.location) {
-    // Try to reconstruct address lines from the stored data
-    const addressParts = (data.location.address || '').split(',').map((part: string) => part.trim());
-    location = {
-      addressLines: [
-        addressParts[0] || '',  // Street address
-        data.location.state || addressParts[1] || '',  // District/Area  
-        data.location.city || addressParts[2] || '',   // City/Town
-        data.location.zipCode || addressParts[addressParts.length - 1] || ''  // Postcode
-      ] as [string, string, string, string],
-      lat: data.location.coordinates?.lat || 0,
-      long: data.location.coordinates?.lng || 0
-    };
+    if (data.location.addressLines) {
+      // New format with addressLines array
+      location = {
+        addressLines: data.location.addressLines as [string, string, string, string],
+        lat: data.location.lat || 0,
+        long: data.location.long || 0
+      };
+      // Create address string for backward compatibility
+      address = data.location.addressLines.filter((line: string) => line.trim()).join(', ');
+    } else {
+      // Old format with separate address, city, state, zipCode fields
+      // Convert to new format for consistency
+      const addressParts = [
+        data.location.address || '',
+        data.location.state || '',
+        data.location.city || '',
+        data.location.zipCode || ''
+      ].filter(part => part.trim());
+      
+      location = {
+        addressLines: [
+          data.location.address || '',
+          data.location.state || '',
+          data.location.city || '',
+          data.location.zipCode || ''
+        ] as [string, string, string, string],
+        lat: data.location.coordinates?.lat || 0,
+        long: data.location.coordinates?.lng || 0
+      };
+      
+      address = addressParts.join(', ');
+    }
   }
 
   return {
     id: doc.id,
     name: data.name || '',
-    address: data.location?.address || '',
+    address: address,
     phone: data.contact?.phone || '',
     email: data.contact?.email || '',
     website: data.contact?.website || '',
