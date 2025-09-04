@@ -174,16 +174,16 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
           {/* Services */}
           <div className="mb-6">
             <h2 className="font-semibold text-blue-800 mb-3">Products & Services</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {(garage.services || []).map((service, i) => (
-                <span
-                  key={i}
-                  className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium"
-                >
-                  {service}
-                </span>
-              ))}
-            </div>
+              <div className="flex flex-wrap gap-2 mt-2 md:grid md:grid-cols-2 md:gap-2">
+                {(garage.services || []).map((service, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-blue-50 text-blue-700 rounded-full px-3 py-1.5 text-xs font-medium shadow-sm whitespace-nowrap"
+                  >
+                    {service}
+                  </div>
+                ))}
+              </div>
           </div>
         </div>
 
