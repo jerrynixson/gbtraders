@@ -33,6 +33,11 @@ export interface Garage {
   description: string;
   services: string[];
   rating: number;
+  location?: {
+    addressLines: [string, string, string, string]; // 4th element for postcode
+    lat: number;
+    long: number;
+  };
   openingHours: {
     weekdays: { start: string; end: string };
     saturday: { start: string; end: string };
@@ -126,22 +131,39 @@ export const deleteGarageImage = async (imageUrl: string): Promise<void> => {
 
 // Function to convert form data to Firestore document
 export const convertGarageToDocument = (garage: Partial<Garage>, userId: string): Omit<GarageDocument, 'createdAt' | 'updatedAt'> => {
-  // Parse address to extract city, state, zipcode
-  const addressParts = (garage.address || '').split(',').map(part => part.trim());
-  const city = addressParts.length > 1 ? addressParts[addressParts.length - 2] : '';
-  const state = addressParts.length > 2 ? addressParts[addressParts.length - 3] : '';
-  const zipCode = addressParts.length > 0 ? addressParts[addressParts.length - 1] : '';
-
-  const result: any = {
-    name: garage.name || '',
-    description: garage.description || '',
-    location: {
+  // Handle location data - prefer new location structure, fallback to old address format
+  let locationData;
+  if (garage.location && garage.location.addressLines[0]) {
+    // Use new location structure
+    locationData = {
+      address: garage.location.addressLines.join(', '),
+      city: garage.location.addressLines[2] || '', // City/Town is in addressLines[2]
+      state: garage.location.addressLines[1] || '', // District/Area is in addressLines[1]
+      zipCode: garage.location.addressLines[3] || '', // Postcode is in addressLines[3]
+      coordinates: garage.location.lat && garage.location.long ? {
+        lat: garage.location.lat,
+        lng: garage.location.long
+      } : undefined
+    };
+  } else {
+    // Fallback to old address format for backward compatibility
+    const addressParts = (garage.address || '').split(',').map(part => part.trim());
+    const city = addressParts.length > 1 ? addressParts[addressParts.length - 2] : '';
+    const state = addressParts.length > 2 ? addressParts[addressParts.length - 3] : '';
+    const zipCode = addressParts.length > 0 ? addressParts[addressParts.length - 1] : '';
+    
+    locationData = {
       address: garage.address || '',
       city,
       state,
       zipCode
-      // coordinates field omitted - can be added later with geocoding
-    },
+    };
+  }
+
+  const result: any = {
+    name: garage.name || '',
+    description: garage.description || '',
+    location: locationData,
     contact: {
       phone: garage.phone || '',
       email: garage.email || '',
@@ -205,6 +227,23 @@ export const convertDocumentToGarage = (doc: any): Garage => {
     return { start: start || '', end: end || '' };
   };
 
+  // Convert location data to new format
+  let location;
+  if (data.location) {
+    // Try to reconstruct address lines from the stored data
+    const addressParts = (data.location.address || '').split(',').map((part: string) => part.trim());
+    location = {
+      addressLines: [
+        addressParts[0] || '',  // Street address
+        data.location.state || addressParts[1] || '',  // District/Area  
+        data.location.city || addressParts[2] || '',   // City/Town
+        data.location.zipCode || addressParts[addressParts.length - 1] || ''  // Postcode
+      ] as [string, string, string, string],
+      lat: data.location.coordinates?.lat || 0,
+      long: data.location.coordinates?.lng || 0
+    };
+  }
+
   return {
     id: doc.id,
     name: data.name || '',
@@ -218,6 +257,7 @@ export const convertDocumentToGarage = (doc: any): Garage => {
     description: data.description || '',
     services: data.services || [],
     rating: data.rating || 0,
+    location,
     openingHours: {
       weekdays: parseHours(data.businessHours?.monday || 'Closed'),
       saturday: parseHours(data.businessHours?.saturday || 'Closed'),
