@@ -1,10 +1,8 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { PostcodeLocationInput, LocationInfo } from '@/components/ui/PostcodeLocationInput';
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { DealerProfileSection } from "@/components/dealer/profile"
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -12,387 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { FirebaseError } from 'firebase/app';
-import { submitDealerProfile, DealerProfile } from "@/lib/dealer/profile";
-import { auth } from "@/lib/firebase";
-
-// Custom component for signup flow
-function DealerProfileSignupSection({ onProfileComplete }: { onProfileComplete: () => void }) {
-  const [isSaving, setIsSaving] = useState(false);
-  const [isFetchingCoordinates, setIsFetchingCoordinates] = useState(false);
-  const [hasCoordinates, setHasCoordinates] = useState(false);
-  const [profile, setProfile] = useState<DealerProfile>({
-    businessName: "",
-    contact: {
-      email: "",
-      phone: "",
-      website: "",
-    },
-    description: "",
-    location: {
-      lat: 0,
-      long: 0,
-      addressLines: ["", "", "", ""],
-    },
-    businessHours: {
-      mondayToFriday: "",
-      saturday: "",
-      sunday: "",
-    },
-    socialMedia: [],
-  });
-
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
-  const [phoneCountryCode, setPhoneCountryCode] = useState('+44');
-
-  // Handle file selection for logo
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Logo file size must be less than 5MB");
-        return;
-      }
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error("Please select a valid image file for logo");
-        return;
-      }
-
-      setLogoFile(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setLogoPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Handle file selection for banner
-  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("Banner file size must be less than 10MB");
-        return;
-      }
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error("Please select a valid image file for banner");
-        return;
-      }
-
-      setBannerFile(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setBannerPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSaveProfile = async () => {
-    try {
-      // Validate required fields
-      if (!profile.businessName.trim()) {
-        toast.error("Business name is required");
-        return;
-      }
-
-      if (!profile.contact.email.trim()) {
-        toast.error("Contact email is required");
-        return;
-      }
-
-  // Postcode/location validation is handled by PostcodeLocationInput
-
-      setIsSaving(true);
-      
-      // Combine country code with phone number
-      const fullPhoneNumber = profile.contact.phone ? `${phoneCountryCode} ${profile.contact.phone}` : '';
-      const profileToSave = {
-        ...profile,
-        contact: {
-          ...profile.contact,
-          phone: fullPhoneNumber
-        }
-      };
-      
-      await submitDealerProfile(profileToSave, logoFile, bannerFile);
-      toast.success("Dealer profile created successfully!");
-      onProfileComplete();
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      toast.error("Failed to save profile. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-
-  // Return a simplified form for signup (essential fields only)
-  return (
-    <Card className="border-none shadow-sm bg-white/80 backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle>Complete Your Dealer Profile</CardTitle>
-        <p className="text-gray-600">Fill in the essential information to set up your dealer account.</p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Business Images */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Business Images</h3>
-          
-          {/* Logo Upload */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Business Logo</label>
-            <div className="flex items-center space-x-4">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleLogoChange}
-                className="hidden"
-                id="logo-upload"
-              />
-              <label
-                htmlFor="logo-upload"
-                className="cursor-pointer bg-gray-100 hover:bg-gray-200 border-2 border-dashed border-gray-300 hover:border-blue-400 rounded-lg p-4 text-center transition-colors"
-              >
-                {logoPreview ? (
-                  <div className="relative">
-                    <img
-                      src={logoPreview}
-                      alt="Logo preview"
-                      className="w-32 h-32 object-contain mx-auto rounded"
-                    />
-                    <p className="text-sm text-gray-600 mt-2">Click to change logo</p>
-                  </div>
-                ) : (
-                  <div className="w-32 h-32 flex flex-col items-center justify-center">
-                    <div className="text-4xl text-gray-400 mb-2">📷</div>
-                    <p className="text-sm text-gray-600 font-medium">Upload Logo</p>
-                    <p className="text-xs text-gray-500">Max 5MB</p>
-                    <p className="text-xs text-gray-500">Recommended: Square aspect ratio</p>
-                  </div>
-                )}
-              </label>
-            </div>
-          </div>
-
-          {/* Banner Upload */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Business Banner</label>
-            <div className="w-full">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleBannerChange}
-                className="hidden"
-                id="banner-upload"
-              />
-              <label
-                htmlFor="banner-upload"
-                className="cursor-pointer bg-gray-100 hover:bg-gray-200 border-2 border-dashed border-gray-300 hover:border-blue-400 rounded-lg p-4 text-center transition-colors block w-full"
-              >
-                {bannerPreview ? (
-                  <div className="relative">
-                    <img
-                      src={bannerPreview}
-                      alt="Banner preview"
-                      className="w-full h-40 object-cover mx-auto rounded"
-                    />
-                    <p className="text-sm text-gray-600 mt-2">Click to change banner</p>
-                  </div>
-                ) : (
-                  <div className="w-full h-40 flex flex-col items-center justify-center">
-                    <div className="text-4xl text-gray-400 mb-2">🖼️</div>
-                    <p className="text-sm text-gray-600 font-medium">Upload Banner Image</p>
-                    <p className="text-xs text-gray-500">Max 10MB</p>
-                    <p className="text-xs text-gray-500">Recommended: 1200x400px or similar wide format</p>
-                  </div>
-                )}
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Essential Business Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Business Name *</label>
-            <input
-              type="text"
-              value={profile.businessName}
-              onChange={(e) => setProfile({ ...profile, businessName: e.target.value })}
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Your business name"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Contact Email *</label>
-            <input
-              type="email"
-              value={profile.contact.email}
-              onChange={(e) => setProfile({
-                ...profile,
-                contact: { ...profile.contact, email: e.target.value }
-              })}
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="business@example.com"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Phone and Website */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Phone Number</label>
-            <div className="flex space-x-2">
-              <select
-                value={phoneCountryCode}
-                onChange={(e) => setPhoneCountryCode(e.target.value)}
-                className="w-20 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                aria-label="Country code"
-              >
-                <option value="+44">+44</option>
-                <option value="+1">+1</option>
-                <option value="+91">+91</option>
-              </select>
-              <input
-                type="tel"
-                value={profile.contact.phone}
-                onChange={(e) => setProfile({
-                  ...profile,
-                  contact: { ...profile.contact, phone: e.target.value }
-                })}
-                className="flex-1 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="20 1234 5678"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Website</label>
-            <input
-              type="url"
-              value={profile.contact.website}
-              onChange={(e) => setProfile({
-                ...profile,
-                contact: { ...profile.contact, website: e.target.value }
-              })}
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="https://www.yourbusiness.com"
-            />
-          </div>
-        </div>
-
-        {/* Address Information */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Business Address</h3>
-          <div className="grid grid-cols-1 gap-4">
-            <input
-              type="text"
-              value={profile.location.addressLines[0]}
-              onChange={e => setProfile(prev => ({
-                ...prev,
-                location: {
-                  ...prev.location,
-                  addressLines: [e.target.value, prev.location.addressLines[1], prev.location.addressLines[2], prev.location.addressLines[3]] as [string, string, string, string]
-                }
-              }))}
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Address Line 1"
-            />
-            <input
-              type="text"
-              value={profile.location.addressLines[1]}
-              onChange={e => setProfile(prev => ({
-                ...prev,
-                location: {
-                  ...prev.location,
-                  addressLines: [prev.location.addressLines[0], e.target.value, prev.location.addressLines[2], prev.location.addressLines[3]] as [string, string, string, string]
-                }
-              }))}
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Address Line 2 (optional)"
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="text"
-                value={profile.location.addressLines[2]}
-                onChange={e => setProfile(prev => ({
-                  ...prev,
-                  location: {
-                    ...prev.location,
-                    addressLines: [prev.location.addressLines[0], prev.location.addressLines[1], e.target.value, prev.location.addressLines[3]] as [string, string, string, string]
-                  }
-                }))}
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="City/Town"
-              />
-              <PostcodeLocationInput
-                value={profile.location}
-                onChange={loc => setProfile(prev => ({ ...prev, location: loc }))}
-                label="Postcode"
-                required
-              />
-            </div>
-          </div>
-        </div>
-        {/* Country (locked to UK) */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Country *</label>
-          <input
-            type="text"
-            value="UK"
-            disabled
-            className="w-full p-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
-          />
-        </div>
-
-        {/* Business Description */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Business Description</label>
-          <textarea
-            value={profile.description}
-            onChange={(e) => setProfile({ ...profile, description: e.target.value })}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            rows={4}
-            placeholder="Describe your business, services, and what makes you unique..."
-          />
-        </div>
-
-        {/* Submit Button */}
-        <div className="flex justify-end pt-4">
-          <button
-            onClick={handleSaveProfile}
-            disabled={isSaving}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Saving Profile...
-              </>
-            ) : (
-              'Complete Registration'
-            )}
-          </button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 interface StoredSignupData {
   firstName: string;
@@ -406,10 +23,8 @@ interface StoredSignupData {
 export default function DealerSignupPage() {
   const [signupData, setSignupData] = useState<StoredSignupData | null>(null);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
-  const [accountCreated, setAccountCreated] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
   const [error, setError] = useState('');
-  const { signUp, logout } = useAuth();
+  const { signUp, logout, sendVerificationEmail } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -431,7 +46,7 @@ export default function DealerSignupPage() {
     }
   }, [router]);
 
-  const createDealerAccount = async () => {
+  const handleAccountCreation = async () => {
     if (!signupData) return;
 
     setIsCreatingAccount(true);
@@ -512,11 +127,19 @@ export default function DealerSignupPage() {
           }
         }
 
+        // Send verification email
+        await sendVerificationEmail();
+        
+        // Sign out the user immediately after account creation
+        await logout();
+        
         // Clear stored signup data
         sessionStorage.removeItem('dealerSignupData');
         
-        setAccountCreated(true);
-        toast.success("Account created! Please complete your dealer profile.");
+        toast.success("Account created successfully! Please check your email to verify your account before you can sign in.");
+        
+        // Redirect to signin page with verification message
+        router.push('/signin?message=verify-email-dealer');
 
       } catch (setupError: any) {
         console.error("Error setting up user:", setupError);
@@ -568,32 +191,6 @@ export default function DealerSignupPage() {
     );
   }
 
-  // Show verification message if account is created and verification is sent
-  if (verificationSent) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
-        <Header />
-        <main className="container mx-auto px-4 py-8 max-w-3xl">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-center">Verify Your Email</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-gray-600 mb-6">
-                We've sent a verification link to <strong>{signupData.email}</strong>. 
-                Please check your inbox and click the link to verify your account.
-              </p>
-              <p className="text-sm text-gray-500">
-                After verification, you can sign in and complete your dealer profile.
-              </p>
-            </CardContent>
-          </Card>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
       <Header />
@@ -601,7 +198,7 @@ export default function DealerSignupPage() {
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Dealer Registration</h1>
           <p className="text-gray-600">
-            Welcome {signupData.firstName}! Please complete your dealer profile to finish registration.
+            Welcome {signupData.firstName}! Let's create your dealer account.
           </p>
         </div>
 
@@ -614,45 +211,50 @@ export default function DealerSignupPage() {
           </Alert>
         )}
 
-        {!accountCreated ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Create Your Dealer Account</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">
-                Click below to create your dealer account with the information you provided:
-              </p>
-              <ul className="list-disc list-inside text-sm text-gray-600 mb-6 space-y-1">
-                <li>Name: {signupData.firstName} {signupData.lastName}</li>
-                <li>Email: {signupData.email}</li>
-                <li>Country: {signupData.country}</li>
-                <li>Account Type: Dealer</li>
-              </ul>
-              <button
-                onClick={createDealerAccount}
-                disabled={isCreatingAccount}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
-              >
-                {isCreatingAccount ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Creating Account...
-                  </>
-                ) : (
-                  'Create Dealer Account'
-                )}
-              </button>
-            </CardContent>
-          </Card>
-        ) : (
-          <DealerProfileSignupSection 
-            onProfileComplete={() => {
-              setVerificationSent(true);
-              toast.success("Dealer profile saved! Please check your email to verify your account.");
-            }}
-          />
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Create Your Dealer Account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <h3 className="font-medium mb-2">Account Details:</h3>
+              <p><strong>Name:</strong> {signupData.firstName} {signupData.lastName}</p>
+              <p><strong>Email:</strong> {signupData.email}</p>
+              <p><strong>Country:</strong> {signupData.country}</p>
+              <p><strong>Account Type:</strong> Dealer</p>
+              {signupData.additionalRoles.length > 0 && (
+                <p><strong>Additional Roles:</strong> {signupData.additionalRoles.join(', ')}</p>
+              )}
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
+                <div>
+                  <h3 className="font-medium text-blue-800 mb-1">Email Verification Required</h3>
+                  <p className="text-blue-700 text-sm">
+                    After creating your account, you'll need to verify your email address before you can sign in and access the platform. You can complete your dealer profile after verification.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleAccountCreation}
+              disabled={isCreatingAccount}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+            >
+              {isCreatingAccount ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </CardContent>
+        </Card>
       </main>
       <Footer />
     </div>
