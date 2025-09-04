@@ -459,11 +459,11 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
     if (!formData.engineCapacity.trim()) errors.engineCapacity = "Engine capacity is required"
 
     // Character limit validation
-    if (formData.title.length > 20) {
-      errors.title = "Title must be 20 characters or less"
+    if (formData.title.length > 50) {
+      errors.title = "Title must be 50 characters or less"
     }
-    if (formData.description.length > 500) {
-      errors.description = "Description must be 500 characters or less"
+    if (formData.description.length > 1000) {
+      errors.description = "Description must be 1000 characters or less"
     }
 
     // Numeric validation
@@ -1042,10 +1042,10 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
       <Separator className="my-6" />
 
       {/* Basic Information */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <h3 className="text-lg font-medium">Basic Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+          <div className="space-y-1.5">
             <Label>Vehicle Type</Label>
             <Select value={formData.type} onValueChange={(value) => handleFormChange("type", value as VehicleType)}>
               <SelectTrigger><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
@@ -1054,37 +1054,70 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Title</Label>
-            <Input value={formData.title} onChange={(e) => handleFormChange("title", e.target.value)} placeholder="e.g., 2023 Toyota Camry XSE" required className={formErrors.title ? "border-red-500" : ""} />
-            {formErrors.title && <p className="text-sm text-red-500">{formErrors.title}</p>}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label>Title</Label>
+              <span className="text-[10px] sm:text-xs text-gray-500">max 50 characters</span>
+            </div>
+            <Input 
+              value={formData.title} 
+              onChange={(e) => handleFormChange("title", e.target.value)} 
+              placeholder="e.g., 2023 Toyota Camry XSE" 
+              required 
+              className={formErrors.title ? "border-red-500" : ""} 
+              maxLength={50} 
+            />
+            <div className="flex items-center justify-between min-h-[16px]">
+              {formErrors.title ? (
+                <p className="text-xs text-red-500">{formErrors.title}</p>
+              ) : (
+                <div></div>
+              )}
+              <span className={`text-[10px] sm:text-xs ${
+                formData.title.length > 45 ? 'text-orange-500' : 
+                formData.title.length > 40 ? 'text-yellow-600' : 
+                'text-gray-500'
+              }`}>
+                {formData.title.length}/50
+              </span>
+            </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Price</Label>
             <Input type="number" value={formData.price} onChange={(e) => handleFormChange("price", e.target.value)} placeholder="Enter price" required className={formErrors.price ? "border-red-500" : ""} />
-            {formErrors.price && <p className="text-sm text-red-500">{formErrors.price}</p>}
+            <div className="min-h-[16px]">
+              {formErrors.price && <p className="text-xs text-red-500">{formErrors.price}</p>}
+            </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Make</Label>
             <Input value={formData.make} onChange={(e) => handleFormChange("make", e.target.value)} placeholder="Vehicle make" required className={formErrors.make ? "border-red-500" : ""} />
-            {formErrors.make && <p className="text-sm text-red-500">{formErrors.make}</p>}
+            <div className="min-h-[16px]">
+              {formErrors.make && <p className="text-xs text-red-500">{formErrors.make}</p>}
+            </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Model</Label>
             <Input value={formData.model} onChange={(e) => handleFormChange("model", e.target.value)} placeholder="Vehicle model" required className={formErrors.model ? "border-red-500" : ""} />
-            {formErrors.model && <p className="text-sm text-red-500">{formErrors.model}</p>}
+            <div className="min-h-[16px]">
+              {formErrors.model && <p className="text-xs text-red-500">{formErrors.model}</p>}
+            </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Year</Label>
             <Input type="number" value={formData.year} onChange={(e) => handleFormChange("year", e.target.value)} placeholder="Vehicle year" required className={formErrors.year ? "border-red-500" : ""} />
-            {formErrors.year && <p className="text-sm text-red-500">{formErrors.year}</p>}
+            <div className="min-h-[16px]">
+              {formErrors.year && <p className="text-xs text-red-500">{formErrors.year}</p>}
+            </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Mileage</Label>
             <Input type="number" value={formData.mileage} onChange={(e) => handleFormChange("mileage", e.target.value)} placeholder="Vehicle mileage" required className={formErrors.mileage ? "border-red-500" : ""} />
-            {formErrors.mileage && <p className="text-sm text-red-500">{formErrors.mileage}</p>}
+            <div className="min-h-[16px]">
+              {formErrors.mileage && <p className="text-xs text-red-500">{formErrors.mileage}</p>}
+            </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Fuel Type</Label>
             <Select value={formData.fuelType} onValueChange={(value) => handleFormChange("fuelType", value as 'petrol' | 'diesel' | 'electric' | 'hybrid' | '')}>
               <SelectTrigger className={formErrors.fuelType ? "border-red-500" : ""}><SelectValue placeholder="Select fuel type" /></SelectTrigger>
@@ -1092,9 +1125,11 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
                 {FUEL_TYPES.map(type => (<SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>))}
               </SelectContent>
             </Select>
-            {formErrors.fuelType && <p className="text-sm text-red-500">{formErrors.fuelType}</p>}
+            <div className="min-h-[16px]">
+              {formErrors.fuelType && <p className="text-xs text-red-500">{formErrors.fuelType}</p>}
+            </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Transmission</Label>
             <Select value={formData.transmission} onValueChange={(value) => handleFormChange("transmission", value as 'manual' | 'automatic' | '')}>
               <SelectTrigger className={formErrors.transmission ? "border-red-500" : ""}><SelectValue placeholder="Select transmission" /></SelectTrigger>
@@ -1102,7 +1137,9 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
                 {TRANSMISSION_TYPES.map(type => (<SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>))}
               </SelectContent>
             </Select>
-            {formErrors.transmission && <p className="text-sm text-red-500">{formErrors.transmission}</p>}
+            <div className="min-h-[16px]">
+              {formErrors.transmission && <p className="text-xs text-red-500">{formErrors.transmission}</p>}
+            </div>
           </div>
         </div>
       </div>
@@ -1509,10 +1546,35 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
       <Separator />
 
       {/* Description */}
-      <div className="space-y-2">
-        <Label>Description</Label>
-        <Textarea value={formData.description} onChange={(e) => handleFormChange("description", e.target.value)} placeholder="Enter vehicle description" rows={4} required className={formErrors.description ? "border-red-500" : ""} />
-        {formErrors.description && <p className="text-sm text-red-500">{formErrors.description}</p>}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <Label>Description</Label>
+          <span className="text-[10px] sm:text-xs text-gray-500">max 1000 characters</span>
+        </div>
+        <Textarea 
+          value={formData.description} 
+          onChange={(e) => handleFormChange("description", e.target.value)} 
+          placeholder="Enter vehicle description" 
+          rows={4} 
+          required 
+          className={formErrors.description ? "border-red-500" : ""} 
+          maxLength={1000} 
+        />
+        <div className="flex items-center justify-between min-h-[16px]">
+          {formErrors.description ? (
+            <p className="text-xs text-red-500">{formErrors.description}</p>
+          ) : (
+            <div></div>
+          )}
+          <span className={`text-[10px] sm:text-xs ${
+            formData.description.length > 950 ? 'text-red-500' : 
+            formData.description.length > 900 ? 'text-orange-500' : 
+            formData.description.length > 800 ? 'text-yellow-600' : 
+            'text-gray-500'
+          }`}>
+            {formData.description.length}/1000
+          </span>
+        </div>
       </div>
 
       {/* Images */}
