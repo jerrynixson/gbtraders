@@ -35,7 +35,13 @@ const SignInPage: React.FC = () => {
       setIsEmailLink(true);
       handleEmailLinkSignIn(storedEmail);
     }
-  }, []);
+    
+    // Check for verification message
+    const message = searchParams.get('message');
+    if (message === 'verify-email-dealer') {
+      setError('Please check your email and verify your account before signing in. If you don\'t see the email, check your spam folder.');
+    }
+  }, [searchParams]);
 
   const handleEmailLinkSignIn = async (storedEmail: string) => {
     try {

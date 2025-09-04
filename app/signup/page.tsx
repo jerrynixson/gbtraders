@@ -32,6 +32,18 @@ const SignUpPage: React.FC = () => {
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [verificationSent, setVerificationSent] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'basic-info' | 'dealer-details'>('basic-info');
+  
+  // Dealer-specific fields
+  const [businessName, setBusinessName] = useState('');
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+44');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [website, setWebsite] = useState('');
+  const [businessDescription, setBusinessDescription] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const { signUp, logout, sendVerificationEmail } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -46,6 +58,35 @@ const SignUpPage: React.FC = () => {
     const hasNumber = /[0-9]/.test(password);
     
     return minLength && hasUppercase && hasLowercase && hasNumber;
+  };
+
+  // File handling functions
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError('Logo file must be smaller than 5MB');
+        return;
+      }
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setLogoPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        setError('Banner file must be smaller than 10MB');
+        return;
+      }
+      setBannerFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setBannerPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const toggleAdditionalRole = (role: string) => {
@@ -87,24 +128,22 @@ const SignUpPage: React.FC = () => {
       return;
     }
 
-    // For regular users, also validate address fields
-    if (!isDealerAccount) {
-      if (!location.addressLines[0] || !location.addressLines[2] || !location.addressLines[3]) {
-        setError('Please fill in your address details (Address Line 1, City/Town, and Postcode are required)');
-        return;
-      }
-      
-      // Check if coordinates were fetched (valid postcode) and postcode validation status
-      if (location.lat === 0 && location.long === 0) {
-        setError('Please enter a valid UK postcode.');
-        return;
-      }
-      
-      // Additional check for postcode validation status
-      if (!isPostcodeValid && location.addressLines[3]?.trim()) {
-        setError('Please enter a valid UK postcode.');
-        return;
-      }
+    // For all users, validate address fields
+    if (!location.addressLines[0] || !location.addressLines[2] || !location.addressLines[3]) {
+      setError('Please fill in your address details (Address Line 1, City/Town, and Postcode are required)');
+      return;
+    }
+    
+    // Check if coordinates were fetched (valid postcode) and postcode validation status
+    if (location.lat === 0 && location.long === 0) {
+      setError('Please enter a valid UK postcode.');
+      return;
+    }
+    
+    // Additional check for postcode validation status
+    if (!isPostcodeValid && location.addressLines[3]?.trim()) {
+      setError('Please enter a valid UK postcode.');
+      return;
     }
 
     // Client-side password validation
@@ -113,23 +152,9 @@ const SignUpPage: React.FC = () => {
       return;
     }
 
-    // If dealer account is selected, redirect to dealer setup instead of creating account
+    // If dealer account is selected, move to dealer details step
     if (isDealerAccount) {
-      // Store form data in session storage for dealer setup page
-      const dealerFormData = {
-        firstName,
-        lastName,
-        email,
-        password,
-        country,
-        location,
-        additionalRoles
-      };
-      
-      sessionStorage.setItem('dealerSignupData', JSON.stringify(dealerFormData));
-      
-      // Redirect to dealer setup page
-      router.push('/signup/dealer-setup');
+      setCurrentStep('dealer-details');
       return;
     }
 
@@ -247,6 +272,344 @@ const SignUpPage: React.FC = () => {
     }
   };
 
+  const handleDealerRegistration = async () => {
+    setError('');
+
+    // Validate dealer-specific fields
+    if (!businessName.trim()) {
+      setError('Business name is required');
+      return;
+    }
+
+    try {
+      // Create the dealer account
+      const userCredential = await signUp(email, password, firstName, lastName);
+      const user = userCredential.user;
+      const role = 'dealer';
+
+      try {
+        // Create user document through the API
+        const createUserResponse = await fetch('/api/auth/create-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            firstName,
+            lastName,
+            email,
+            country,
+            location,
+            role,
+            additionalRoles,
+            emailVerified: false,
+          }),
+        });
+
+        if (!createUserResponse.ok) {
+          const errorData = await createUserResponse.json();
+          throw new Error(errorData.error || 'Failed to create user document');
+        }
+
+        // Set user role through the API
+        const setRoleResponse = await fetch('/api/auth/set-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            role,
+          }),
+        });
+
+        if (!setRoleResponse.ok) {
+          const errorData = await setRoleResponse.json();
+          throw new Error(errorData.error || 'Failed to set user role');
+        }
+
+        // Create dealer profile
+        const dealerProfile = {
+          businessName: businessName.trim(),
+          contact: {
+            email: email,
+            phone: phoneNumber ? `${phoneCountryCode}${phoneNumber}` : "",
+            website: website.trim(),
+          },
+          description: businessDescription.trim(),
+          location: {
+            lat: location.lat,
+            long: location.long,
+            addressLines: location.addressLines,
+          },
+          businessHours: {
+            mondayToFriday: "",
+            saturday: "",
+            sunday: "",
+          },
+          socialMedia: [],
+        };
+
+        // Save to dealers collection via API
+        const idToken = await user.getIdToken();
+        const formData = new FormData();
+        formData.append('profile', JSON.stringify(dealerProfile));
+        
+        // Add image files if they exist
+        if (logoFile) {
+          formData.append('logo', logoFile);
+        }
+        if (bannerFile) {
+          formData.append('banner', bannerFile);
+        }
+
+        const dealerResponse = await fetch('/api/dealer/profile', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${idToken}`
+          },
+          body: formData,
+        });
+
+        if (!dealerResponse.ok) {
+          const errorData = await dealerResponse.json();
+          throw new Error(errorData.error || 'Failed to create dealer profile');
+        }
+
+        // Add additional roles if any are selected
+        if (additionalRoles.length > 0) {
+          for (const additionalRole of additionalRoles) {
+            const addRoleResponse = await fetch('/api/auth/manage-additional-roles', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+              },
+              body: JSON.stringify({
+                uid: user.uid,
+                role: additionalRole,
+                action: 'add',
+              }),
+            });
+
+            if (!addRoleResponse.ok) {
+              console.error(`Failed to add additional role: ${additionalRole}`);
+            }
+          }
+        }
+
+        // Set verification sent state
+        setVerificationSent(true);
+
+        toast({
+          title: "Dealer Account Created!",
+          description: "Please check your email to verify your account.",
+          variant: "default",
+        });
+
+        // Sign out the user until they verify their email
+        await logout();
+      } catch (setupError: any) {
+        console.error("Error setting up dealer:", setupError);
+        // If setup fails, sign out the user
+        await logout();
+        setError(setupError.message || 'Failed to create your dealer account. Please try again later.');
+      }
+    } catch (error: any) {
+      console.error("Dealer signup error:", error);
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/invalid-email':
+            setError('The email address is not valid. Please check and try again.');
+            break;
+          case 'auth/operation-not-allowed':
+            setError('Email/password accounts are not enabled. Please contact support.');
+            break;
+          case 'auth/password-does-not-meet-requirements':
+          case 'auth/weak-password':
+            setError('Password must contain: at least 6 characters, one uppercase letter, one lowercase letter, and one number.');
+            break;
+          default:
+            setError(error.message || 'An unexpected error occurred during signup. Please try again.');
+        }
+      } else {
+        setError(error.message || 'An error occurred during signup. Please try again.');
+      }
+    }
+  };
+
+  // DealerDetailsStep Component
+  const DealerDetailsStep = () => {
+    return (
+      <div className="max-w-md mx-auto w-full">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900">Dealer Information</h2>
+          <p className="mt-2 text-gray-600">Complete your dealer profile</p>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+
+        <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleDealerRegistration(); }}>
+          {/* Business Name */}
+          <div className="space-y-2">
+            <label htmlFor="business-name" className="block text-sm font-medium text-gray-700">
+              Business Name *
+            </label>
+            <input
+              id="business-name"
+              name="businessName"
+              type="text"
+              required
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter your business name"
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+            />
+          </div>
+
+          {/* Phone Number with Country Code */}
+          <div className="space-y-2">
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              Phone Number
+            </label>
+            <div className="flex">
+              <select
+                value={phoneCountryCode}
+                onChange={(e) => setPhoneCountryCode(e.target.value)}
+                className="w-[100px] p-3 bg-gray-50 border border-gray-200 rounded-l-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                aria-label="Country code"
+              >
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+91">🇮🇳 +91</option>
+              </select>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Enter phone number"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Website */}
+          <div className="space-y-2">
+            <label htmlFor="website" className="block text-sm font-medium text-gray-700">
+              Website (Optional)
+            </label>
+            <input
+              id="website"
+              name="website"
+              type="url"
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="https://your-website.com"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
+          </div>
+
+          {/* Business Description */}
+          <div className="space-y-2">
+            <label htmlFor="business-description" className="block text-sm font-medium text-gray-700">
+              Business Description
+            </label>
+            <textarea
+              id="business-description"
+              name="businessDescription"
+              rows={4}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Tell us about your business..."
+              value={businessDescription}
+              onChange={(e) => setBusinessDescription(e.target.value)}
+            />
+          </div>
+
+          {/* Business Logo */}
+          <div className="space-y-2">
+            <label htmlFor="logo" className="block text-sm font-medium text-gray-700">
+              Business Logo (Optional)
+            </label>
+            <input
+              id="logo"
+              name="logo"
+              type="file"
+              accept="image/*"
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              onChange={handleLogoChange}
+            />
+            {logoPreview && (
+              <div className="mt-2">
+                <img src={logoPreview} alt="Logo preview" className="w-24 h-24 object-cover rounded-lg border" />
+              </div>
+            )}
+            <p className="text-xs text-gray-500">Maximum file size: 5MB</p>
+          </div>
+
+          {/* Business Banner */}
+          <div className="space-y-2">
+            <label htmlFor="banner" className="block text-sm font-medium text-gray-700">
+              Business Banner (Optional)
+            </label>
+            <input
+              id="banner"
+              name="banner"
+              type="file"
+              accept="image/*"
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              onChange={handleBannerChange}
+            />
+            {bannerPreview && (
+              <div className="mt-2">
+                <img src={bannerPreview} alt="Banner preview" className="w-full h-32 object-cover rounded-lg border" />
+              </div>
+            )}
+            <p className="text-xs text-gray-500">Maximum file size: 10MB</p>
+          </div>
+
+          {/* Address Information Display */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Business Address
+            </label>
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-600">
+                {location.addressLines[0]}<br/>
+                {location.addressLines[1] && <>{location.addressLines[1]}<br/></>}
+                {location.addressLines[2]}<br/>
+                {location.addressLines[3]}
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setCurrentStep('basic-info')}
+              className="flex-1 p-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+            >
+              Back
+            </button>
+            <button
+              type="submit"
+              className="flex-1 p-3 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium shadow-sm transition-colors"
+            >
+              Complete Registration
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  };
+
   // If verification email is sent, show verification message
   if (verificationSent) {
     return (
@@ -300,28 +663,29 @@ const SignUpPage: React.FC = () => {
 
         {/* Right Panel - Sign Up Form */}
         <div className="flex flex-col justify-center p-6 lg:p-8 overflow-y-auto">
-          <div className="max-w-md mx-auto w-full">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
-              <p className="mt-2 text-gray-600">Fill in your details to get started</p>
-            </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">
-                  {error}
-                  {error.includes('already registered') && (
-                    <span className="ml-2">
-                      <Link href="/signin" className="text-indigo-600 hover:text-indigo-500 underline">
-                        Sign in here
-                      </Link>
-                    </span>
-                  )}
-                </p>
+          {currentStep === 'basic-info' ? (
+            <div className="max-w-md mx-auto w-full">
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
+                <p className="mt-2 text-gray-600">Fill in your details to get started</p>
               </div>
-            )}
 
-            <form className="space-y-5" onSubmit={handleSubmit}>
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 text-sm">
+                    {error}
+                    {error.includes('already registered') && (
+                      <span className="ml-2">
+                        <Link href="/signin" className="text-indigo-600 hover:text-indigo-500 underline">
+                          Sign in here
+                        </Link>
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              <form className="space-y-5" onSubmit={handleSubmit}>
               {/* Dealer Account Toggle */}
               <div className="flex items-center">
                 <label className="flex items-center cursor-pointer">
@@ -461,10 +825,9 @@ const SignUpPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Address and Location Fields - Only show for regular users */}
-              {!isDealerAccount && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900">Address Information</h3>
+              {/* Address and Location Fields */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Address Information</h3>
                   
                   {/* Address Line 1 */}
                   <div className="space-y-2">
@@ -539,7 +902,6 @@ const SignUpPage: React.FC = () => {
                     />
                   </div>
                 </div>
-              )}
 
               {/* Country Dropdown (locked to UK) */}
               <div className="space-y-2">
@@ -631,6 +993,9 @@ const SignUpPage: React.FC = () => {
               </div>
             </form>
           </div>
+        ) : (
+          <DealerDetailsStep />
+        )}
         </div>
       </main>
 
