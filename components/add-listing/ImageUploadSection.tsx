@@ -19,6 +19,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -76,7 +77,7 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="relative group"
+      className="relative group touch-manipulation"
       {...attributes}
     >
       <Card className="overflow-hidden border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors">
@@ -85,19 +86,20 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
             <img
               src={image.url}
               alt={`Upload ${index + 1}`}
-              className="w-full h-full object-cover rounded"
+              className="w-full h-full object-cover rounded select-none"
               onError={(e) => {
                 console.error('Failed to load image:', image.url);
                 e.currentTarget.src = '/placeholder-image.jpg';
               }}
+              draggable={false}
             />
             
             {/* Drag handle */}
             <div
-              className="absolute top-1 left-1 p-1 bg-black/50 rounded cursor-grab hover:bg-black/70 transition-colors"
+              className="absolute top-1 left-1 p-2 sm:p-1 bg-black/50 rounded cursor-grab hover:bg-black/70 transition-colors touch-manipulation"
               {...listeners}
             >
-              <GripVertical className="h-3 w-3 text-white" />
+              <GripVertical className="h-4 w-4 sm:h-3 sm:w-3 text-white" />
             </div>
             
             {/* Remove button */}
@@ -105,14 +107,14 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
               type="button"
               variant="destructive"
               size="sm"
-              className="absolute top-1 right-1 h-6 w-6 p-0 bg-red-500/80 hover:bg-red-600"
+              className="absolute top-1 right-1 h-7 w-7 sm:h-6 sm:w-6 p-0 bg-red-500/80 hover:bg-red-600 touch-manipulation"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onRemove();
               }}
             >
-              <X className="h-3 w-3" />
+              <X className="h-4 w-4 sm:h-3 sm:w-3" />
             </Button>
             
             {/* Image position indicator */}
@@ -273,7 +275,17 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
 
   // Sensors for drag and drop
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Minimum distance before drag starts
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200, // 200ms delay before drag starts on touch
+        tolerance: 5, // 5px tolerance for touch movement
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -480,7 +492,8 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
           </DndContext>
 
           <div className="mt-3 text-sm text-gray-500">
-            <p>• Drag images to reorder them</p>
+            <p className="hidden sm:block">• Drag images to reorder them</p>
+            <p className="sm:hidden">• Touch and hold the grip icon to reorder images</p>
             <p>• The first image will be used as the main photo</p>
           </div>
         </div>
