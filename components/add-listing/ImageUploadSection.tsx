@@ -77,7 +77,7 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="relative group touch-manipulation"
+      className="relative group touch-manipulation select-none"
       {...attributes}
     >
       <Card className="overflow-hidden border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors">
@@ -86,7 +86,7 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
             <img
               src={image.url}
               alt={`Upload ${index + 1}`}
-              className="w-full h-full object-cover rounded select-none"
+              className="w-full h-full object-cover rounded select-none pointer-events-none"
               onError={(e) => {
                 console.error('Failed to load image:', image.url);
                 e.currentTarget.src = '/placeholder-image.jpg';
@@ -94,24 +94,41 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
               draggable={false}
             />
             
-            {/* Drag handle */}
+            {/* Large drag handle for mobile - covers more area and prevents text selection */}
             <div
-              className="absolute top-1 left-1 p-2 sm:p-1 bg-black/50 rounded cursor-grab hover:bg-black/70 transition-colors touch-manipulation"
+              className="absolute top-0 right-0 w-12 h-12 sm:w-8 sm:h-8 bg-black/60 hover:bg-black/80 transition-colors cursor-grab active:cursor-grabbing select-none flex items-center justify-center touch-manipulation"
+              style={{
+                touchAction: 'none',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none'
+              }}
               {...listeners}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
             >
-              <GripVertical className="h-4 w-4 sm:h-3 sm:w-3 text-white" />
+              <GripVertical className="h-6 w-6 sm:h-4 sm:w-4 text-white drop-shadow-sm" />
             </div>
             
-            {/* Remove button */}
+            {/* Remove button - positioned away from drag handle */}
             <Button
               type="button"
               variant="destructive"
               size="sm"
-              className="absolute top-1 right-1 h-7 w-7 sm:h-6 sm:w-6 p-0 bg-red-500/80 hover:bg-red-600 touch-manipulation"
+              className="absolute top-1 left-1 h-8 w-8 sm:h-6 sm:w-6 p-0 bg-red-500/80 hover:bg-red-600 touch-manipulation z-10"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onRemove();
+              }}
+              style={{
+                touchAction: 'manipulation'
               }}
             >
               <X className="h-4 w-4 sm:h-3 sm:w-3" />
@@ -273,7 +290,7 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
     updateParentImages();
   }, [cachedImages, updateParentImages]);
 
-  // Sensors for drag and drop
+  // Sensors for drag and drop - improved for mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -282,8 +299,8 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200, // 200ms delay before drag starts on touch
-        tolerance: 5, // 5px tolerance for touch movement
+        delay: 150, // Shorter delay for better responsiveness
+        tolerance: 8, // Increased tolerance for touch movement
       },
     }),
     useSensor(KeyboardSensor, {
@@ -477,7 +494,15 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
               items={cachedImages.map(img => img.id)}
               strategy={horizontalListSortingStrategy}
             >
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div 
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 select-none"
+                style={{
+                  touchAction: 'pan-y',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  WebkitTouchCallout: 'none'
+                }}
+              >
                 {cachedImages.map((image, index) => (
                   <SortableImageItem
                     key={image.id}
@@ -491,10 +516,11 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
             </SortableContext>
           </DndContext>
 
-          <div className="mt-3 text-sm text-gray-500">
+          <div className="mt-3 text-sm text-gray-500 space-y-1">
             <p className="hidden sm:block">• Drag images to reorder them</p>
-            <p className="sm:hidden">• Touch and hold the grip icon to reorder images</p>
+            <p className="sm:hidden">• Touch and hold the grip icon (⋮⋮) in the top-right corner to drag and reorder images</p>
             <p>• The first image will be used as the main photo</p>
+            <p className="sm:hidden text-blue-600">• Make sure to tap and hold only on the grip icon to avoid text selection</p>
           </div>
         </div>
       )}
