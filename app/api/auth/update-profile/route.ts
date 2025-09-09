@@ -3,7 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: Request) {
   try {
-    const { uid, firstName, lastName, country, role, location } = await request.json();
+    const { uid, firstName, lastName, phone, country, role, location } = await request.json();
 
     if (!uid) {
       return NextResponse.json(
@@ -20,6 +20,11 @@ export async function POST(request: Request) {
       role,
       updatedAt: new Date(),
     };
+
+    // Add phone if provided
+    if (phone !== undefined) {
+      updateData.phone = phone;
+    }
 
     // Add location if provided
     if (location) {

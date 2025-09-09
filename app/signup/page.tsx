@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Header } from "../../components/header";
 import { Footer } from "../../components/footer";
 import { Eye, EyeOff, ArrowRight, Mail, Lock, User, Globe } from "lucide-react";
@@ -14,11 +14,243 @@ import { useToast } from "@/hooks/use-toast";
 import { FirebaseError } from 'firebase/app';
 import { PostcodeLocationInput, LocationInfo } from '@/components/ui/PostcodeLocationInput';
 
+// DealerDetailsStep Component - moved outside to prevent recreation
+const DealerDetailsStep = React.memo(({ 
+  businessName,
+  setBusinessName,
+  website,
+  setWebsite,
+  businessDescription,
+  setBusinessDescription,
+  logoFile,
+  setLogoFile,
+  bannerFile,
+  setBannerFile,
+  logoPreview,
+  setLogoPreview,
+  bannerPreview,
+  setBannerPreview,
+  location,
+  error,
+  onBack,
+  onSubmit
+}: {
+  businessName: string;
+  setBusinessName: (value: string) => void;
+  website: string;
+  setWebsite: (value: string) => void;
+  businessDescription: string;
+  setBusinessDescription: (value: string) => void;
+  logoFile: File | null;
+  setLogoFile: (file: File | null) => void;
+  bannerFile: File | null;
+  setBannerFile: (file: File | null) => void;
+  logoPreview: string | null;
+  setLogoPreview: (preview: string | null) => void;
+  bannerPreview: string | null;
+  setBannerPreview: (preview: string | null) => void;
+  location: LocationInfo;
+  error: string;
+  onBack: () => void;
+  onSubmit: () => void;
+}) => {
+  const handleLogoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        // We can't set error here, but we'll show an alert
+        alert('Logo file must be smaller than 5MB');
+        return;
+      }
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setLogoPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }, [setLogoFile, setLogoPreview]);
+
+  const handleBannerChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert('Banner file must be smaller than 10MB');
+        return;
+      }
+      setBannerFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setBannerPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }, [setBannerFile, setBannerPreview]);
+
+  const handleBusinessNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setBusinessName(e.target.value);
+  }, [setBusinessName]);
+
+  const handleWebsiteChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setWebsite(e.target.value);
+  }, [setWebsite]);
+
+  const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setBusinessDescription(e.target.value);
+  }, [setBusinessDescription]);
+
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit();
+  }, [onSubmit]);
+
+  return (
+    <div className="max-w-md mx-auto w-full">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-gray-900">Dealer Information</h2>
+        <p className="mt-2 text-gray-600">Complete your dealer profile</p>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-sm">{error}</p>
+        </div>
+      )}
+
+      <form className="space-y-5" onSubmit={handleSubmit}>
+        {/* Business Name */}
+        <div className="space-y-2">
+          <label htmlFor="business-name" className="block text-sm font-medium text-gray-700">
+            Business Name *
+          </label>
+          <input
+            id="business-name"
+            name="businessName"
+            type="text"
+            required
+            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Enter your business name"
+            value={businessName}
+            onChange={handleBusinessNameChange}
+          />
+        </div>
+
+        {/* Website */}
+        <div className="space-y-2">
+          <label htmlFor="website" className="block text-sm font-medium text-gray-700">
+            Website (Optional)
+          </label>
+          <input
+            id="website"
+            name="website"
+            type="url"
+            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="https://your-website.com"
+            value={website}
+            onChange={handleWebsiteChange}
+          />
+        </div>
+
+        {/* Business Description */}
+        <div className="space-y-2">
+          <label htmlFor="business-description" className="block text-sm font-medium text-gray-700">
+            Business Description
+          </label>
+          <textarea
+            id="business-description"
+            name="businessDescription"
+            rows={4}
+            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Tell us about your business..."
+            value={businessDescription}
+            onChange={handleDescriptionChange}
+          />
+        </div>
+
+        {/* Business Logo */}
+        <div className="space-y-2">
+          <label htmlFor="logo" className="block text-sm font-medium text-gray-700">
+            Business Logo (Optional)
+          </label>
+          <input
+            id="logo"
+            name="logo"
+            type="file"
+            accept="image/*"
+            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            onChange={handleLogoChange}
+          />
+          {logoPreview && (
+            <div className="mt-2">
+              <img src={logoPreview} alt="Logo preview" className="w-24 h-24 object-cover rounded-lg border" />
+            </div>
+          )}
+          <p className="text-xs text-gray-500">Maximum file size: 5MB</p>
+        </div>
+
+        {/* Business Banner */}
+        <div className="space-y-2">
+          <label htmlFor="banner" className="block text-sm font-medium text-gray-700">
+            Business Banner (Optional)
+          </label>
+          <input
+            id="banner"
+            name="banner"
+            type="file"
+            accept="image/*"
+            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            onChange={handleBannerChange}
+          />
+          {bannerPreview && (
+            <div className="mt-2">
+              <img src={bannerPreview} alt="Banner preview" className="w-full h-32 object-cover rounded-lg border" />
+            </div>
+          )}
+          <p className="text-xs text-gray-500">Maximum file size: 10MB</p>
+        </div>
+
+        {/* Address Information Display */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Business Address
+          </label>
+          <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-sm text-gray-600">
+              {location.addressLines[0]}<br/>
+              {location.addressLines[1] && <>{location.addressLines[1]}<br/></>}
+              {location.addressLines[2]}<br/>
+              {location.addressLines[3]}
+            </p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-4">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex-1 p-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+          >
+            Back
+          </button>
+          <button
+            type="submit"
+            className="flex-1 p-3 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium shadow-sm transition-colors"
+          >
+            Complete Registration
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+});
+
+// Add display name for debugging
+DealerDetailsStep.displayName = 'DealerDetailsStep';
+
 const SignUpPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+44');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [country, setCountry] = useState('UK');
   const [location, setLocation] = useState<LocationInfo>({
     addressLines: ['', '', '', ''],
@@ -36,8 +268,6 @@ const SignUpPage: React.FC = () => {
   
   // Dealer-specific fields
   const [businessName, setBusinessName] = useState('');
-  const [phoneCountryCode, setPhoneCountryCode] = useState('+44');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [website, setWebsite] = useState('');
   const [businessDescription, setBusinessDescription] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -123,7 +353,7 @@ const SignUpPage: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !email || !password || !phoneNumber.trim()) {
       setError('Please fill in all required fields');
       return;
     }
@@ -176,6 +406,7 @@ const SignUpPage: React.FC = () => {
             firstName,
             lastName,
             email,
+            phone: `${phoneCountryCode}${phoneNumber}`,
             country,
             location,
             role,
@@ -272,7 +503,11 @@ const SignUpPage: React.FC = () => {
     }
   };
 
-  const handleDealerRegistration = async () => {
+  const handleBackToBasicInfo = useCallback(() => {
+    setCurrentStep('basic-info');
+  }, []);
+
+  const handleDealerRegistration = useCallback(async () => {
     setError('');
 
     // Validate dealer-specific fields
@@ -299,6 +534,7 @@ const SignUpPage: React.FC = () => {
             firstName,
             lastName,
             email,
+            phone: `${phoneCountryCode}${phoneNumber}`,
             country,
             location,
             role,
@@ -334,7 +570,7 @@ const SignUpPage: React.FC = () => {
           businessName: businessName.trim(),
           contact: {
             email: email,
-            phone: phoneNumber ? `${phoneCountryCode}${phoneNumber}` : "",
+            phone: `${phoneCountryCode}${phoneNumber}`, // Use phone from main form
             website: website.trim(),
           },
           description: businessDescription.trim(),
@@ -437,178 +673,7 @@ const SignUpPage: React.FC = () => {
         setError(error.message || 'An error occurred during signup. Please try again.');
       }
     }
-  };
-
-  // DealerDetailsStep Component
-  const DealerDetailsStep = () => {
-    return (
-      <div className="max-w-md mx-auto w-full">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">Dealer Information</h2>
-          <p className="mt-2 text-gray-600">Complete your dealer profile</p>
-        </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-600 text-sm">{error}</p>
-          </div>
-        )}
-
-        <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleDealerRegistration(); }}>
-          {/* Business Name */}
-          <div className="space-y-2">
-            <label htmlFor="business-name" className="block text-sm font-medium text-gray-700">
-              Business Name *
-            </label>
-            <input
-              id="business-name"
-              name="businessName"
-              type="text"
-              required
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Enter your business name"
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-            />
-          </div>
-
-          {/* Phone Number with Country Code */}
-          <div className="space-y-2">
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-              Phone Number
-            </label>
-            <div className="flex">
-              <select
-                value={phoneCountryCode}
-                onChange={(e) => setPhoneCountryCode(e.target.value)}
-                className="w-[100px] p-3 bg-gray-50 border border-gray-200 rounded-l-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                aria-label="Country code"
-              >
-                <option value="+44">🇬🇧 +44</option>
-                <option value="+1">🇺🇸 +1</option>
-                <option value="+91">🇮🇳 +91</option>
-              </select>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Enter phone number"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Website */}
-          <div className="space-y-2">
-            <label htmlFor="website" className="block text-sm font-medium text-gray-700">
-              Website (Optional)
-            </label>
-            <input
-              id="website"
-              name="website"
-              type="url"
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="https://your-website.com"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-            />
-          </div>
-
-          {/* Business Description */}
-          <div className="space-y-2">
-            <label htmlFor="business-description" className="block text-sm font-medium text-gray-700">
-              Business Description
-            </label>
-            <textarea
-              id="business-description"
-              name="businessDescription"
-              rows={4}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Tell us about your business..."
-              value={businessDescription}
-              onChange={(e) => setBusinessDescription(e.target.value)}
-            />
-          </div>
-
-          {/* Business Logo */}
-          <div className="space-y-2">
-            <label htmlFor="logo" className="block text-sm font-medium text-gray-700">
-              Business Logo (Optional)
-            </label>
-            <input
-              id="logo"
-              name="logo"
-              type="file"
-              accept="image/*"
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              onChange={handleLogoChange}
-            />
-            {logoPreview && (
-              <div className="mt-2">
-                <img src={logoPreview} alt="Logo preview" className="w-24 h-24 object-cover rounded-lg border" />
-              </div>
-            )}
-            <p className="text-xs text-gray-500">Maximum file size: 5MB</p>
-          </div>
-
-          {/* Business Banner */}
-          <div className="space-y-2">
-            <label htmlFor="banner" className="block text-sm font-medium text-gray-700">
-              Business Banner (Optional)
-            </label>
-            <input
-              id="banner"
-              name="banner"
-              type="file"
-              accept="image/*"
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              onChange={handleBannerChange}
-            />
-            {bannerPreview && (
-              <div className="mt-2">
-                <img src={bannerPreview} alt="Banner preview" className="w-full h-32 object-cover rounded-lg border" />
-              </div>
-            )}
-            <p className="text-xs text-gray-500">Maximum file size: 10MB</p>
-          </div>
-
-          {/* Address Information Display */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Business Address
-            </label>
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-600">
-                {location.addressLines[0]}<br/>
-                {location.addressLines[1] && <>{location.addressLines[1]}<br/></>}
-                {location.addressLines[2]}<br/>
-                {location.addressLines[3]}
-              </p>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={() => setCurrentStep('basic-info')}
-              className="flex-1 p-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
-            >
-              Back
-            </button>
-            <button
-              type="submit"
-              className="flex-1 p-3 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium shadow-sm transition-colors"
-            >
-              Complete Registration
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-  };
+  }, [email, password, firstName, lastName, phoneCountryCode, phoneNumber, country, location, additionalRoles, businessName, website, businessDescription, logoFile, bannerFile, signUp, logout, toast]);
 
   // If verification email is sent, show verification message
   if (verificationSent) {
@@ -765,6 +830,36 @@ const SignUpPage: React.FC = () => {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number Field */}
+              <div className="space-y-2">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  Phone Number *
+                </label>
+                <div className="flex">
+                  <select
+                    value={phoneCountryCode}
+                    onChange={(e) => setPhoneCountryCode(e.target.value)}
+                    className="w-[100px] p-3 bg-gray-50 border border-gray-200 rounded-l-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    aria-label="Country code"
+                  >
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+91">🇮🇳 +91</option>
+                  </select>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    required
+                    className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="1234567890"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
                   />
                 </div>
               </div>
@@ -994,7 +1089,26 @@ const SignUpPage: React.FC = () => {
             </form>
           </div>
         ) : (
-          <DealerDetailsStep />
+          <DealerDetailsStep 
+            businessName={businessName}
+            setBusinessName={setBusinessName}
+            website={website}
+            setWebsite={setWebsite}
+            businessDescription={businessDescription}
+            setBusinessDescription={setBusinessDescription}
+            logoFile={logoFile}
+            setLogoFile={setLogoFile}
+            bannerFile={bannerFile}
+            setBannerFile={setBannerFile}
+            logoPreview={logoPreview}
+            setLogoPreview={setLogoPreview}
+            bannerPreview={bannerPreview}
+            setBannerPreview={setBannerPreview}
+            location={location}
+            error={error}
+            onBack={handleBackToBasicInfo}
+            onSubmit={handleDealerRegistration}
+          />
         )}
         </div>
       </main>

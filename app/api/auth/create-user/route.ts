@@ -6,10 +6,10 @@ const VALID_ADDITIONAL_ROLES = ['shop', 'garage'];
 
 export async function POST(request: Request) {
   try {
-    const { uid, firstName, lastName, email, country, location, role, additionalRoles = [] } = await request.json();
+    const { uid, firstName, lastName, email, phone, country, location, role, additionalRoles = [] } = await request.json();
 
     // Validate required fields
-    if (!uid || !firstName || !lastName || !email || !country || !role) {
+    if (!uid || !firstName || !lastName || !email || !phone || !country || !role) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       firstName,
       lastName,
       email,
+      phone,
       country,
       location: location || null,
       role,

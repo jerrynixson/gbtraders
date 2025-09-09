@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Mail, 
   MapPin, 
+  Phone,
   Calendar, 
   Car, 
   Settings, 
@@ -51,6 +52,7 @@ interface UserProfile {
   country: string;
   createdAt: { seconds: number };
   email: string;
+  phone?: string;
   firstName: string;
   lastName: string;
   role: "user" | "dealer";
@@ -587,6 +589,20 @@ export function ProfilePage() {
                           className="text-gray-900" 
                           disabled 
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone" className="flex items-center gap-2 text-base font-medium text-gray-900">
+                          <Phone className="h-4 w-4" />
+                          Phone Number
+                        </Label>
+                        <Input 
+                          id="phone" 
+                          type="tel" 
+                          value={userProfile.phone || 'Not provided'} 
+                          className="text-gray-900 bg-gray-100" 
+                          disabled 
+                        />
+                        <p className="text-sm text-gray-500">Phone number cannot be changed after registration.</p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="location" className="flex items-center gap-2 text-base font-medium text-gray-900">
