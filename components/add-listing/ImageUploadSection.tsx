@@ -520,7 +520,6 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
             <p className="hidden sm:block">• Drag images to reorder them</p>
             <p className="sm:hidden">• Touch and hold the grip icon (⋮⋮) in the top-right corner to drag and reorder images</p>
             <p>• The first image will be used as the main photo</p>
-            <p className="sm:hidden text-blue-600">• Make sure to tap and hold only on the grip icon to avoid text selection</p>
           </div>
         </div>
       )}
