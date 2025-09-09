@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, MapPin, Filter, Grid, List, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield, Lock, CheckCircle, Timer } from "lucide-react"
+import { Search, MapPin, Filter, Grid, List, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield, Lock, CheckCircle, Timer, X } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
@@ -36,6 +36,7 @@ export default function SearchGaragesPage() {
   const [locationFilter, setLocationFilter] = useState('')
   const isMobile = useIsMobile();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showMobileMap, setShowMobileMap] = useState(false);
 
   // Load garages on component mount
   useEffect(() => {
@@ -43,6 +44,16 @@ export default function SearchGaragesPage() {
       try {
         setLoading(true)
         const garagesData = await getAllPublicGarages()
+        
+        // Debug garage data
+        console.log('Loaded garages:', garagesData.length);
+        console.log('Sample garage data:', garagesData.slice(0, 3).map(g => ({
+          name: g.name,
+          address: g.address,
+          location: g.location,
+          hasValidCoords: !!(g.location?.lat && g.location?.long && g.location.lat !== 0 && g.location.long !== 0)
+        })));
+        
         setGarages(garagesData)
         setFilteredGarages(garagesData)
       } catch (error) {
@@ -227,6 +238,89 @@ export default function SearchGaragesPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  // Map calculation functions
+  const calculateMapCenter = () => {
+    // Fix coordinate filtering to match individual garage page logic
+    const garagesWithCoords = filteredGarages.filter(g => 
+      g.location?.lat && 
+      g.location?.long && 
+      g.location.lat !== 0 && 
+      g.location.long !== 0
+    );
+    
+    // Add debugging
+    console.log('Total filtered garages:', filteredGarages.length);
+    console.log('Garages with valid coordinates:', garagesWithCoords.length);
+    console.log('Sample garage locations:', filteredGarages.slice(0, 3).map(g => ({
+      name: g.name,
+      location: g.location
+    })));
+    
+    if (garagesWithCoords.length === 0) {
+      console.log('No garages with coordinates, using default center');
+      return { lat: 52.4862, lng: -1.8904 }; // Default to Birmingham, UK
+    }
+
+    if (garagesWithCoords.length === 1) {
+      const center = { 
+        lat: garagesWithCoords[0].location!.lat, 
+        lng: garagesWithCoords[0].location!.long 
+      };
+      console.log('Single garage center:', center);
+      return center;
+    }
+
+    // Calculate center point of all garages
+    const latSum = garagesWithCoords.reduce((sum, g) => sum + g.location!.lat, 0);
+    const lngSum = garagesWithCoords.reduce((sum, g) => sum + g.location!.long, 0);
+    
+    const center = {
+      lat: latSum / garagesWithCoords.length,
+      lng: lngSum / garagesWithCoords.length,
+    };
+    console.log('Calculated map center:', center, 'from', garagesWithCoords.length, 'garages');
+    return center;
+  };
+
+  const getOptimalZoom = () => {
+    const garagesWithCoords = filteredGarages.filter(g => 
+      g.location?.lat && 
+      g.location?.long && 
+      g.location.lat !== 0 && 
+      g.location.long !== 0
+    );
+    
+    console.log('Zoom calculation for', garagesWithCoords.length, 'garages');
+    
+    if (garagesWithCoords.length <= 1) return 13;
+    if (garagesWithCoords.length <= 5) return 11;
+    if (garagesWithCoords.length <= 10) return 10;
+    return 9;
+  };
+
+  // Create markers for garages - use same filtering logic as center calculation
+  const garageMarkers = filteredGarages
+    .filter(garage => 
+      garage.location?.lat && 
+      garage.location?.long && 
+      garage.location.lat !== 0 && 
+      garage.location.long !== 0
+    )
+    .map(garage => ({
+      position: {
+        lat: garage.location!.lat,
+        lng: garage.location!.long,
+      },
+      title: `${garage.name} - ${garage.location?.addressLines ? garage.location.addressLines.filter(line => line.trim()).join(', ') : garage.address || 'Address not available'}`,
+      icon: {
+        url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+      },
+    }));
+
+  // Log marker information for debugging
+  console.log('Generated garage markers:', garageMarkers.length);
+  console.log('Sample markers:', garageMarkers.slice(0, 2));
+
   const GarageCard = ({ garage }: { garage: Garage }) => (
     <Link href={`/categories/garages/${garage.id}`} className="block h-full">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 group h-full flex flex-col">
@@ -364,6 +458,51 @@ export default function SearchGaragesPage() {
       {/* Feature Bar - moved to right column above dealer cards */}
       {/* Removed from here */}
 
+      {/* Full Screen Map for Mobile/Desktop */}
+      {showMobileMap && (
+        <div className="fixed inset-0 z-50 bg-white">
+          <div className="h-full flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Garage Locations</h2>
+              <Button variant="outline" onClick={() => setShowMobileMap(false)}>
+                <X className="h-4 w-4 mr-2" />
+                Close Map
+              </Button>
+            </div>
+            <div className="flex-1">
+              {garageMarkers.length > 0 ? (
+                <GoogleMapComponent 
+                  center={calculateMapCenter()}
+                  zoom={getOptimalZoom()}
+                  markers={garageMarkers}
+                  height="100%"
+                  width="100%"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <MapPin className="h-12 w-12 mx-auto mb-4" />
+                    <p className="text-lg">No garage locations to display</p>
+                    <p className="text-sm">Garages need valid coordinates to appear on the map</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="p-4 bg-gray-50 border-t border-gray-200">
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <span>Showing {garageMarkers.length} garage locations</span>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span>Garages</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="container mx-auto px-2 sm:px-4 py-4">
         {/* Mobile Filter Toggle */}
@@ -382,13 +521,38 @@ export default function SearchGaragesPage() {
           {/* Sidebar - show above results on mobile, left on desktop */}
           <div className={`lg:w-1/4 ${isMobile ? (showMobileFilters ? "block" : "hidden") : "block"}`}>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 sticky top-4 flex flex-col">
-              {/* Map Preview - Glassmorphic Card */}
+              {/* Map Preview - Functional Garage Map */}
               <div className="mb-6">
                 <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200">
-                  <GoogleMapComponent 
-                    center={{ lat: 52.4862, lng: -1.8904 }}
-                    zoom={13}
-                  />
+                  {garageMarkers.length > 0 ? (
+                    <GoogleMapComponent 
+                      center={calculateMapCenter()}
+                      zoom={getOptimalZoom()}
+                      markers={garageMarkers}
+                      height="160px"
+                      width="100%"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                      <div className="text-center text-gray-500">
+                        <MapPin className="h-8 w-8 mx-auto mb-2" />
+                        <p className="text-sm">No garage locations available</p>
+                        {process.env.NODE_ENV === 'development' && (
+                          <p className="text-xs mt-1">
+                            {filteredGarages.length > 0 ? 'Garages loaded but no valid coordinates' : 'No garages loaded'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2 text-xs text-gray-500 flex items-center justify-between">
+                  <span>Showing {garageMarkers.length} garage locations</span>
+                  {garageMarkers.length > 0 && (
+                    <span className="text-blue-600 cursor-pointer hover:underline" onClick={() => setShowMobileMap(!showMobileMap)}>
+                      {isMobile ? (showMobileMap ? 'Hide Map' : 'Full Map') : 'View Full Map'}
+                    </span>
+                  )}
                 </div>
               </div>
 

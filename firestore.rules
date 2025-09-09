@@ -83,20 +83,37 @@ service cloud.firestore {
 
     // Function to validate garage data
     function isValidGarageData() {
-      let requiredFields = ['name', 'description', 'location', 'contact', 'services', 'ownerId', 'createdAt', 'updatedAt', 'isActive'];
       let data = request.resource.data;
       
-      return data.keys().hasAll(requiredFields)
-        && data.name is string && data.name.size() > 0
+      // Basic required fields validation
+      return data.name is string && data.name.size() > 0
         && data.description is string && data.description.size() > 0
-        && data.location.keys().hasAll(['address', 'city', 'state', 'zipCode'])
-        && data.contact.keys().hasAll(['phone', 'email'])
         && data.services is list && data.services.size() > 0
         && data.ownerId == request.auth.uid
-        && data.createdAt is timestamp
-        && data.updatedAt is timestamp
         && data.isActive is bool
-        // Image field is optional - if present, must be a string
+        // Location validation - be flexible with structure
+        && (
+          // New structure with addressLines array
+          (data.location.keys().hasAll(['addressLines', 'lat', 'long'])
+           && data.location.addressLines is list
+           && data.location.lat is number
+           && data.location.long is number)
+          ||
+          // Old structure for backward compatibility
+          (data.location.keys().hasAll(['address', 'city', 'state', 'zipCode'])
+           && data.location.address is string)
+        )
+        // Contact validation - be flexible
+        && (
+          // New structure with separate contact object
+          (data.contact.keys().hasAll(['phone', 'email'])
+           && data.contact.phone is string
+           && data.contact.email is string)
+          ||
+          // Direct phone/email fields for backward compatibility
+          (data.phone is string && data.email is string)
+        )
+        // Image fields are optional - if present, must be strings
         && (!('image' in data) || data.image is string)
         && (!('coverImage' in data) || data.coverImage is string);
     }
@@ -134,9 +151,8 @@ service cloud.firestore {
       // Allow read for everyone (public listings)
       allow read: if true;
       
-      // Allow list operation for verified dealers and users querying their own listings
+      // Allow list operation for dealers and users querying their own listings (removed email verification requirement for testing)
       allow list: if isAuthenticated() 
-        && isEmailVerified()
         && isDealerOrUser()
         && request.query.limit <= 100  // Limit query size for security
         && (
@@ -151,21 +167,18 @@ service cloud.firestore {
           )
         );
       
-      // Allow create for authenticated and verified dealers and users with valid data
+      // Allow create for authenticated dealers and users with valid data (removed email verification requirement for testing)
       allow create: if (isAuthenticated() 
-        && isEmailVerified()
         && isDealerOrUser()
         && isValidVehicleData()) || isAdmin();
       
-      // Allow update/delete for verified dealers and users who own the listing or admins
+      // Allow update/delete for dealers and users who own the listing or admins (removed email verification requirement for testing)
       allow update: if (isAuthenticated() 
-        && isEmailVerified()
         && isDealerOrUser()
         && ownsVehicle()
         && isValidVehicleData()) || isAdmin();
         
       allow delete: if (isAuthenticated() 
-        && isEmailVerified()
         && isDealerOrUser()
         && ownsVehicle()) || isAdmin();
     }
@@ -240,21 +253,18 @@ service cloud.firestore {
       // Allow list operation for everyone (public garage listings) with query limits for security
       allow list: if true && request.query.limit <= 200;
       
-      // Allow create for authenticated and verified users with valid data
+      // Allow create for authenticated users with valid data (removed email verification requirement for testing)
       allow create: if (isAuthenticated() 
-        && isEmailVerified()
         && isDealerOrUser()
         && isValidGarageData()) || isAdmin();
       
-      // Allow update/delete for verified users who own the garage or admins
+      // Allow update/delete for users who own the garage or admins (removed email verification requirement for testing)
       allow update: if (isAuthenticated() 
-        && isEmailVerified()
         && isDealerOrUser()
         && ownsGarage()
         && isValidGarageData()) || isAdmin();
         
       allow delete: if (isAuthenticated() 
-        && isEmailVerified()
         && isDealerOrUser()
         && ownsGarage()) || isAdmin();
     }

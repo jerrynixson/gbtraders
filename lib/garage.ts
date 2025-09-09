@@ -223,12 +223,33 @@ export const convertDocumentToGarage = (doc: any): Garage => {
   let address = '';
   
   if (data.location) {
+    // Helper function to extract coordinates from various possible structures
+    const extractCoordinates = (locationData: any) => {
+      // Try different possible coordinate structures
+      const lat = locationData.lat || 
+                  locationData.latitude || 
+                  locationData.coordinates?.lat || 
+                  locationData.coordinates?.latitude || 
+                  0;
+      
+      const long = locationData.long || 
+                   locationData.lng || 
+                   locationData.longitude || 
+                   locationData.coordinates?.lng || 
+                   locationData.coordinates?.long || 
+                   locationData.coordinates?.longitude || 
+                   0;
+      
+      return { lat: Number(lat) || 0, long: Number(long) || 0 };
+    };
+
     if (data.location.addressLines) {
       // New format with addressLines array
+      const coords = extractCoordinates(data.location);
       location = {
         addressLines: data.location.addressLines as [string, string, string, string],
-        lat: data.location.lat || 0,
-        long: data.location.long || 0
+        lat: coords.lat,
+        long: coords.long
       };
       // Create address string for backward compatibility
       address = data.location.addressLines.filter((line: string) => line.trim()).join(', ');
@@ -242,6 +263,7 @@ export const convertDocumentToGarage = (doc: any): Garage => {
         data.location.zipCode || ''
       ].filter(part => part.trim());
       
+      const coords = extractCoordinates(data.location);
       location = {
         addressLines: [
           data.location.address || '',
@@ -249,8 +271,8 @@ export const convertDocumentToGarage = (doc: any): Garage => {
           data.location.city || '',
           data.location.zipCode || ''
         ] as [string, string, string, string],
-        lat: data.location.coordinates?.lat || 0,
-        long: data.location.coordinates?.lng || 0
+        lat: coords.lat,
+        long: coords.long
       };
       
       address = addressParts.join(', ');
