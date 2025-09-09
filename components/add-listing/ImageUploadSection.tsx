@@ -104,14 +104,6 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
                 WebkitTouchCallout: 'none'
               }}
               {...listeners}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
             >
               <GripVertical className="h-6 w-6 sm:h-4 sm:w-4 text-white drop-shadow-sm" />
             </div>
@@ -397,7 +389,6 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
       const success = await imageCacheManager.removeImage(vehicleId, imageId, true);
       if (success) {
         setCachedImages(imageCacheManager.getImages(vehicleId));
-        toast.success('Image removed successfully');
       } else {
         console.error('Failed to remove image - removeImage returned false');
         toast.error('Failed to remove image from storage');
@@ -412,7 +403,7 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
@@ -420,10 +411,29 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
         const activeIndex = cachedImages.findIndex(img => img.id === active.id);
         const overIndex = cachedImages.findIndex(img => img.id === over.id);
 
-        if (activeIndex !== -1 && overIndex !== -1) {
+        if (activeIndex !== -1 && overIndex !== -1) {       
           const newOrder = arrayMove(cachedImages.map(img => img.id), activeIndex, overIndex);
+          // Reorder images in cache
           imageCacheManager.reorderImages(vehicleId, newOrder);
-          setCachedImages(imageCacheManager.getImages(vehicleId));
+          
+          // Update local state
+          const reorderedImages = imageCacheManager.getImages(vehicleId);
+          setCachedImages(reorderedImages);
+          
+          // Explicitly trigger parent update
+          const newImageUrls = imageCacheManager.getImageUrls(vehicleId);
+          onImagesChange(newImageUrls);
+          
+          // If in edit mode, save immediately to Firebase
+          if (isEditMode) {
+            try {
+              await imageCacheManager.finalSave(vehicleId);
+            } catch (saveError) {
+              console.error('❌ Error saving reordered images to Firebase:', saveError);
+              toast.error('Failed to save image order to server');
+              return;
+            }
+          }
         }
       } catch (error) {
         console.error('Error reordering images:', error);
