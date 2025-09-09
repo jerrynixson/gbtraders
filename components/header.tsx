@@ -137,13 +137,13 @@ export function Header() {
         <div className="flex items-center justify-between">
           {/* Logo - Using auto-scaling approach */}
           <Link href="/" className="flex items-center flex-shrink-0">
-            <div className="relative w-auto h-auto max-h-16">
+            <div className="relative w-auto h-auto max-h-16 -mt-4 lg:max-h-20 lg:-mt-12">
               <Image
-                src="/gbtrader-logo.png"
+                src="/GBTrader_Logo.svg"
                 alt="GB Trader Logo"
                 width={1080}
                 height={1080}
-                className="w-auto max-h-16 object-contain"
+                className="w-auto max-h-24 lg:max-h-36 object-contain"
                 priority
                 loading="eager"
                 quality={75}

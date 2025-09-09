@@ -264,9 +264,9 @@ export function sortVehiclesLocally(
         bValue = b.mileage;
         break;
       case 'createdAt':
-        // Use createdAt timestamp, fallback to updatedAt if not available
-        aValue = new Date(a.createdAt || a.updatedAt).getTime();
-        bValue = new Date(b.createdAt || b.updatedAt).getTime();
+        // Use only createdAt timestamp - all documents have this field
+        aValue = new Date(a.createdAt).getTime();
+        bValue = new Date(b.createdAt).getTime();
         break;
       default:
         return 0;

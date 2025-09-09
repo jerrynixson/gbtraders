@@ -33,6 +33,11 @@ export interface Garage {
   description: string;
   services: string[];
   rating: number;
+  location?: {
+    addressLines: [string, string, string, string]; // 4th element for postcode
+    lat: number;
+    long: number;
+  };
   openingHours: {
     weekdays: { start: string; end: string };
     saturday: { start: string; end: string };
@@ -126,22 +131,30 @@ export const deleteGarageImage = async (imageUrl: string): Promise<void> => {
 
 // Function to convert form data to Firestore document
 export const convertGarageToDocument = (garage: Partial<Garage>, userId: string): Omit<GarageDocument, 'createdAt' | 'updatedAt'> => {
-  // Parse address to extract city, state, zipcode
-  const addressParts = (garage.address || '').split(',').map(part => part.trim());
-  const city = addressParts.length > 1 ? addressParts[addressParts.length - 2] : '';
-  const state = addressParts.length > 2 ? addressParts[addressParts.length - 3] : '';
-  const zipCode = addressParts.length > 0 ? addressParts[addressParts.length - 1] : '';
+  // Handle location data - prefer new location structure, fallback to old address format
+  let locationData;
+  if (garage.location && garage.location.addressLines[0]) {
+    // Use new location structure directly
+    locationData = {
+      addressLines: garage.location.addressLines,
+      lat: garage.location.lat || 0,
+      long: garage.location.long || 0
+    };
+  } else {
+    // Fallback to old address format for backward compatibility
+    // Convert old address string to addressLines format
+    const address = garage.address || '';
+    locationData = {
+      addressLines: [address, '', '', ''] as [string, string, string, string],
+      lat: 0,
+      long: 0
+    };
+  }
 
   const result: any = {
     name: garage.name || '',
     description: garage.description || '',
-    location: {
-      address: garage.address || '',
-      city,
-      state,
-      zipCode
-      // coordinates field omitted - can be added later with geocoding
-    },
+    location: locationData,
     contact: {
       phone: garage.phone || '',
       email: garage.email || '',
@@ -205,10 +218,49 @@ export const convertDocumentToGarage = (doc: any): Garage => {
     return { start: start || '', end: end || '' };
   };
 
+  // Handle location data - support both new and old formats
+  let location;
+  let address = '';
+  
+  if (data.location) {
+    if (data.location.addressLines) {
+      // New format with addressLines array
+      location = {
+        addressLines: data.location.addressLines as [string, string, string, string],
+        lat: data.location.lat || 0,
+        long: data.location.long || 0
+      };
+      // Create address string for backward compatibility
+      address = data.location.addressLines.filter((line: string) => line.trim()).join(', ');
+    } else {
+      // Old format with separate address, city, state, zipCode fields
+      // Convert to new format for consistency
+      const addressParts = [
+        data.location.address || '',
+        data.location.state || '',
+        data.location.city || '',
+        data.location.zipCode || ''
+      ].filter(part => part.trim());
+      
+      location = {
+        addressLines: [
+          data.location.address || '',
+          data.location.state || '',
+          data.location.city || '',
+          data.location.zipCode || ''
+        ] as [string, string, string, string],
+        lat: data.location.coordinates?.lat || 0,
+        long: data.location.coordinates?.lng || 0
+      };
+      
+      address = addressParts.join(', ');
+    }
+  }
+
   return {
     id: doc.id,
     name: data.name || '',
-    address: data.location?.address || '',
+    address: address,
     phone: data.contact?.phone || '',
     email: data.contact?.email || '',
     website: data.contact?.website || '',
@@ -218,6 +270,7 @@ export const convertDocumentToGarage = (doc: any): Garage => {
     description: data.description || '',
     services: data.services || [],
     rating: data.rating || 0,
+    location,
     openingHours: {
       weekdays: parseHours(data.businessHours?.monday || 'Closed'),
       saturday: parseHours(data.businessHours?.saturday || 'Closed'),

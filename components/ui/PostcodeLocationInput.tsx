@@ -28,10 +28,12 @@ export const PostcodeLocationInput: React.FC<PostcodeLocationInputProps> = ({ va
 
   useEffect(() => {
     // Call validation change callback when validation state changes
+    // Consider valid when postcode format is correct AND coordinates are available
+    const isFullyValid = isValid && hasCoordinates;
     if (onValidationChange) {
-      onValidationChange(isValid);
+      onValidationChange(isFullyValid);
     }
-  }, [isValid, onValidationChange]);
+  }, [isValid, hasCoordinates, onValidationChange]);
 
   const validatePostcode = (postcode: string): boolean => {
     return postcode.trim() !== '' && ukPostcodeRegex.test(postcode.trim());

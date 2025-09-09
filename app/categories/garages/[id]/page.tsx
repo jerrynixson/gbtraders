@@ -151,7 +151,15 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
           <h1 className="text-3xl font-bold text-blue-900 mb-2">{garage.name}</h1>
           <div className="flex items-center text-blue-700 mb-4">
             <MapPin className="h-5 w-5 mr-2" />
-            {garage.address}
+            {garage.location?.addressLines ? (
+              <span>
+                {garage.location.addressLines
+                  .filter(line => line.trim()) // Filter out empty lines
+                  .join(', ')}
+              </span>
+            ) : (
+              <span>{garage.address || 'Address not available'}</span>
+            )}
           </div>
           {/* Rating (temporarily disabled)
           <div className="flex items-center mb-6">
@@ -174,16 +182,16 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
           {/* Services */}
           <div className="mb-6">
             <h2 className="font-semibold text-blue-800 mb-3">Products & Services</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {(garage.services || []).map((service, i) => (
-                <span
-                  key={i}
-                  className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium"
-                >
-                  {service}
-                </span>
-              ))}
-            </div>
+              <div className="flex flex-wrap gap-2 mt-2 md:grid md:grid-cols-2 md:gap-2">
+                {(garage.services || []).map((service, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-blue-50 text-blue-700 rounded-full px-3 py-1.5 text-xs font-medium shadow-sm whitespace-nowrap"
+                  >
+                    {service}
+                  </div>
+                ))}
+              </div>
           </div>
         </div>
 
@@ -192,10 +200,25 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
           {/* Map Card */}
           <div className="bg-white/80 rounded-3xl shadow-lg p-6">
             <div className="w-full h-48 rounded-2xl overflow-hidden mb-4">
-              <GoogleMapComponent 
-                center={{ lat: 52.4862, lng: -1.8904 }}
-                zoom={13}
-              />
+              {garage.location?.lat && garage.location?.long && garage.location.lat !== 0 && garage.location.long !== 0 ? (
+                <GoogleMapComponent 
+                  center={{ lat: garage.location.lat, lng: garage.location.long }}
+                  zoom={15}
+                  markers={[
+                    {
+                      position: { lat: garage.location.lat, lng: garage.location.long },
+                      title: garage.name,
+                    }
+                  ]}
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-100 rounded-2xl flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <MapPin className="h-8 w-8 mx-auto mb-2" />
+                    <p className="text-sm">Location not available</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -288,7 +311,13 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
                 <h3 className="font-bold text-lg text-gray-900 mb-1">{relatedGarage.name}</h3>
                 <div className="flex items-center text-sm text-gray-500 mb-2">
                   <MapPin className="h-4 w-4 mr-1" />
-                  {relatedGarage.address || 'Location not specified'}
+                  {relatedGarage.location?.addressLines ? (
+                    relatedGarage.location.addressLines
+                      .filter(line => line.trim())
+                      .join(', ') || 'Location not specified'
+                  ) : (
+                    relatedGarage.address || 'Location not specified'
+                  )}
                 </div>
                 {/* Rating in card (temporarily disabled)
                 <div className="flex items-center mb-2">
@@ -309,7 +338,15 @@ export default function GarageInfoPage({ params }: GaragePageProps) {
                   )}
                 </div>
                 <div className="text-sm text-gray-700 mb-2">
-                  <span className="font-medium">Address:</span> {relatedGarage.address || 'Address not available'}
+                  <span className="font-medium">Address:</span> {
+                    relatedGarage.location?.addressLines ? (
+                      relatedGarage.location.addressLines
+                        .filter(line => line.trim())
+                        .join(', ') || 'Address not available'
+                    ) : (
+                      relatedGarage.address || 'Address not available'
+                    )
+                  }
                 </div>
                 <div className="text-sm text-gray-700 mb-2">
                   <span className="font-medium">Phone:</span> {relatedGarage.phone || 'Phone not available'}

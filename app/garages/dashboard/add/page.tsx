@@ -26,6 +26,7 @@ import {
   getGarageById 
 } from "@/lib/garage";
 import { type Garage, AVAILABLE_SERVICES } from "@/lib/types/garage";
+import { PostcodeLocationInput, LocationInfo } from '@/components/ui/PostcodeLocationInput';
 
 export default function AddGaragePage() {
   const router = useRouter();
@@ -46,6 +47,11 @@ export default function AddGaragePage() {
     price: "£0.00",
     paymentMethods: [],
     socialMedia: {},
+    location: {
+      addressLines: ["", "", "", ""],
+      lat: 0,
+      long: 0
+    },
     openingHours: {
       weekdays: { start: "", end: "" },
       saturday: { start: "", end: "" },
@@ -65,6 +71,7 @@ export default function AddGaragePage() {
   const [saving, setSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false); // Add submission guard
   const [manualSubmitAttempted, setManualSubmitAttempted] = useState(false); // Track manual submission attempts
+  const [isPostcodeValid, setIsPostcodeValid] = useState(false); // Track postcode validation state
 
   // Load garage data for editing
   useEffect(() => {
@@ -89,6 +96,24 @@ export default function AddGaragePage() {
             );
             
             setForm(cleanGarageData);
+            
+            // Handle backward compatibility for address format
+            if (garage.address && !garage.location) {
+              // Convert old address format to new location format
+              setForm(f => ({
+                ...f,
+                location: {
+                  addressLines: [garage.address || "", "", "", ""],
+                  lat: 0,
+                  long: 0
+                }
+              }));
+              // Reset postcode validation since we don't have coordinates
+              setIsPostcodeValid(false);
+            } else if (garage.location && garage.location.addressLines[3] && garage.location.lat && garage.location.long) {
+              // If we have a complete location with coordinates, consider postcode valid
+              setIsPostcodeValid(true);
+            }
             
             // Handle existing images separately - store them for display and validation
             if (garage.image) {
@@ -255,8 +280,22 @@ export default function AddGaragePage() {
       return;
     }
 
-    if (!form.name || !form.address || !form.phone || !form.email || !form.services?.length) {
+    // Check required basic fields and location
+    if (!form.name || !form.phone || !form.email || !form.services?.length) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Check location validation
+    if (!form.location || 
+        !form.location.addressLines[0] || 
+        !form.location.addressLines[1] || 
+        !form.location.addressLines[2] || 
+        !form.location.addressLines[3] ||
+        !isPostcodeValid ||
+        form.location.lat === 0 || 
+        form.location.long === 0) {
+      toast.error('Please provide a complete address with valid postcode and coordinates');
       return;
     }
 
@@ -363,7 +402,14 @@ export default function AddGaragePage() {
         const hasCoverImage = isEditing ? (form.coverImage || coverImageFile) : coverImageFile;
         return form.name && form.description && hasMainImage && hasCoverImage;
       case 1: // Contact
-        return form.address && form.phone && form.email;
+        // Check that all address lines are filled and postcode is valid, plus contact info
+        const hasValidLocation = form.location && 
+          form.location.addressLines[0] && 
+          form.location.addressLines[1] && 
+          form.location.addressLines[2] && 
+          form.location.addressLines[3] && 
+          isPostcodeValid; // Use the postcode validation state instead of coordinates
+        return hasValidLocation && form.phone && form.email;
       case 2: // Services
         return (form.services || []).length > 0;
       case 3: // Hours
@@ -394,7 +440,12 @@ export default function AddGaragePage() {
       description: !!form.description,
       hasMainImage: !!(isEditing ? (form.image || imageFile) : imageFile),
       hasCoverImage: !!(isEditing ? (form.coverImage || coverImageFile) : coverImageFile),
-      address: !!form.address,
+      addressLine1: !!form.location?.addressLines[0],
+      addressLine2: !!form.location?.addressLines[1],
+      addressLine3: !!form.location?.addressLines[2],
+      postcode: !!form.location?.addressLines[3],
+      isPostcodeValid: isPostcodeValid,
+      coordinates: !!(form.location?.lat && form.location?.long),
       phone: !!form.phone,
       email: !!form.email,
       services: (form.services || []).length,
@@ -677,17 +728,102 @@ export default function AddGaragePage() {
                     <p className="text-gray-600">Provide your contact information and location details</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700">Full Address *</label>
-                    <textarea 
-                      name="address" 
-                      value={form.address || ""} 
-                      onChange={handleChange} 
-                      placeholder="Street address, city, postcode, country"
-                      rows={3}
-                      required
-                      className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition-all duration-200 resize-none"
-                    />
+                  {/* Address Section */}
+                  <div className="space-y-6">
+                    <h4 className="text-lg font-semibold text-gray-800">Address Information *</h4>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-700">Address Line 1 *</label>
+                        <Input 
+                          value={form.location?.addressLines[0] || ""} 
+                          onChange={(e) => {
+                            const newAddressLines: [string, string, string, string] = [
+                              e.target.value,
+                              form.location?.addressLines[1] || "",
+                              form.location?.addressLines[2] || "",
+                              form.location?.addressLines[3] || ""
+                            ];
+                            setForm(f => ({
+                              ...f,
+                              location: {
+                                ...f.location,
+                                addressLines: newAddressLines,
+                                lat: f.location?.lat || 0,
+                                long: f.location?.long || 0
+                              }
+                            }));
+                          }}
+                          placeholder="Street address"
+                          required
+                          className="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-gray-50 focus:bg-white transition-all duration-200"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-700">Address Line 2 *</label>
+                        <Input 
+                          value={form.location?.addressLines[1] || ""} 
+                          onChange={(e) => {
+                            const newAddressLines: [string, string, string, string] = [
+                              form.location?.addressLines[0] || "",
+                              e.target.value,
+                              form.location?.addressLines[2] || "",
+                              form.location?.addressLines[3] || ""
+                            ];
+                            setForm(f => ({
+                              ...f,
+                              location: {
+                                ...f.location,
+                                addressLines: newAddressLines,
+                                lat: f.location?.lat || 0,
+                                long: f.location?.long || 0
+                              }
+                            }));
+                          }}
+                          placeholder="District/Area"
+                          required
+                          className="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-gray-50 focus:bg-white transition-all duration-200"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-700">Address Line 3 *</label>
+                        <Input 
+                          value={form.location?.addressLines[2] || ""} 
+                          onChange={(e) => {
+                            const newAddressLines: [string, string, string, string] = [
+                              form.location?.addressLines[0] || "",
+                              form.location?.addressLines[1] || "",
+                              e.target.value,
+                              form.location?.addressLines[3] || ""
+                            ];
+                            setForm(f => ({
+                              ...f,
+                              location: {
+                                ...f.location,
+                                addressLines: newAddressLines,
+                                lat: f.location?.lat || 0,
+                                long: f.location?.long || 0
+                              }
+                            }));
+                          }}
+                          placeholder="City/Town"
+                          required
+                          className="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-gray-50 focus:bg-white transition-all duration-200"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <PostcodeLocationInput
+                          value={form.location || { addressLines: ["", "", "", ""], lat: 0, long: 0 }}
+                          onChange={(location) => setForm(f => ({ ...f, location }))}
+                          onValidationChange={(isValid) => setIsPostcodeValid(isValid)}
+                          label="Postcode *"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

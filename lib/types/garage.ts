@@ -12,6 +12,11 @@ export interface Garage {
   description: string;
   services: string[];
   rating: number;
+  location?: {
+    addressLines: [string, string, string, string]; // 4th element for postcode
+    lat: number;
+    long: number;
+  };
   openingHours: {
     weekdays: { start: string; end: string };
     saturday: { start: string; end: string };
@@ -36,11 +41,9 @@ export interface GarageDocument {
   name: string;
   description: string;
   location: {
-    address: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    coordinates?: { lat: number; lng: number };
+    addressLines: [string, string, string, string]; // 4th element for postcode
+    lat: number;
+    long: number;
   };
   contact: {
     phone: string;
