@@ -31,7 +31,6 @@ import {
   X,
   AlertCircle
 } from "lucide-react";
-import { PostcodeLocationInput, LocationInfo } from '@/components/ui/PostcodeLocationInput';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -115,12 +114,6 @@ export function ProfilePage() {
   const [vehicles, setVehicles] = useState<DealerVehicle[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
-  const [editedLocation, setEditedLocation] = useState<LocationInfo>({
-    addressLines: ['', '', '', ''],
-    lat: 0,
-    long: 0
-  });
-  const [isPostcodeValid, setIsPostcodeValid] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { user, getUserProfile } = useAuth();
   const router = useRouter();
@@ -164,20 +157,6 @@ export function ProfilePage() {
     setIsEditing(true);
     setEditedProfile({ ...userProfile! });
     
-    // Initialize editedLocation with current location or default values
-    if (userProfile?.location) {
-      setEditedLocation({ ...userProfile.location });
-    } else {
-      setEditedLocation({
-        addressLines: ['', '', '', ''],
-        lat: 0,
-        long: 0
-      });
-    }
-    
-    // Reset postcode validation state
-    setIsPostcodeValid(true);
-    
     // Ensure the profile tab is active first
     setActiveTab("profile");
     
@@ -196,19 +175,6 @@ export function ProfilePage() {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditedProfile({ ...userProfile! });
-    // Reset location to original values
-    if (userProfile?.location) {
-      setEditedLocation({ ...userProfile.location });
-    } else {
-      setEditedLocation({
-        addressLines: ['', '', '', ''],
-        lat: 0,
-        long: 0
-      });
-    }
-    
-    // Reset postcode validation state
-    setIsPostcodeValid(true);
   };
 
   const handleSaveChanges = async () => {
@@ -224,43 +190,9 @@ export function ProfilePage() {
       return;
     }
 
-    // Validate location if any address fields are filled
-    const hasAddressData = editedLocation.addressLines.some(line => line.trim() !== '');
-    if (hasAddressData) {
-      // Check required address fields: addressLine1, city, and postcode
-      if (!editedLocation.addressLines[0]?.trim() || !editedLocation.addressLines[2]?.trim() || !editedLocation.addressLines[3]?.trim()) {
-        toast({
-          title: "Validation Error",
-          description: "Address Line 1, City/Town, and Postcode are required when providing address information.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Check if coordinates were fetched (valid postcode) and postcode validation status
-      if (editedLocation.lat === 0 && editedLocation.long === 0) {
-        toast({
-          title: "Validation Error",
-          description: "Please enter a valid UK postcode.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Additional check for postcode validation status
-      if (!isPostcodeValid && editedLocation.addressLines[3]?.trim()) {
-        toast({
-          title: "Validation Error",
-          description: "Please enter a valid UK postcode.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     setIsSaving(true);
     try {
-      // Update user profile through the API
+      // Update user profile through the API (excluding location since it's immutable)
       const updateProfileResponse = await fetch('/api/auth/update-profile', {
         method: 'POST',
         headers: {
@@ -272,7 +204,7 @@ export function ProfilePage() {
           lastName: editedProfile.lastName,
           country: editedProfile.country,
           role: editedProfile.role,
-          location: hasAddressData ? editedLocation : null, // Include location data
+          // location is excluded since it's now immutable
         }),
       });
 
@@ -303,11 +235,7 @@ export function ProfilePage() {
       }
 
       // Update local state
-      const updatedProfile = {
-        ...editedProfile,
-        location: hasAddressData ? editedLocation : undefined
-      };
-      setUserProfile(updatedProfile);
+      setUserProfile(editedProfile);
       setIsEditing(false);
       
       toast({
@@ -618,78 +546,8 @@ export function ProfilePage() {
                         <p className="text-sm text-gray-500">Country cannot be changed after registration.</p>
                       </div>
                       
-                      {/* Address Information */}
-                      {isEditing && (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label className="text-base font-medium text-gray-900">Address Information</Label>
-                            <p className="text-sm text-gray-500">Fill in your address details (optional)</p>
-                          </div>
-                          
-                          {/* Address Line 1 */}
-                          <div className="space-y-2">
-                            <Label htmlFor="address-line-1" className="text-sm font-medium text-gray-700">
-                              Address Line 1
-                            </Label>
-                            <Input
-                              id="address-line-1"
-                              value={editedLocation.addressLines[0]}
-                              onChange={(e) => setEditedLocation(prev => ({
-                                ...prev,
-                                addressLines: [e.target.value, prev.addressLines[1], prev.addressLines[2], prev.addressLines[3]] as [string, string, string, string]
-                              }))}
-                              placeholder="Street address"
-                              className="text-gray-900"
-                            />
-                          </div>
-
-                          {/* Address Line 2 */}
-                          <div className="space-y-2">
-                            <Label htmlFor="address-line-2" className="text-sm font-medium text-gray-700">
-                              Address Line 2 (Optional)
-                            </Label>
-                            <Input
-                              id="address-line-2"
-                              value={editedLocation.addressLines[1]}
-                              onChange={(e) => setEditedLocation(prev => ({
-                                ...prev,
-                                addressLines: [prev.addressLines[0], e.target.value, prev.addressLines[2], prev.addressLines[3]] as [string, string, string, string]
-                              }))}
-                              placeholder="Apartment, suite, etc."
-                              className="text-gray-900"
-                            />
-                          </div>
-
-                          {/* City/Town */}
-                          <div className="space-y-2">
-                            <Label htmlFor="city" className="text-sm font-medium text-gray-700">
-                              City/Town
-                            </Label>
-                            <Input
-                              id="city"
-                              value={editedLocation.addressLines[2]}
-                              onChange={(e) => setEditedLocation(prev => ({
-                                ...prev,
-                                addressLines: [prev.addressLines[0], prev.addressLines[1], e.target.value, prev.addressLines[3]] as [string, string, string, string]
-                              }))}
-                              placeholder="City or town"
-                              className="text-gray-900"
-                            />
-                          </div>
-
-                          {/* Postcode with validation */}
-                          <PostcodeLocationInput
-                            value={editedLocation}
-                            onChange={setEditedLocation}
-                            onValidationChange={setIsPostcodeValid}
-                            label="Postcode"
-                            required={false}
-                          />
-                        </div>
-                      )}
-                      
-                      {/* Display current address when not editing */}
-                      {!isEditing && userProfile.location && userProfile.location.addressLines.some(line => line.trim() !== '') && (
+                      {/* Display address (always read-only) */}
+                      {userProfile.location && userProfile.location.addressLines.some(line => line.trim() !== '') && (
                         <div className="space-y-2">
                           <Label className="flex items-center gap-2 text-base font-medium text-gray-900">
                             <MapPin className="h-4 w-4" />
@@ -711,6 +569,7 @@ export function ProfilePage() {
                               )}
                             </div>
                           </div>
+                          <p className="text-sm text-gray-500">Address cannot be changed after registration.</p>
                         </div>
                       )}
                       <div className="space-y-2">
