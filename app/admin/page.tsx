@@ -453,7 +453,7 @@ export default function AdminPanel() {
                         <TableCell>{dealer.businessName}</TableCell>
                         <TableCell>{dealer.contact.email}</TableCell>
                         <TableCell>{dealer.contact.phone}</TableCell>
-                        <TableCell>{dealer.location.addressLines.join(', ')}</TableCell>
+                        <TableCell>{dealer.location.addressLines.filter(line => line && line.trim()).join(', ')}</TableCell>
                         <TableCell>{dealer.businessHours.mondayToFriday}</TableCell>
                         <TableCell className="text-right">
                           <Button

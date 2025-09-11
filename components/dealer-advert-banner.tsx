@@ -240,7 +240,7 @@ const CarRentalBannerMinimal: React.FC<CarRentalBannerProps> = ({
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     <span className="text-gray-900 dark:text-white text-sm truncate">
-                      {banner.location.addressLines.join(", ")}
+                      {banner.location.addressLines.filter(line => line && line.trim()).join(", ")}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

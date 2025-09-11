@@ -117,7 +117,7 @@ export default function BrowseVehiclesPage() {
               </span>
             </div>
             <div className="text-sm text-gray-600 space-y-1 mb-4">
-              <p className="truncate">{location.addressLines.join(", ")}</p>
+              <p className="truncate">{location.addressLines.filter(line => line && line.trim()).join(", ")}</p>
               <p className="flex items-center">
                 <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {contact.phone || "Not available"}
               </p>

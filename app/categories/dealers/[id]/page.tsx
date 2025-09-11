@@ -72,7 +72,7 @@ function DealerCard({ id, businessName, dealerBanner, dealerBannerUrl, contact, 
             </span>
           </div>
           <div className="text-sm text-gray-600 space-y-1 mb-4">
-            <p className="truncate">{location?.addressLines?.join(", ")}</p>
+            <p className="truncate">{location?.addressLines?.filter(line => line && line.trim()).join(", ")}</p>
             <p className="flex items-center">
               <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {contact?.phone}
             </p>
@@ -315,7 +315,7 @@ export default function DealerInfoPage() {
           <h1 className="text-3xl font-bold text-blue-900 mb-2">{dealer.businessName}</h1>
           <div className="flex items-center text-blue-700 mb-4">
             <MapPin className="h-5 w-5 mr-2" aria-label="Location" />
-            {dealer.location.addressLines.join(", ")}
+            {dealer.location.addressLines.filter(line => line && line.trim()).join(", ")}
           </div>
           {dealer.rating !== undefined && (
             <div className="flex items-center mb-4" aria-label={`Rating: ${dealer.rating} out of 5`}>

@@ -65,7 +65,7 @@ function DealerCard({ id, businessName, dealerBannerUrl, contact, location }: De
             </span>
           </div>
           <div className="text-sm text-gray-600 space-y-1 mb-4">
-            <p className="truncate">{location.addressLines.join(", ")}</p>
+            <p className="truncate">{location.addressLines.filter(line => line && line.trim()).join(", ")}</p>
             <p className="flex items-center">
               <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" /> {contact.phone}
             </p>
@@ -86,7 +86,7 @@ const CACHE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
 // Add this function to convert address to coordinates
 const getCoordinatesFromAddress = async (addressLines: string[]): Promise<{ lat: number; lng: number }> => {
   try {
-    const address = addressLines.join(", ");
+    const address = addressLines.filter(line => line && line.trim()).join(", ");
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
         address
@@ -464,7 +464,7 @@ export default function SearchDealerPage() {
                           <div className="space-y-2 text-sm text-gray-600">
                             <p className="flex items-center">
                               <MapPin className="h-4 w-4 mr-2 text-blue-500" />
-                              {dealer.location.addressLines.join(', ')}
+                              {dealer.location.addressLines.filter(line => line && line.trim()).join(', ')}
                             </p>
                             <p className="flex items-center">
                               <Phone className="h-4 w-4 mr-2 text-blue-500" />
