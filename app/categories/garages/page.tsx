@@ -519,17 +519,28 @@ export default function SearchGaragesPage() {
         <div className="sticky top-0 mb-12">
           <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar - show above results on mobile, left on desktop */}
-          <div className={`lg:w-1/4 ${isMobile ? (showMobileFilters ? "block" : "hidden") : "block"}`}>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 sticky top-4 flex flex-col">
-              {/* Map Preview - Functional Garage Map */}
-              <div className="mb-6">
-                <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200">
+          <div className={`lg:w-1/4 ${isMobile ? (showMobileFilters ? "block" : "hidden") : "block"} space-y-6`}>
+            {/* Map Section - Positioned above filters in left column (hidden on mobile) */}
+            {!isMobile && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-blue-600" />
+                    Garage Locations
+                  </h2>
+                  {garageMarkers.length > 0 && (
+                    <span className="text-blue-600 cursor-pointer hover:underline text-sm" onClick={() => setShowMobileMap(!showMobileMap)}>
+                      Full
+                    </span>
+                  )}
+                </div>
+                <div className="w-full h-48 rounded-lg overflow-hidden border border-gray-200">
                   {garageMarkers.length > 0 ? (
                     <GoogleMapComponent 
                       center={calculateMapCenter()}
                       zoom={getOptimalZoom()}
                       markers={garageMarkers}
-                      height="160px"
+                      height="192px"
                       width="100%"
                     />
                   ) : (
@@ -546,16 +557,18 @@ export default function SearchGaragesPage() {
                     </div>
                   )}
                 </div>
-                <div className="mt-2 text-xs text-gray-500 flex items-center justify-between">
+                <div className="mt-3 text-xs text-gray-500 flex items-center justify-between">
                   <span>Showing {garageMarkers.length} garage locations</span>
-                  {garageMarkers.length > 0 && (
-                    <span className="text-blue-600 cursor-pointer hover:underline" onClick={() => setShowMobileMap(!showMobileMap)}>
-                      {isMobile ? (showMobileMap ? 'Hide Map' : 'Full Map') : 'View Full Map'}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span>Garages</span>
+                  </div>
                 </div>
               </div>
+            )}
 
+            {/* Filters Section - Below map in left column */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 sticky top-4 flex flex-col">
               {/* Filter header */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
@@ -602,37 +615,86 @@ export default function SearchGaragesPage() {
 
           {/* Right Content - Results */}
           <div className="lg:w-3/4 w-full">
-            {/* Feature Bar - now above results header */}
-            <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 px-2 sm:px-4 py-4 sm:py-6 bg-white/70 backdrop-blur rounded-2xl shadow mb-6">
-              <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <PoundSterling className="h-8 w-8 text-blue-600" />
-                <div>
-                  <div className="font-bold text-gray-900">Up to 47% cheaper</div>
-                  <div className="text-xs text-gray-500">Versus franchise garages</div>
+            {/* Feature Bar - now above results header (hidden on mobile) */}
+            {!isMobile && (
+              <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 px-2 sm:px-4 py-4 sm:py-6 bg-white/70 backdrop-blur rounded-2xl shadow mb-6">
+                <div className="flex items-center gap-3 flex-1 min-w-[180px]">
+                  <PoundSterling className="h-8 w-8 text-blue-600" />
+                  <div>
+                    <div className="font-bold text-gray-900">Up to 47% cheaper</div>
+                    <div className="text-xs text-gray-500">Versus franchise garages</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 flex-1 min-w-[180px]">
+                  <CheckCircle className="h-8 w-8 text-blue-600" />
+                  <div>
+                    <div className="font-bold text-gray-900">Vetted mechanics</div>
+                    <div className="text-xs text-gray-500">Only qualified professionals</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 flex-1 min-w-[180px]">
+                  <Shield className="h-8 w-8 text-blue-600" />
+                  <div>
+                    <div className="font-bold text-gray-900">Quality guarantee</div>
+                    <div className="text-xs text-gray-500">12-month warranty on parts</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 flex-1 min-w-[180px]">
+                  <Timer className="h-8 w-8 text-blue-600" />
+                  <div>
+                    <div className="font-bold text-gray-900">Same day service</div>
+                    <div className="text-xs text-gray-500">Quick turnaround time</div>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <CheckCircle className="h-8 w-8 text-blue-600" />
-                <div>
-                  <div className="font-bold text-gray-900">Vetted mechanics</div>
-                  <div className="text-xs text-gray-500">Only qualified professionals</div>
+            )}
+
+            {/* Mobile Map Section - replaces feature bar on mobile */}
+            {isMobile && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-blue-600" />
+                    Garage Locations
+                  </h2>
+                  {garageMarkers.length > 0 && (
+                    <span className="text-blue-600 cursor-pointer hover:underline text-sm" onClick={() => setShowMobileMap(!showMobileMap)}>
+                      Full Map
+                    </span>
+                  )}
+                </div>
+                <div className="w-full h-48 rounded-lg overflow-hidden border border-gray-200">
+                  {garageMarkers.length > 0 ? (
+                    <GoogleMapComponent 
+                      center={calculateMapCenter()}
+                      zoom={getOptimalZoom()}
+                      markers={garageMarkers}
+                      height="192px"
+                      width="100%"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                      <div className="text-center text-gray-500">
+                        <MapPin className="h-8 w-8 mx-auto mb-2" />
+                        <p className="text-sm">No garage locations available</p>
+                        {process.env.NODE_ENV === 'development' && (
+                          <p className="text-xs mt-1">
+                            {filteredGarages.length > 0 ? 'Garages loaded but no valid coordinates' : 'No garages loaded'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3 text-xs text-gray-500 flex items-center justify-between">
+                  <span>Showing {garageMarkers.length} garage locations</span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span>Garages</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <Shield className="h-8 w-8 text-blue-600" />
-                <div>
-                  <div className="font-bold text-gray-900">Quality guarantee</div>
-                  <div className="text-xs text-gray-500">12-month warranty on parts</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                <Timer className="h-8 w-8 text-blue-600" />
-                <div>
-                  <div className="font-bold text-gray-900">Same day service</div>
-                  <div className="text-xs text-gray-500">Quick turnaround time</div>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Results Header */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-3 md:gap-4">
@@ -972,6 +1034,40 @@ export default function SearchGaragesPage() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Feature Bar - moved to bottom for mobile */}
+      {isMobile && (
+        <div className="w-full flex flex-col items-center gap-4 px-4 py-6 bg-white shadow-lg border-t border-gray-200">
+          <div className="flex items-center gap-3">
+            <PoundSterling className="h-8 w-8 text-blue-600" />
+            <div className="text-center">
+              <div className="font-bold text-gray-900">Up to 47% cheaper</div>
+              <div className="text-xs text-gray-500">Versus franchise garages</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <CheckCircle className="h-8 w-8 text-blue-600" />
+            <div className="text-center">
+              <div className="font-bold text-gray-900">Vetted mechanics</div>
+              <div className="text-xs text-gray-500">Only qualified professionals</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Shield className="h-8 w-8 text-blue-600" />
+            <div className="text-center">
+              <div className="font-bold text-gray-900">Quality guarantee</div>
+              <div className="text-xs text-gray-500">12-month warranty on parts</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Timer className="h-8 w-8 text-blue-600" />
+            <div className="text-center">
+              <div className="font-bold text-gray-900">Same day service</div>
+              <div className="text-xs text-gray-500">Quick turnaround time</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <Footer />
