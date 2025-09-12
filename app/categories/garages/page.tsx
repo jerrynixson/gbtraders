@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, MapPin, Filter, Grid, List, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield, Lock, CheckCircle, Timer, X } from "lucide-react"
+import { MapPin, Filter, Grid, List, Clock, Phone, Globe, Mail, Facebook, Twitter, Instagram, ChevronDown, ChevronUp, PoundSterling, Settings, Shield, Lock, CheckCircle, Timer, X } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
@@ -98,14 +98,6 @@ export default function SearchGaragesPage() {
       )
     }
 
-    // Apply location filter (from top search form)
-    if (locationFilter.trim()) {
-      const locationLower = locationFilter.toLowerCase()
-      filtered = filtered.filter(garage =>
-        garage.address.toLowerCase().includes(locationLower)
-      )
-    }
-
     // Apply category filter (from sidebar)
     if (selectedCategory !== "All Services") {
       filtered = filtered.filter(garage => 
@@ -130,7 +122,7 @@ export default function SearchGaragesPage() {
     filtered = applySorting(filtered, sortBy)
 
     setFilteredGarages(filtered)
-  }, [garages, debouncedSearchTerm, selectedService, locationFilter, selectedCategory, selectedServices, sortBy])
+  }, [garages, debouncedSearchTerm, selectedService, selectedCategory, selectedServices, sortBy])
 
   // Sorting logic
   const applySorting = (garageList: Garage[], sortOption: string) => {
@@ -173,13 +165,6 @@ export default function SearchGaragesPage() {
   }
 
   // Remove old search effects - now using client-side filtering above
-
-  // Handle search form submission - now just triggers client-side filtering
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    // Client-side filtering will automatically apply via useEffect dependencies
-    // No need for server calls since all filtering is now client-side
-  }
 
   // Use AVAILABLE_SERVICES from the imported types
   const allServices = AVAILABLE_SERVICES
@@ -394,13 +379,13 @@ export default function SearchGaragesPage() {
       <div className="flex justify-center items-center py-4 mb-2">
         <div className="w-full max-w-4xl flex flex-col md:flex-row rounded-none md:rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-blue-200 relative">
           <div className="hidden md:block md:w-2 md:h-full bg-gradient-to-b from-blue-400 to-blue-700 md:rounded-l-3xl md:rounded-t-none"></div>
-          <form className="flex-1 flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4 p-4" onSubmit={handleSearch}>
-            {/* Garage Name Field */}
-            <div className="flex-1 min-w-[140px]">
-              <label htmlFor="garage-name" className="block text-xs font-semibold text-gray-700 mb-1 ml-1">Garage Name</label>
+          <form className="flex-1 flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4 p-4">
+            {/* Combined Search Field */}
+            <div className="flex-1 min-w-[240px]">
+              <label htmlFor="search-input" className="block text-xs font-semibold text-gray-700 mb-1 ml-1">Search Garages</label>
               <Input
-                id="garage-name"
-                placeholder="Search garages..."
+                id="search-input"
+                placeholder="Search by garage name or location..."
                 className="w-full h-12 rounded-full bg-white/80 border border-blue-200 px-4 text-base"
                 type="text"
                 autoComplete="off"
@@ -429,28 +414,6 @@ export default function SearchGaragesPage() {
                 ))}
               </select>
             </div>
-            {/* Location Field */}
-            <div className="flex-1 min-w-[140px]">
-              <label htmlFor="location" className="block text-xs font-semibold text-gray-700 mb-1 ml-1">Location</label>
-              <Input
-                id="location"
-                placeholder="City or postcode"
-                className="w-full h-12 rounded-full bg-white/80 border border-blue-200 px-4 text-base"
-                type="text"
-                autoComplete="off"
-                value={locationFilter}
-                onChange={(e) => setLocationFilter(e.target.value)}
-              />
-            </div>
-            {/* Search Button */}
-            <Button
-              type="submit"
-              className="rounded-full bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold px-8 h-12 shadow-lg hover:scale-105 transition-transform duration-200 w-full md:w-auto"
-              disabled={loading}
-            >
-              <Search className="mr-2 h-5 w-5" />
-              {loading ? 'Searching...' : 'Search'}
-            </Button>
           </form>
         </div>
       </div>

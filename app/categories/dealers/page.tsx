@@ -287,7 +287,7 @@ export default function SearchDealerPage() {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 group-focus-within:text-blue-600 transition-colors duration-200 h-5 w-5" />
                 <Input
                   id="dealer-search"
-                  placeholder="Search by dealer name, location, or services..."
+                  placeholder="Search by dealer name or location..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 pr-12 py-3 rounded-full bg-white/80 border border-blue-200 shadow focus:ring-2 focus:ring-blue-400 text-blue-900 placeholder-blue-400 h-12 text-base"
