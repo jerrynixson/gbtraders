@@ -970,35 +970,37 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Token Availability Alert */}
-      {loading ? (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Checking your plan and token availability...</AlertDescription>
-        </Alert>
-      ) : !canCreateNewListing ? (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertTitle className="text-red-800">Cannot Create Listing</AlertTitle>
-          <AlertDescription className="text-red-700">
-            {tokenCheckError}
-            <Button
-              type="button"
-              variant="link"
-              className="p-0 h-auto ml-2 text-red-600 underline"
-              onClick={() => router.push('/payment-plans')}
-            >
-              Upgrade Plan
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <Alert className="border-green-200 bg-green-50">
-          <AlertCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-700">
-            ✓ You can create new listings. This listing will use 1 token when activated.
-          </AlertDescription>
-        </Alert>
+      {/* Token Availability Alert - Only show in Add mode */}
+      {!isEditMode && (
+        loading ? (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>Checking your plan and token availability...</AlertDescription>
+          </Alert>
+        ) : !canCreateNewListing ? (
+          <Alert className="border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertTitle className="text-red-800">Cannot Create Listing</AlertTitle>
+            <AlertDescription className="text-red-700">
+              {tokenCheckError}
+              <Button
+                type="button"
+                variant="link"
+                className="p-0 h-auto ml-2 text-red-600 underline"
+                onClick={() => router.push('/payment-plans')}
+              >
+                Upgrade Plan
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert className="border-green-200 bg-green-50">
+            <AlertCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-700">
+              ✓ You can create new listings. This listing will use 1 token when activated.
+            </AlertDescription>
+          </Alert>
+        )
       )}
 
       {/* VIN Lookup Section */}
