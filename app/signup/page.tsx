@@ -1061,6 +1061,46 @@ const SignUpPage: React.FC = () => {
                 <ArrowRight size={18} className="ml-2 opacity-70 group-hover:translate-x-1 transition-transform" />
               </button>
 
+              {/* Divider for social options */}
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">Or sign up with</span>
+                  </div>
+                </div>
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <div className="col-span-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // TODO: Implement Google sign-up
+                        console.log('Google sign-up clicked');
+                      }}
+                      className="w-full p-3 flex justify-center items-center bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    >
+                      <img className="h-5 w-5" src="/google-logo.svg" alt="Google logo" />
+                      <span className="ml-2 text-sm font-medium text-gray-700">Google</span>
+                    </button>
+                  </div>
+                  <div className="col-span-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // TODO: Implement Apple sign-up
+                        console.log('Apple sign-up clicked');
+                      }}
+                      className="w-full p-3 flex justify-center items-center bg-black border border-gray-200 rounded-lg shadow-sm hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    >
+                      <img className="h-5 w-5 filter brightness-0 invert" src="/apple-logo.svg" alt="Apple logo" />
+                      <span className="ml-2 text-sm font-medium text-white">Apple</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Terms and Sign In Link */}
               <div className="text-center mt-6">
                 <p className="text-xs text-gray-500">

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from "../../components/header";
 import { Footer } from "../../components/footer";
+import { PrivacyPolicyModal } from "../../components/privacy-policy-modal";
 import { Eye, EyeOff, ArrowRight, Mail, Lock } from "lucide-react";
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -26,6 +27,7 @@ const SignInPage: React.FC = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetStatus, setResetStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [resetMessage, setResetMessage] = useState('');
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
   useEffect(() => {
     // Check if this is an email sign-in link
@@ -315,7 +317,6 @@ const SignInPage: React.FC = () => {
               </button>
 
               {/* Divider for social options */}
-              {/*
               <div className="mt-6">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
@@ -329,7 +330,11 @@ const SignInPage: React.FC = () => {
                   <div className="col-span-1">
                     <button
                       type="button"
-                      className="w-full p-3 flex justify-center items-center bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50"
+                      onClick={() => {
+                        // TODO: Implement Google sign-in
+                        console.log('Google sign-in clicked');
+                      }}
+                      className="w-full p-3 flex justify-center items-center bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     >
                       <img className="h-5 w-5" src="/google-logo.svg" alt="Google logo" />
                       <span className="ml-2 text-sm font-medium text-gray-700">Google</span>
@@ -338,18 +343,41 @@ const SignInPage: React.FC = () => {
                   <div className="col-span-1">
                     <button
                       type="button"
-                      className="w-full p-3 flex justify-center items-center bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50"
+                      onClick={() => {
+                        // TODO: Implement Apple sign-in
+                        console.log('Apple sign-in clicked');
+                      }}
+                      className="w-full p-3 flex justify-center items-center bg-black border border-gray-200 rounded-lg shadow-sm hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     >
-                      <img className="h-5 w-5" src="/apple-logo.svg" alt="Apple logo" />
-                      <span className="ml-2 text-sm font-medium text-gray-700">Apple</span>
+                      <img className="h-5 w-5 filter brightness-0 invert" src="/apple-logo.svg" alt="Apple logo" />
+                      <span className="ml-2 text-sm font-medium text-white">Apple</span>
                     </button>
                   </div>
                 </div>
               </div>
-              */}
+
+              {/* Terms and Privacy Policy */}
+              <div className="text-center mt-6">
+                <p className="text-xs text-gray-500">
+                  By signing in, you agree to the{" "}
+                  <button
+                    onClick={() => setIsPrivacyModalOpen(true)}
+                    className="text-indigo-600 hover:underline"
+                  >
+                    Terms of Service
+                  </button>{" "}
+                  and{" "}
+                  <button
+                    onClick={() => setIsPrivacyModalOpen(true)}
+                    className="text-indigo-600 hover:underline"
+                  >
+                    Privacy Policy
+                  </button>.
+                </p>
+              </div>
 
               {/* Sign Up Link */}
-              <div className="text-center mt-6">
+              <div className="text-center mt-4">
                 <p className="text-sm text-gray-600">
                   Don't have an account?{" "}
                   <Link href={`/signup?redirectTo=${encodeURIComponent(redirectTo)}`} className="font-semibold text-indigo-600 hover:text-indigo-500">
@@ -363,6 +391,12 @@ const SignInPage: React.FC = () => {
       </main>
 
       <Footer />
+      
+      {/* Privacy Policy Modal */}
+      <PrivacyPolicyModal 
+        isOpen={isPrivacyModalOpen} 
+        onClose={() => setIsPrivacyModalOpen(false)} 
+      />
     </div>
   );
 };
