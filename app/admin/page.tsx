@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, AlertCircle, Building2, Car } from "lucide-react";
+import { Trash2, AlertCircle, Building2, Car, FileText } from "lucide-react";
 import { sortVehiclesLocally, type SortOptions } from "@/lib/search/searchServices";
 import { VehicleSummary } from "@/types/vehicles";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAdmin } from "@/hooks/useAdmin";
 import { AddAdminForm } from "@/components/admin/add-admin-form";
+import { ArticleManagement } from "@/components/admin/articles/article-management";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Vehicle {
@@ -282,9 +283,9 @@ export default function AdminPanel() {
         </CardContent>
       </Card>
 
-      {/* Tabs for Vehicles and Dealers */}
+      {/* Tabs for Vehicles, Dealers, and Articles */}
       <Tabs defaultValue="vehicles" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="vehicles" className="flex items-center gap-2">
             <Car className="h-4 w-4" />
             Vehicles
@@ -292,6 +293,10 @@ export default function AdminPanel() {
           <TabsTrigger value="dealers" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             Dealers
+          </TabsTrigger>
+          <TabsTrigger value="articles" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Articles
           </TabsTrigger>
         </TabsList>
 
@@ -472,6 +477,11 @@ export default function AdminPanel() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Articles Tab */}
+        <TabsContent value="articles">
+          <ArticleManagement />
         </TabsContent>
       </Tabs>
 
