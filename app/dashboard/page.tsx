@@ -841,7 +841,7 @@ export default function DealerDashboard() {
                     {/* Mobile: cards, Desktop: table */}
                     <div className="block sm:hidden space-y-4">
                       {offers.map((offer, idx) => {
-                        const vehicle = allVehicles.find(v => v.id === offer.id);
+                        const vehicle = allVehicles.find(v => v.id === (offer.vehicleId || offer.id));
                         return (
                           <Card key={offer.id + offer.email} className="p-4">
                             <div className="flex items-center gap-3 mb-2">
@@ -852,7 +852,7 @@ export default function DealerDashboard() {
                               />
                               <div>
                                 <div className="font-semibold text-gray-900">
-                                  {vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : offer.id}
+                                  {vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : (offer.vehicleId || offer.id)}
                                 </div>
                                 <div className="text-xs text-gray-500">Offer: <span className="font-bold text-blue-700">£{offer.offer}</span></div>
                               </div>
@@ -864,7 +864,7 @@ export default function DealerDashboard() {
                               size="sm"
                               variant="outline"
                               className="w-full"
-                              onClick={() => router.push(`/vehicle-info/${offer.id}`)}
+                              onClick={() => router.push(`/vehicle-info/${offer.vehicleId || offer.id}`)}
                             >
                               View
                             </Button>
@@ -886,7 +886,7 @@ export default function DealerDashboard() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
                           {offers.map((offer, idx) => {
-                            const vehicle = allVehicles.find(v => v.id === offer.id);
+                            const vehicle = allVehicles.find(v => v.id === (offer.vehicleId || offer.id));
                             return (
                               <tr
                                 key={offer.id + offer.email}
@@ -901,7 +901,7 @@ export default function DealerDashboard() {
                                   <span>
                                     {vehicle
                                       ? `${vehicle.make} ${vehicle.model} ${vehicle.year}`
-                                      : offer.id}
+                                      : (offer.vehicleId || offer.id)}
                                   </span>
                                 </td>
                                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
@@ -924,7 +924,7 @@ export default function DealerDashboard() {
                                     size="sm"
                                     variant="outline"
                                     onClick={() => {
-                                      router.push(`/vehicle-info/${offer.id}`);
+                                      router.push(`/vehicle-info/${offer.vehicleId || offer.id}`);
                                     }}
                                   >
                                     View

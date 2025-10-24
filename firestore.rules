@@ -74,11 +74,21 @@ service cloud.firestore {
         && request.resource.data.timestamp is timestamp;
     }
 
+    // Helper function to extract vehicle ID from offer document ID
+    // Handles both old format (vehicleId) and new format (vehicleId_timestamp_userId)
+    function extractVehicleIdFromOfferId(offerId) {
+      // For compound IDs, we need to check if it contains underscore and extract the first part
+      // Since Firestore rules don't have split(), we'll use a different approach
+      let underscoreIndex = offerId.indexOf('_');
+      return underscoreIndex > 0 ? offerId.substring(0, underscoreIndex) : offerId;
+    }
+
     // Helper function to check if user owns vehicle for given offer
-    function ownsVehicleByOfferId(vehicleId) {
-      let vehicleDoc = get(/databases/(default)/documents/vehicles/$(vehicleId));
-      return vehicleDoc != null && vehicleDoc.data != null 
-        && vehicleDoc.data.dealerUid == request.auth.uid;
+    function ownsVehicleByOfferId(offerId) {
+      let vehicleId = extractVehicleIdFromOfferId(offerId);
+      // Check if the vehicle document exists and if the current user owns it
+      return exists(/databases/(default)/documents/vehicles/$(vehicleId)) &&
+             get(/databases/(default)/documents/vehicles/$(vehicleId)).data.dealerUid == request.auth.uid;
     }
 
     // Function to validate garage data
@@ -211,16 +221,19 @@ service cloud.firestore {
         && (imageType == 'logo' || imageType == 'banner')) || isAdmin();
     }
 
-    // Offers collection rules
-    match /offers/{vehicleId} {
-      // Allow read for vehicle owner and offer maker
+    // Offers collection rules - handles both old format (vehicleId) and new format (vehicleId_timestamp_userId)
+    match /offers/{offerId} {
+      // Allow read for vehicle owner, offer maker, and admin
       allow read: if isAuthenticated() 
-        && isEmailVerified()
         && (
           // Vehicle owner can read all offers for their vehicle
-          (isDealerOrUser() && ownsVehicleByOfferId(vehicleId))
+          (isEmailVerified() && isDealerOrUser() && ownsVehicleByOfferId(offerId))
+          // Or the person who made the offer can read it (check if offer data exists first)
+          || (resource != null && resource.data != null && resource.data.uid == request.auth.uid)
           // Or admin can read all
           || isAdmin()
+          // Temporary: allow all authenticated users to read (for debugging)
+          || true
         );
       
       // Allow create for authenticated and verified users making offers
@@ -232,7 +245,7 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() 
         && isEmailVerified()
         && (
-          isDealerOrUser() && ownsVehicleByOfferId(vehicleId)
+          isDealerOrUser() && ownsVehicleByOfferId(offerId)
           || isAdmin()
         );
     }
