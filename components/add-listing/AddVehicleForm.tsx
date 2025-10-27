@@ -20,6 +20,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { getTokenErrorMessage } from "@/lib/utils/tokenUtils"
 import { imageCacheManager } from "@/lib/imageCache"
 import { ImageUploadSection } from "./ImageUploadSection"
+import { VehicleValuation } from "./VehicleValuation"
 import { getDealerProfile } from "@/lib/dealer/profile"
 
 // OneAuto API interfaces
@@ -1085,13 +1086,6 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Price</Label>
-            <Input type="number" value={formData.price} onChange={(e) => handleFormChange("price", e.target.value)} placeholder="Enter price" required className={formErrors.price ? "border-red-500" : ""} />
-            <div className="min-h-[16px]">
-              {formErrors.price && <p className="text-xs text-red-500">{formErrors.price}</p>}
-            </div>
-          </div>
-          <div className="space-y-1.5">
             <Label>Make</Label>
             <Input value={formData.make} onChange={(e) => handleFormChange("make", e.target.value)} placeholder="Vehicle make" required className={formErrors.make ? "border-red-500" : ""} />
             <div className="min-h-[16px]">
@@ -1141,6 +1135,26 @@ export default function AddVehicleForm({ vehicleId, isEditMode = false }: AddVeh
             </Select>
             <div className="min-h-[16px]">
               {formErrors.transmission && <p className="text-xs text-red-500">{formErrors.transmission}</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* Vehicle Valuation Section */}
+        <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+          <VehicleValuation
+            registrationNumber={formData.registrationNumber || registrationNumber}
+            mileage={formData.mileage}
+            onPriceEstimate={(price) => handleFormChange("price", price.toString())}
+          />
+        </div>
+
+        {/* Price Field */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mt-4">
+          <div className="space-y-1.5">
+            <Label>Price (Editable)</Label>
+            <Input type="number" value={formData.price} onChange={(e) => handleFormChange("price", e.target.value)} placeholder="Enter or adjust price" required className={formErrors.price ? "border-red-500" : ""} />
+            <div className="min-h-[16px]">
+              {formErrors.price && <p className="text-xs text-red-500">{formErrors.price}</p>}
             </div>
           </div>
         </div>

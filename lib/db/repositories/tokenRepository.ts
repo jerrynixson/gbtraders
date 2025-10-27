@@ -34,7 +34,7 @@ export interface UserPlanInfo {
   planStartDate?: Date;
   planEndDate?: Date;
   totalTokens: number;
-  usedTokens: number;
+  usedTokens: number; 
   purchaseHistory: PurchaseRecord[];
   lastPaymentStatus?: 'completed' | 'failed' | 'expired';
   lastPaymentDate?: Date;
