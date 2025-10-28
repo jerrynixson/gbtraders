@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Bell } from 'lucide-react';
 import { useNotifications } from './NotificationProvider';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
+import { Button } from '@/components/ui/button';
 
 interface NotificationBellProps {
   className?: string;
@@ -23,9 +24,11 @@ export function NotificationBell({ className = "" }: NotificationBellProps) {
 
   return (
     <div className={`relative ${className}`}>
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={handleToggle}
-        className="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg transition-colors"
+        className="relative"
         aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
       >
         <Bell className="h-6 w-6" />
@@ -36,7 +39,7 @@ export function NotificationBell({ className = "" }: NotificationBellProps) {
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
-      </button>
+      </Button>
 
       {/* Notification Dropdown */}
       {isOpen && (
