@@ -893,7 +893,11 @@ export default function DealerDashboard() {
                         const status = getOfferStatus(offer);
                         const isLoading = offerStatusLoading[offer.id];
                         return (
-                          <Card key={offer.id + offer.email} className="p-4">
+                          <Card 
+                            key={offer.id + offer.email} 
+                            className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => router.push(`/vehicle-info/${offer.vehicleId || offer.id}`)}
+                          >
                             <div className="flex items-center gap-3 mb-2">
                               <img
                                 src={vehicle?.image || vehicle?.images?.[0] || "/placeholder.jpg"}
@@ -914,37 +918,27 @@ export default function DealerDashboard() {
                             <div className="text-xs text-gray-500 mb-1">{offer.email} {offer.phone && <>| {offer.phone}</>}</div>
                             <div className="text-xs text-gray-500 mb-3">{offer.timestamp && offer.timestamp.toDate ? offer.timestamp.toDate().toLocaleString() : ""}</div>
                             
-                            <div className="flex gap-2">
-                              {status === 'pending' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    className="flex-1 bg-green-600 hover:bg-green-700"
-                                    onClick={() => handleAcceptOffer(offer.id)}
-                                    disabled={isLoading}
-                                  >
-                                    {isLoading ? "..." : "Accept"}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    className="flex-1"
-                                    onClick={() => handleDeclineOffer(offer.id)}
-                                    disabled={isLoading}
-                                  >
-                                    {isLoading ? "..." : "Decline"}
-                                  </Button>
-                                </>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className={status === 'pending' ? "flex-1" : "w-full"}
-                                onClick={() => router.push(`/vehicle-info/${offer.vehicleId || offer.id}`)}
-                              >
-                                View
-                              </Button>
-                            </div>
+                            {status === 'pending' && (
+                              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  size="sm"
+                                  className="flex-1 bg-green-600 hover:bg-green-700"
+                                  onClick={() => handleAcceptOffer(offer.id)}
+                                  disabled={isLoading}
+                                >
+                                  {isLoading ? "..." : "Accept"}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="flex-1"
+                                  onClick={() => handleDeclineOffer(offer.id)}
+                                  disabled={isLoading}
+                                >
+                                  {isLoading ? "..." : "Decline"}
+                                </Button>
+                              </div>
+                            )}
                           </Card>
                         );
                       })}
@@ -970,7 +964,8 @@ export default function DealerDashboard() {
                             return (
                               <tr
                                 key={offer.id + offer.email}
-                                className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                                className={`cursor-pointer hover:bg-blue-50 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
+                                onClick={() => router.push(`/vehicle-info/${offer.vehicleId || offer.id}`)}
                               >
                                 <td className="px-4 py-2 whitespace-nowrap flex items-center gap-2">
                                   <img
@@ -1003,37 +998,27 @@ export default function DealerDashboard() {
                                     : ""}
                                 </td>
                                 <td className="px-4 py-2 whitespace-nowrap">
-                                  <div className="flex gap-1 justify-center">
-                                    {status === 'pending' && (
-                                      <>
-                                        <Button
-                                          size="sm"
-                                          className="bg-green-600 hover:bg-green-700 text-xs px-2"
-                                          onClick={() => handleAcceptOffer(offer.id)}
-                                          disabled={isLoading}
-                                        >
-                                          {isLoading ? "..." : "Accept"}
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          className="text-xs px-2"
-                                          onClick={() => handleDeclineOffer(offer.id)}
-                                          disabled={isLoading}
-                                        >
-                                          {isLoading ? "..." : "Decline"}
-                                        </Button>
-                                      </>
-                                    )}
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-xs px-2"
-                                      onClick={() => router.push(`/vehicle-info/${offer.vehicleId || offer.id}`)}
-                                    >
-                                      View
-                                    </Button>
-                                  </div>
+                                  {status === 'pending' && (
+                                    <div className="flex gap-1 justify-center" onClick={(e) => e.stopPropagation()}>
+                                      <Button
+                                        size="sm"
+                                        className="bg-green-600 hover:bg-green-700 text-xs px-2"
+                                        onClick={() => handleAcceptOffer(offer.id)}
+                                        disabled={isLoading}
+                                      >
+                                        {isLoading ? "..." : "Accept"}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="text-xs px-2"
+                                        onClick={() => handleDeclineOffer(offer.id)}
+                                        disabled={isLoading}
+                                      >
+                                        {isLoading ? "..." : "Decline"}
+                                      </Button>
+                                    </div>
+                                  )}
                                 </td>
                               </tr>
                             );
