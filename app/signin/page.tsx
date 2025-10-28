@@ -361,6 +361,7 @@ const SignInPage: React.FC = () => {
                 <p className="text-xs text-gray-500">
                   By signing in, you agree to the{" "}
                   <button
+                    type="button"
                     onClick={() => setIsPrivacyModalOpen(true)}
                     className="text-indigo-600 hover:underline"
                   >
@@ -368,6 +369,7 @@ const SignInPage: React.FC = () => {
                   </button>{" "}
                   and{" "}
                   <button
+                    type="button"
                     onClick={() => setIsPrivacyModalOpen(true)}
                     className="text-indigo-600 hover:underline"
                   >
