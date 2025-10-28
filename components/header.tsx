@@ -135,7 +135,51 @@ export function Header() {
   return (
     <header className="border-b border-gray-200 py-1 lg:py-3 bg-white">
       <div className="container mx-auto px-4 my-0 lg:my-0">
-        <div className="flex items-center justify-between">
+        <div className="flex lg:hidden items-center justify-between">
+          {/* Logo - Mobile/Tablet */}
+          <Link href="/" className="flex items-center flex-shrink-0">
+            <div className="relative w-auto h-auto max-h-16 -mt-4">
+              <Image
+                src="/GBTrader_Logo.svg"
+                alt="GB Trader Logo"
+                width={1080}
+                height={1080}
+                className="w-auto max-h-24 object-contain"
+                priority
+                loading="eager"
+                quality={75}
+              />
+            </div>
+          </Link>
+
+          {/* User Controls - Mobile/Tablet */}
+          <div className="flex items-center space-x-4">
+            <Link href="/favourites">
+              <Button variant="ghost" size="icon">
+                <Heart className="h-6 w-6" />
+              </Button>
+            </Link>
+            {user && (
+              <>
+                <NotificationBell />
+                <Link href="/profile">
+                  <Button variant="ghost" size="icon">
+                    <UserCircle className="h-6 w-6" />
+                  </Button>
+                </Link>
+              </>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
+        </div>
+
+        <div className="hidden lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-4">
           {/* Logo - Using auto-scaling approach */}
           <Link href="/" className="flex items-center flex-shrink-0">
             <div className="relative w-auto h-auto max-h-16 -mt-4 lg:max-h-20 lg:-mt-12">
@@ -153,7 +197,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex flex-col items-center flex-grow mx-8 md:flex-row md:justify-center md:items-center md:space-x-6 md:space-y-0 md:flex-wrap md:gap-y-3">
+          <div className="flex flex-col items-center md:flex-row md:justify-center md:items-center md:space-x-6 md:space-y-0 md:flex-wrap md:gap-y-3">
             <div className="bg-gray-100 rounded-full px-6 py-2 mb-3 inline-flex main-navigation-bubble md:min-w-[120px] md:h-12 md:px-6 md:py-0 md:flex md:items-center md:justify-center md:text-base md:px-8 md:py-3 md:mb-0 md:text-base">
               <nav className="flex items-center space-x-8 lg:space-x-16 md:space-x-3 md:flex-wrap md:justify-center md:w-full">
                 {topNavItems.map((item, index) => 
@@ -223,20 +267,20 @@ export function Header() {
           </div>
 
           {/* User Controls */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 justify-end">
             {/* Desktop-only Favourites */}
             <Link href="/favourites">
-              <Button variant="ghost" size="icon" className="hidden lg:flex">
+              <Button variant="ghost" size="icon">
                 <Heart className="h-6 w-6" />
               </Button>
             </Link>
             {/* Notifications - only show for authenticated users */}
             {user && (
-              <NotificationBell className="hidden lg:block" />
+              <NotificationBell />
             )}
             {user && (
               <Link href="/dashboard">
-                <Button variant="secondary" className="hidden lg:flex">
+                <Button variant="secondary">
                   Dashboard
                 </Button>
               </Link>
@@ -244,7 +288,7 @@ export function Header() {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="hidden lg:flex">
+                  <Button variant="ghost" size="icon">
                     <User className="h-6 w-6" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -295,34 +339,12 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link href={`/signin?redirectTo=${encodeURIComponent(pathname)}`} className="hidden lg:block">
+              <Link href={`/signin?redirectTo=${encodeURIComponent(pathname)}`}>
                 <Button variant="ghost" size="icon">
                   <User className="h-6 w-6" />
                 </Button>
               </Link>
             )}
-            {/* Mobile-only buttons: Favourites, Profile, then Hamburger as rightmost */}
-            <Link href="/favourites" className="lg:hidden">
-              <Button variant="ghost" size="icon">
-                <Heart className="h-6 w-6" />
-              </Button>
-            </Link>
-            {user && (
-              <Link href="/profile" className="lg:hidden">
-                <Button variant="ghost" size="icon">
-                  <UserCircle className="h-6 w-6" />
-                </Button>
-              </Link>
-            )}
-            {/* Hamburger menu icon (mobile only, rightmost) */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
           </div>
         </div>
 
