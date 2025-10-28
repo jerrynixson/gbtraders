@@ -21,7 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/hooks/useAuth"
-import { fetchOffersForVehicles } from "@/lib/offers"
+import { fetchOffersForVehicles, updateOfferStatus, getOfferStatus, OfferStatus } from "@/lib/offers"
 import { auth } from "@/lib/firebase"
 import { DealerProfileSection } from "@/components/dealer/profile"
 import { PlanInfoSection } from "@/components/dashboard/PlanInfoSection"
@@ -201,6 +201,7 @@ export default function DealerDashboard() {
   const [planInfo, setPlanInfo] = useState<UserPlanInfo | null>(null)
   const [offers, setOffers] = useState<any[]>([]);
   const [offersLoading, setOffersLoading] = useState(false);
+  const [offerStatusLoading, setOfferStatusLoading] = useState<{ [offerId: string]: boolean }>({});
   const [bulkUploadStatus, setBulkUploadStatus] = useState<BulkUploadStatus | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [selectedAPI, setSelectedAPI] = useState<string>("")
@@ -416,6 +417,53 @@ export default function DealerDashboard() {
 
     router.push("/dashboard/add-listing")
   }
+
+  // Handle offer status updates
+  const handleOfferStatusUpdate = async (offerId: string, newStatus: OfferStatus) => {
+    if (!user?.uid) return;
+
+    setOfferStatusLoading(prev => ({ ...prev, [offerId]: true }));
+
+    try {
+      await updateOfferStatus(offerId, newStatus, user.uid);
+      toast.success(`Offer ${newStatus} successfully`);
+      
+      // Update local state to reflect the change immediately
+      setOffers(prevOffers => 
+        prevOffers.map(offer => 
+          offer.id === offerId 
+            ? { ...offer, status: newStatus }
+            : offer
+        )
+      );
+    } catch (error) {
+      console.error('Error updating offer status:', error);
+      toast.error(`Failed to ${newStatus} offer`);
+    } finally {
+      setOfferStatusLoading(prev => ({ ...prev, [offerId]: false }));
+    }
+  };
+
+  const handleAcceptOffer = (offerId: string) => {
+    handleOfferStatusUpdate(offerId, 'accepted');
+  };
+
+  const handleDeclineOffer = (offerId: string) => {
+    handleOfferStatusUpdate(offerId, 'declined');
+  };
+
+  // Helper function to get status badge styling
+  const getStatusBadge = (status: OfferStatus) => {
+    switch (status) {
+      case 'accepted':
+        return <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">Accepted</Badge>;
+      case 'declined':
+        return <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">Declined</Badge>;
+      case 'pending':
+      default:
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>;
+    }
+  };
 
   const handleEditListing = (id: string) => {
     router.push(`/dashboard/edit-listing/${id}`)
@@ -842,6 +890,8 @@ export default function DealerDashboard() {
                     <div className="block sm:hidden space-y-4">
                       {offers.map((offer, idx) => {
                         const vehicle = allVehicles.find(v => v.id === (offer.vehicleId || offer.id));
+                        const status = getOfferStatus(offer);
+                        const isLoading = offerStatusLoading[offer.id];
                         return (
                           <Card key={offer.id + offer.email} className="p-4">
                             <div className="flex items-center gap-3 mb-2">
@@ -850,24 +900,51 @@ export default function DealerDashboard() {
                                 alt={vehicle ? `${vehicle.make} ${vehicle.model}` : "Vehicle"}
                                 className="w-14 h-14 rounded object-cover border"
                               />
-                              <div>
+                              <div className="flex-1">
                                 <div className="font-semibold text-gray-900">
                                   {vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : (offer.vehicleId || offer.id)}
                                 </div>
                                 <div className="text-xs text-gray-500">Offer: <span className="font-bold text-blue-700">£{offer.offer}</span></div>
+                                <div className="mt-1">
+                                  {getStatusBadge(status)}
+                                </div>
                               </div>
                             </div>
                             <div className="text-sm text-gray-900 mb-1">Buyer: {offer.name}</div>
                             <div className="text-xs text-gray-500 mb-1">{offer.email} {offer.phone && <>| {offer.phone}</>}</div>
-                            <div className="text-xs text-gray-500 mb-2">{offer.timestamp && offer.timestamp.toDate ? offer.timestamp.toDate().toLocaleString() : ""}</div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full"
-                              onClick={() => router.push(`/vehicle-info/${offer.vehicleId || offer.id}`)}
-                            >
-                              View
-                            </Button>
+                            <div className="text-xs text-gray-500 mb-3">{offer.timestamp && offer.timestamp.toDate ? offer.timestamp.toDate().toLocaleString() : ""}</div>
+                            
+                            <div className="flex gap-2">
+                              {status === 'pending' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                    onClick={() => handleAcceptOffer(offer.id)}
+                                    disabled={isLoading}
+                                  >
+                                    {isLoading ? "..." : "Accept"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="flex-1"
+                                    onClick={() => handleDeclineOffer(offer.id)}
+                                    disabled={isLoading}
+                                  >
+                                    {isLoading ? "..." : "Decline"}
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className={status === 'pending' ? "flex-1" : "w-full"}
+                                onClick={() => router.push(`/vehicle-info/${offer.vehicleId || offer.id}`)}
+                              >
+                                View
+                              </Button>
+                            </div>
                           </Card>
                         );
                       })}
@@ -880,13 +957,16 @@ export default function DealerDashboard() {
                             <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Buyer</th>
                             <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Contact</th>
                             <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Offer (£)</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
                             <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
-                            <th className="px-4 py-2"></th>
+                            <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
                           {offers.map((offer, idx) => {
                             const vehicle = allVehicles.find(v => v.id === (offer.vehicleId || offer.id));
+                            const status = getOfferStatus(offer);
+                            const isLoading = offerStatusLoading[offer.id];
                             return (
                               <tr
                                 key={offer.id + offer.email}
@@ -914,21 +994,46 @@ export default function DealerDashboard() {
                                 <td className="px-4 py-2 whitespace-nowrap text-sm text-blue-700 font-bold">
                                   £{offer.offer}
                                 </td>
+                                <td className="px-4 py-2 whitespace-nowrap">
+                                  {getStatusBadge(status)}
+                                </td>
                                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">
                                   {offer.timestamp && offer.timestamp.toDate
                                     ? offer.timestamp.toDate().toLocaleString()
                                     : ""}
                                 </td>
                                 <td className="px-4 py-2 whitespace-nowrap">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      router.push(`/vehicle-info/${offer.vehicleId || offer.id}`);
-                                    }}
-                                  >
-                                    View
-                                  </Button>
+                                  <div className="flex gap-1 justify-center">
+                                    {status === 'pending' && (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          className="bg-green-600 hover:bg-green-700 text-xs px-2"
+                                          onClick={() => handleAcceptOffer(offer.id)}
+                                          disabled={isLoading}
+                                        >
+                                          {isLoading ? "..." : "Accept"}
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          className="text-xs px-2"
+                                          onClick={() => handleDeclineOffer(offer.id)}
+                                          disabled={isLoading}
+                                        >
+                                          {isLoading ? "..." : "Decline"}
+                                        </Button>
+                                      </>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs px-2"
+                                      onClick={() => router.push(`/vehicle-info/${offer.vehicleId || offer.id}`)}
+                                    >
+                                      View
+                                    </Button>
+                                  </div>
                                 </td>
                               </tr>
                             );

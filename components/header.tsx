@@ -41,6 +41,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useAdmin } from "@/hooks/useAdmin"
+import { NotificationBell } from "./NotificationBell"
 
 interface NavItem {
   href?: string;
@@ -229,6 +230,10 @@ export function Header() {
                 <Heart className="h-6 w-6" />
               </Button>
             </Link>
+            {/* Notifications - only show for authenticated users */}
+            {user && (
+              <NotificationBell className="hidden lg:block" />
+            )}
             {user && (
               <Link href="/dashboard">
                 <Button variant="secondary" className="hidden lg:flex">
