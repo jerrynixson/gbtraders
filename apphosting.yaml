@@ -93,8 +93,8 @@ env:
       - RUNTIME
 
   # OneAuto API Key
-  - variable: key
-    secret: key
+  - variable: oneauto_key
+    secret: oneauto_key
     availability:
       - BUILD
       - RUNTIME
